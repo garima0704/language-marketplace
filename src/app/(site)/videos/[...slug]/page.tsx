@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CategoryBar from "@/components/CategoryBar";
 import VideoSection from "@/components/VideoSection";
-import Footer from "@/components/Footer";
 
 type Props = {
   params: Promise<{
@@ -168,8 +167,6 @@ if (!category) {
       </div>
 
       <VideoSection showViewAll={false} />
-
-      <Footer />
 
     </div>
   );

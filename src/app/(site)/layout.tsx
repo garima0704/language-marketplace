@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/sidebar/Sidebar";
+import Footer from "@/components/Footer";
 
 export default function SiteLayout({
   children,
@@ -9,10 +10,15 @@ export default function SiteLayout({
   return (
     <div>
       <Navbar />
+
       <Sidebar />
 
-      <main className="min-h-screen ml-56 pt-24 bg-gray-50">
-        {children}
+      <main className="ml-56 min-h-[calc(100vh-96px)] pt-24 bg-gray-50 flex flex-col">
+        <div className="flex-1">
+          {children}
+        </div>
+
+        <Footer />
       </main>
     </div>
   );

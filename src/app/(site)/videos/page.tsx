@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 
 import CategoryBar from "@/components/CategoryBar";
 import VideoSection from "@/components/VideoSection";
-import Footer from "@/components/Footer";
 
 export default async function VideosPage() {
   const supabase = await createClient();
@@ -81,7 +80,6 @@ export default async function VideosPage() {
 
       <VideoSection showViewAll={false} />
 
-      <Footer />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import CategoryBar from "@/components/CategoryBar";
 import CreatorSection from "@/components/CreatorSection";
 import VideoSection from "@/components/VideoSection";
-import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
@@ -47,8 +46,6 @@ export default async function HomePage() {
       <CreatorSection />
 
       <VideoSection title="Latest Videos" />
-
-      <Footer />
 
     </div>
   );
