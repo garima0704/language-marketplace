@@ -1,52 +1,87 @@
-export default function VideosPage() {
+import Link from "next/link";
+
+import { createClient } from "@/lib/supabase/server";
+
+import CategoryBar from "@/components/CategoryBar";
+import VideoSection from "@/components/VideoSection";
+import Footer from "@/components/Footer";
+
+export default async function VideosPage() {
+  const supabase = await createClient();
+
+  // Top-level language categories
+  const { data: languages } = await supabase
+    .from("categories")
+    .select(`
+      id,
+      slug,
+      display_order,
+      category_translations!inner(
+        locale_code,
+        name
+      )
+    `)
+    .is("parent_id", null)
+    .eq("is_active", true)
+    .eq("category_translations.locale_code", "en")
+    .order("display_order");
+
+  const pills = [
+    {
+      id: "all",
+      slug: "videos",
+      name: "All",
+    },
+
+    ...(languages ?? []).map((language: any) => ({
+      id: language.id,
+      slug: language.slug,
+      name: language.category_translations[0]?.name,
+    })),
+  ];
+
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-[#082645]">
-        Browse Videos
-      </h1>
+    <div className="px-6 py-6">
+      <div className="mx-auto mb-6 max-w-7xl">
+        <nav className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <Link
+            href="/"
+            className="transition hover:text-primary"
+          >
+            Home
+          </Link>
 
-      <p className="mt-2 text-gray-500">
-        Discover language videos from sellers around the world.
-      </p>
+          <span>/</span>
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Video cards will come here */}
-        <div className="rounded-xl border bg-white p-5 shadow-sm">
-          <div className="h-40 rounded-lg bg-gray-100" />
+          <span className="font-medium text-foreground">
+            Videos
+          </span>
+        </nav>
 
-          <h3 className="mt-4 font-semibold">
-            Sample Language Video
-          </h3>
+        <h1 className="text-4xl font-bold text-[#082645]">
+          All Videos
+        </h1>
 
-          <p className="mt-1 text-sm text-gray-500">
-            English • Beginner
-          </p>
-        </div>
-
-        <div className="rounded-xl border bg-white p-5 shadow-sm">
-          <div className="h-40 rounded-lg bg-gray-100" />
-
-          <h3 className="mt-4 font-semibold">
-            Learn Spanish Conversation
-          </h3>
-
-          <p className="mt-1 text-sm text-gray-500">
-            Spanish • Intermediate
-          </p>
-        </div>
-
-        <div className="rounded-xl border bg-white p-5 shadow-sm">
-          <div className="h-40 rounded-lg bg-gray-100" />
-
-          <h3 className="mt-4 font-semibold">
-            Arabic Speaking Practice
-          </h3>
-
-          <p className="mt-1 text-sm text-gray-500">
-            Arabic • Advanced
-          </p>
-        </div>
+        <p className="mt-2 text-muted-foreground">
+          Discover language videos from creators around the world.
+        </p>
       </div>
+
+      <CategoryBar
+        categories={pills}
+        selectedCategory="all"
+        basePath="/videos"
+      />
+
+      <div className="mx-auto max-w-7xl px-6 py-4">
+        <p className="text-sm font-medium text-gray-600">
+          All Videos
+        </p>
+      </div>
+
+      <VideoSection showViewAll={false} />
+
+      <Footer />
     </div>
   );
 }

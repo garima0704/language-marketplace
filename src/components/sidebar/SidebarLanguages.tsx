@@ -17,13 +17,12 @@ type Props = {
 export default function SidebarLanguages({
   languages,
 }: Props) {
+  const pathname = usePathname();
 
-const pathname = usePathname();
-
-const selectedLanguage =
-  pathname.startsWith("/categories/")
-    ? pathname.split("/")[2]
-    : "";
+  const selectedLanguage =
+    pathname.startsWith("/videos/")
+      ? pathname.split("/")[2]
+      : "";
 
   return (
     <div className="mb-8">
@@ -47,7 +46,7 @@ const selectedLanguage =
         return (
           <Link
             key={language.id}
-            href={`/categories/${language.slug}`}
+            href={`/videos/${language.slug}`}
             className={`
               mx-3
               my-1

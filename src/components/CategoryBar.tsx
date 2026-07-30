@@ -5,6 +5,7 @@ interface CategoryPillsProps {
     id: string;
     slug: string;
     name: string;
+    href?: string;
   }[];
   selectedCategory?: string;
   basePath?: string;
@@ -27,10 +28,11 @@ export default function CategoryPills({
             <Link
               key={category.id}
               href={
-                category.id === "all"
-                ? basePath
-                : `${basePath}/${category.slug}`
-                }
+                category.href ??
+                (category.id === "all"
+                  ? basePath
+                  : `${basePath}/${category.slug}`)
+              }
               className={`
                 whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition
                 ${

@@ -105,7 +105,6 @@ if (!category) {
       <div className="mx-auto mb-6 max-w-7xl">
 
         <nav className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-
           <Link
             href="/"
             className="transition hover:text-primary"
@@ -113,8 +112,17 @@ if (!category) {
             Home
           </Link>
 
+          <span>/</span>
+
+          <Link
+            href="/videos"
+            className="transition hover:text-primary"
+          >
+            Videos
+          </Link>
+
           {slug.map((part, index) => {
-            const href = "/categories/" + slug.slice(0, index + 1).join("/");
+            const href = "/videos/" + slug.slice(0, index + 1).join("/");
             const isCurrent = index === slug.length - 1;
 
             return (
@@ -139,9 +147,7 @@ if (!category) {
               </div>
             );
           })}
-
         </nav>
-
 
         <h1 className="text-4xl font-bold text-[#082645]">
           {translation?.name ?? currentSlug}
@@ -149,20 +155,17 @@ if (!category) {
 
       </div>
 
-
       <CategoryBar
         categories={pills}
         selectedCategory="all"
-        basePath={`/categories/${slug.join("/")}`}
+        basePath={`/videos/${slug.join("/")}`}
       />
-
 
       <div className="mx-auto max-w-7xl px-6 py-4">
         <p className="text-sm font-medium text-gray-600">
           0 Videos
         </p>
       </div>
-
 
       <VideoSection showViewAll={false} />
 
