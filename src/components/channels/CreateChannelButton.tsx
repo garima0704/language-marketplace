@@ -1,33 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import CreateChannelDialog from "./CreateChannelDialog";
 
-interface CreateChannelButtonProps {
-  userId: string;
-}
-
-export default function CreateChannelButton({
-  userId,
-}: CreateChannelButtonProps) {
-  const [open, setOpen] = useState(false);
-
+export default function CreateChannelButton() {
   return (
-    <>
-      <Button
-        onClick={() => setOpen(true)}
-        className="bg-primary text-white hover:bg-primary hover:opacity-90 transition-opacity"
-      >
-        Create Channel
-      </Button>
-
-      <CreateChannelDialog
-        open={open}
-        onOpenChange={setOpen}
-        userId={userId}
-      />
-    </>
+    <Button
+      asChild
+      className="bg-primary text-white hover:bg-primary hover:opacity-90 transition-opacity"
+    >
+      <Link href="/seller/channels/new">Create Channel</Link>
+    </Button>
   );
 }
