@@ -14,7 +14,7 @@ export const creatorMenu = [
       },
       {
         href: "/seller/videos",
-        label: "Videos",
+        label: "My Videos",
         icon: "Video",
       },
       {
