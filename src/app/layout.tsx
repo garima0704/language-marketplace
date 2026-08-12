@@ -31,7 +31,7 @@ export default function RootLayout({
       lang="en"
       className={cn("h-full", "antialiased", poppins.variable, inter.variable, "font-sans", geist.variable)}
     >
-      <body className="min-h-screen bg-light-bg text-gray-800">
+      <body className="min-h-screen bg-white text-gray-900">
         {children}
       </body>
     </html>

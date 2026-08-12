@@ -29,12 +29,10 @@ export default function EditAboutDialog({
   onOpenChange,
   profile,
 }: EditAboutDialogProps) {
-
   const [bio, setBio] = useState(profile.bio ?? "");
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
-
 
   const handleSave = async () => {
     setLoading(true);
@@ -46,20 +44,17 @@ export default function EditAboutDialog({
       })
       .eq("id", profile.id);
 
-
     if (error) {
       console.error("Error updating bio:", error.message);
       setLoading(false);
       return;
     }
 
-
     setLoading(false);
     onOpenChange(false);
 
     window.location.reload();
   };
-
 
   return (
     <Dialog
@@ -71,50 +66,38 @@ export default function EditAboutDialog({
           w-[95vw]
           max-w-3xl
           rounded-2xl
-          bg-white
+          bg-background
           p-8
         "
       >
-
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
+          <DialogTitle className="text-2xl font-bold text-foreground">
             Edit About
           </DialogTitle>
         </DialogHeader>
 
-
         <div className="mt-6 space-y-6">
-
-
           <div className="space-y-2">
-
-            <Label>
+            <Label htmlFor="bio">
               About
             </Label>
 
-
             <Textarea
+              id="bio"
               rows={6}
               maxLength={300}
               value={bio}
-              onChange={(e) =>
-                setBio(e.target.value)
-              }
+              onChange={(e) => setBio(e.target.value)}
               placeholder="Tell people about yourself..."
               className="resize-none"
             />
 
-
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted">
               Maximum 300 characters.
             </p>
-
           </div>
 
-
-
           <div className="flex flex-col-reverse gap-3 pt-3 sm:flex-row sm:justify-end">
-
             <Button
               type="button"
               variant="outline"
@@ -124,27 +107,16 @@ export default function EditAboutDialog({
               Cancel
             </Button>
 
-
             <Button
               type="button"
               disabled={loading}
               onClick={handleSave}
-              className="
-                bg-primary
-                text-white
-                hover:bg-primary
-                hover:opacity-90
-                transition-opacity
-              "
+              className="transition-opacity hover:opacity-90"
             >
               {loading ? "Saving..." : "Save Changes"}
             </Button>
-
           </div>
-
-
         </div>
-
       </DialogContent>
     </Dialog>
   );

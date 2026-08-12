@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -31,11 +35,13 @@ export default function ProfileHeader({
     <>
       <Card className="rounded-2xl p-8 shadow-sm">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+
           <div className="flex items-center gap-6">
+
             <Avatar className="h-24 w-24">
               <AvatarImage src={profile.avatar_url ?? ""} />
 
-              <AvatarFallback className="bg-primary text-white text-3xl">
+              <AvatarFallback className="bg-primary text-primary-foreground text-3xl">
                 {profile.display_name
                   ?.split(" ")
                   .map((name: string) => name.charAt(0))
@@ -45,6 +51,7 @@ export default function ProfileHeader({
             </Avatar>
 
             <div className="space-y-3">
+
               <h1 className="text-3xl font-bold">
                 {profile.display_name}
               </h1>
@@ -54,8 +61,20 @@ export default function ProfileHeader({
               </p>
 
               <div className="flex flex-wrap items-center gap-2">
+
                 {profile.is_creator && (
-                  <span className="whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium bg-secondary text-white">
+                  <span
+                    className="
+                      whitespace-nowrap
+                      rounded-full
+                      bg-secondary
+                      px-3
+                      py-1
+                      text-sm
+                      font-medium
+                      text-white
+                    "
+                  >
                     Creator
                   </span>
                 )}
@@ -66,20 +85,23 @@ export default function ProfileHeader({
 
                 <span className="text-sm text-muted-foreground">
                   • Joined{" "}
-                  {new Date(profile.created_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  {new Date(profile.created_at).toLocaleDateString(
+                    "en-US",
+                    {
+                      month: "short",
+                      year: "numeric",
+                    }
+                  )}
                 </span>
+
               </div>
             </div>
           </div>
 
-          <Button
-            onClick={() => setOpen(true)}
-          >
+          <Button onClick={() => setOpen(true)}>
             Edit Profile
           </Button>
+
         </div>
       </Card>
 

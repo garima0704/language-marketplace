@@ -39,9 +39,7 @@ export default function ChannelForm({
     channel?.channel_name ?? ""
   );
 
-  const [slug, setSlug] = useState(
-    channel?.slug ?? ""
-  );
+  const [slug, setSlug] = useState(channel?.slug ?? "");
 
   const [description, setDescription] = useState(
     channel?.description ?? ""
@@ -51,9 +49,7 @@ export default function ChannelForm({
     channel?.subscription_price.toString() ?? "0"
   );
 
-  const [slugEdited, setSlugEdited] = useState(
-    mode === "edit"
-  );
+  const [slugEdited, setSlugEdited] = useState(mode === "edit");
 
   const generatedSlug = useMemo(() => {
     return channelName
@@ -160,22 +156,25 @@ export default function ChannelForm({
 
   return (
     <div className="max-w-4xl space-y-10">
+
       {/* General Information */}
-      <div className="rounded-2xl border bg-card p-8 shadow-sm">
+      <div className="rounded-2xl border border-border bg-background p-8 shadow-sm">
         <div className="mb-8">
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-xl font-semibold text-foreground">
             General Information
           </h2>
 
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted">
             Update how your channel appears across NiceConvo.
           </p>
         </div>
 
         <div className="space-y-8">
+
+          {/* Channel Name */}
           <div className="space-y-2">
             <Label htmlFor="channelName">
-              Channel Name <span className="text-destructive">*</span>
+              Channel Name <span className="text-red-600">*</span>
             </Label>
 
             <Input
@@ -185,24 +184,25 @@ export default function ChannelForm({
               onChange={(e) => setChannelName(e.target.value)}
             />
 
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted">
               This is the name learners will see.
             </p>
           </div>
 
+          {/* Channel URL */}
           <div className="space-y-2">
             <Label htmlFor="slug">
               Channel URL
             </Label>
 
-            <div className="flex overflow-hidden rounded-lg border">
-              <div className="flex items-center bg-muted px-4 text-sm text-muted-foreground">
+            <div className="flex overflow-hidden rounded-lg border border-border">
+              <div className="flex items-center bg-muted-bg px-4 text-sm text-muted">
                 niceconvo.com/c/
               </div>
 
               <Input
                 id="slug"
-                className="border-0 rounded-none"
+                className="rounded-none border-0"
                 value={slug}
                 onChange={(e) => {
                   setSlugEdited(true);
@@ -216,18 +216,19 @@ export default function ChannelForm({
               />
             </div>
 
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted">
               Your public channel URL.
             </p>
           </div>
 
+          {/* Description */}
           <div className="space-y-2">
             <div className="flex justify-between">
               <Label htmlFor="description">
                 Description
               </Label>
 
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted">
                 {description.length}/500
               </span>
             </div>
@@ -237,26 +238,25 @@ export default function ChannelForm({
               rows={6}
               maxLength={500}
               value={description}
-              onChange={(e) =>
-                setDescription(e.target.value)
-              }
+              onChange={(e) => setDescription(e.target.value)}
             />
 
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted">
               Describe what learners can expect.
             </p>
           </div>
+
         </div>
       </div>
 
       {/* Pricing */}
-      <div className="rounded-2xl border bg-card p-8 shadow-sm">
+      <div className="rounded-2xl border border-border bg-background p-8 shadow-sm">
         <div className="mb-8">
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-xl font-semibold text-foreground">
             Pricing
           </h2>
 
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted">
             Set your monthly subscription price.
           </p>
         </div>
@@ -267,7 +267,7 @@ export default function ChannelForm({
           </Label>
 
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
               $
             </span>
 
@@ -282,18 +282,20 @@ export default function ChannelForm({
             />
           </div>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted">
             You can change this later.
           </p>
         </div>
       </div>
 
+      {/* Error */}
       {error && (
-        <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
           {error}
         </div>
       )}
 
+      {/* Actions */}
       <div className="flex justify-end gap-3 pt-6">
         <Button
           type="button"
@@ -315,10 +317,11 @@ export default function ChannelForm({
               ? "Creating..."
               : "Saving..."
             : mode === "create"
-            ? "Create Channel"
-            : "Save Changes"}
+              ? "Create Channel"
+              : "Save Changes"}
         </Button>
       </div>
+
     </div>
   );
 }

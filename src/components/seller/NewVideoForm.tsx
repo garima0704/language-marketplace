@@ -704,15 +704,13 @@ async function handleSaveDraft() {
                   <span
                     className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-medium ${
                       isActive
-                        ? "border-primary bg-primary text-primary-foreground"
+                        ? "border-primary bg-primary text-white"
                         : isCompleted
-                          ? "border-primary bg-primary text-primary-foreground"
+                          ? "border-primary bg-primary text-white"
                           : "border-muted-foreground/30 text-muted-foreground"
                     }`}
                   >
-                    {isCompleted
-                      ? "✓"
-                      : step.number}
+                    {isCompleted ? "✓" : step.number}
                   </span>
 
                   <span
@@ -752,7 +750,7 @@ async function handleSaveDraft() {
           </CardHeader>
 
           <CardContent>
-            <div className="rounded-xl border-2 border-dashed p-12 text-center">
+            <div className="rounded-xl border-2 border-dashed border-border bg-light-bg p-12 text-center">
               <p className="text-lg font-medium">
                 Drag & Drop your video here
               </p>
@@ -892,7 +890,7 @@ async function handleSaveDraft() {
                 name="channel_id"
                 value={channelId}
                 onChange={(e) => setChannelId(e.target.value)}
-                className="w-full rounded-lg border bg-background p-2"
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
                 required
               >
                 <option value="">
@@ -943,6 +941,7 @@ async function handleSaveDraft() {
                     name="is_native_speaker"
                     value="true"
                     defaultChecked
+                    className="h-4 w-4 accent-primary"
                   />
                   Yes
                 </label>
@@ -983,7 +982,7 @@ async function handleSaveDraft() {
                 name="level"
                 value={level}
                 onChange={(e) => setLevel(e.target.value)}
-                className="w-full rounded-lg border bg-background p-2"
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
                 required
               >
                 <option value="">
@@ -1042,7 +1041,7 @@ async function handleSaveDraft() {
 
               <select
                 name="subtitle_language_code"
-                className="w-full rounded-lg border bg-background p-2"
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
               >
                 <option value="">
                   No subtitles

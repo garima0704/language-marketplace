@@ -16,22 +16,12 @@ export default function ChannelVideos({
 }: ChannelVideosProps) {
   return (
     <section className="space-y-5">
-
-      <h2 className="text-2xl font-bold">
+      <h2 className="text-2xl font-bold text-foreground">
         Videos
       </h2>
 
-
       {videos.length > 0 ? (
-
-        <div
-          className="
-            grid
-            gap-5
-            sm:grid-cols-2
-            lg:grid-cols-3
-          "
-        >
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {videos.map((video) => (
             <ChannelVideoCard
               key={video.id}
@@ -39,17 +29,13 @@ export default function ChannelVideos({
             />
           ))}
         </div>
-
       ) : (
-
-        <div className="rounded-2xl border p-8 text-center">
-          <p className="text-muted-foreground">
+        <div className="rounded-2xl border border-border bg-background p-8 text-center">
+          <p className="text-muted">
             No videos available yet.
           </p>
         </div>
-
       )}
-
     </section>
   );
 }

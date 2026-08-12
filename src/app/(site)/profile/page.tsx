@@ -96,7 +96,7 @@ return (
           channels.map((channel) => (
             <Card
               key={channel.id}
-              className="rounded-xl p-4 hover:border-primary transition"
+              className="rounded-xl p-4 border border-transparent hover:border-gray-300 transition"
             >
               <h3 className="font-semibold">
                 {channel.channel_name}

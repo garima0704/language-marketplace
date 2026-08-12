@@ -161,7 +161,7 @@ if (categoryIds.length > 0) {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[#082645]">
+          <h1 className="text-3xl font-bold text-gray-900">
             My Videos
           </h1>
 
@@ -226,7 +226,7 @@ if (categoryIds.length > 0) {
 
   {/* Category Tag */}
   {video.category_label && (
-                  <span className="absolute right-2 -top-3 z-10 rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm">
+                  <span className="absolute right-2 -top-3 z-10 rounded-md bg-primary px-3 py-1 text-xs font-medium text-white shadow-sm">
                     {video.category_label}
                   </span>
                 )}
@@ -247,7 +247,7 @@ if (categoryIds.length > 0) {
           <span
             className={
               video.status === "published"
-                ? "rounded-full bg-green-100 px-2 py-1 text-xs text-green-700"
+                ? "rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700"
                 : "rounded-full bg-muted px-2 py-1 text-xs"
             }
           >
@@ -257,8 +257,8 @@ if (categoryIds.length > 0) {
           <span
             className={
               video.access_type === "free"
-                ? "rounded-full bg-green-100 px-2 py-1 text-xs text-green-700"
-                : "rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700"
+                ? "rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700"
+                : "rounded-full bg-gray-900 px-2 py-1 text-xs text-white"
             }
           >
             {video.access_type === "free"

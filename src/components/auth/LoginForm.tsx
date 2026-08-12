@@ -42,7 +42,7 @@ export default function LoginForm() {
           type="email"
           required
           placeholder="john@example.com"
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none transition focus:border-primary"
+          className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none transition focus:border-gray-900"
         />
       </div>
 
@@ -58,7 +58,7 @@ export default function LoginForm() {
 
           <Link
             href="/forgot-password"
-            className="text-sm text-primary hover:underline"
+            className="text-sm text-gray-900 hover:underline"
           >
             Forgot password?
           </Link>
@@ -71,7 +71,7 @@ export default function LoginForm() {
             type={showPassword ? "text" : "password"}
             required
             placeholder="Enter your password"
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 pr-12 outline-none transition focus:border-primary"
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 pr-12 outline-none transition focus:border-gray-900"
           />
 
           <button
@@ -102,7 +102,7 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="flex w-full items-center justify-center rounded-lg bg-primary py-2 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+        className="flex w-full items-center justify-center rounded-lg bg-gray-900 py-2 font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {pending ? (
           <>
@@ -118,7 +118,7 @@ export default function LoginForm() {
         Don't have an account?{" "}
         <Link
           href="/signup"
-          className="font-semibold text-primary hover:underline"
+          className="font-semibold text-gray-900 hover:underline"
         >
           Sign Up
         </Link>

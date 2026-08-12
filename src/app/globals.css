@@ -1,13 +1,19 @@
+
 @import "tailwindcss";
 
 :root {
-  /* NiceConvo Brand Colors */
-  --primary: #F8BA29;
-  --secondary: #52CCF5;
-  --light-bg: #F7F9FA;
-
+  /* NiceConvo Neutral Colors */
   --background: #ffffff;
-  --foreground: #111827;
+  --foreground: #111111;
+
+  --primary: #111111;
+  --secondary: #666666;
+
+  --light-bg: #f7f7f7;
+
+  --border: #e5e5e5;
+  --muted: #737373;
+  --muted-bg: #f1f1f1;
 }
 
 @theme inline {
@@ -16,10 +22,15 @@
 
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
+
   --color-light-bg: var(--light-bg);
+
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-bg: var(--muted-bg);
 }
 
 body {
-  background: var(--light-bg);
+  background: var(--background);
   color: var(--foreground);
 }

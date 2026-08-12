@@ -42,7 +42,16 @@ function DropdownMenuContent({
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
           className={cn(
-            "w-72 rounded-2xl border border-gray-200 bg-white shadow-2xl p-2",
+            `
+              w-72
+              rounded-2xl
+              border
+              border-border
+              bg-background
+              p-2
+              text-foreground
+              shadow-2xl
+            `,
             className
           )}
           {...props}
@@ -82,8 +91,8 @@ function DropdownMenuItem({
   variant = "default",
   ...props
 }: MenuPrimitive.Item.Props & {
-  inset?: boolean
-  variant?: "default" | "destructive"
+  inset?: boolean;
+  variant?: "default" | "destructive";
 }) {
   return (
     <MenuPrimitive.Item
@@ -91,27 +100,38 @@ function DropdownMenuItem({
       data-inset={inset}
       data-variant={variant}
       className={cn(
-  `
-  group relative flex h-11 cursor-default items-center gap-3
-  rounded-lg px-3 text-sm
-  transition-colors duration-200
-  outline-none select-none
+        `
+          group
+          relative
+          flex
+          h-11
+          cursor-default
+          items-center
+          gap-3
+          rounded-lg
+          px-3
+          text-sm
+          text-foreground
+          transition-colors
+          duration-200
+          outline-none
+          select-none
 
-  data-[highlighted]:bg-[#52CCF5]
-  data-[highlighted]:text-white
+          data-[highlighted]:bg-muted-bg
+          data-[highlighted]:text-primary
 
-  [&_svg]:size-4
-  [&_svg]:shrink-0
-  data-[highlighted]:[&_svg]:text-white
+          [&_svg]:size-4
+          [&_svg]:shrink-0
+          data-[highlighted]:[&_svg]:text-primary
 
-  data-disabled:pointer-events-none
-  data-disabled:opacity-50
-  `,
-  className
-)}
+          data-disabled:pointer-events-none
+          data-disabled:opacity-50
+        `,
+        className
+      )}
       {...props}
     />
-  )
+  );
 }
 
 function DropdownMenuSub({ ...props }: MenuPrimitive.SubmenuRoot.Props) {

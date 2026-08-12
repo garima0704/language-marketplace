@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -28,13 +29,13 @@ export default function SidebarLanguages({
     <div className="mb-8">
       <h3
         className="
-          px-6
           mb-3
+          px-6
           text-xs
           font-semibold
           uppercase
           tracking-wider
-          text-gray-400
+          text-muted
         "
       >
         Explore Languages
@@ -60,12 +61,12 @@ export default function SidebarLanguages({
               duration-200
               ${
                 isActive
-                  ? "bg-primary text-[#082645] font-semibold shadow-sm"
-                  : "text-[#444444] hover:bg-secondary hover:text-white"
+                  ? "bg-primary font-semibold text-white shadow-sm"
+                  : "text-secondary hover:bg-muted-bg hover:text-foreground"
               }
             `}
           >
-            {language.category_translations[0].name}
+            {language.category_translations[0]?.name}
           </Link>
         );
       })}

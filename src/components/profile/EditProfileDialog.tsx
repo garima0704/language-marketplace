@@ -1,6 +1,6 @@
 "use client";
 
-import { useState,useRef } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
@@ -12,7 +12,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,10 +41,8 @@ export default function EditProfileDialog({
   onOpenChange,
   profile,
 }: EditProfileDialogProps) {
-
   const router = useRouter();
   const supabase = createClient();
-
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,94 +64,81 @@ export default function EditProfileDialog({
 
   const [loading, setLoading] = useState(false);
 
-
   async function handleSave() {
-  setLoading(true);
+    setLoading(true);
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      display_name: displayName,
-      username,
-      country,
-      avatar_url: avatarUrl,
-    })
-    .eq("id", profile.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        display_name: displayName,
+        username,
+        country,
+        avatar_url: avatarUrl,
+      })
+      .eq("id", profile.id);
 
+    if (error) {
+      console.error(
+        "Profile update failed:",
+        error.message
+      );
 
-  if (error) {
-    console.error(
-      "Profile update failed:",
-      error.message
-    );
+      setLoading(false);
+      return;
+    }
 
     setLoading(false);
-    return;
+    onOpenChange(false);
+
+    router.refresh();
   }
-
-
-  setLoading(false);
-
-  onOpenChange(false);
-
-  router.refresh();
-}
 
   async function handleAvatarUpload(
-  e: React.ChangeEvent<HTMLInputElement>
-) {
-  const file = e.target.files?.[0];
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = e.target.files?.[0];
 
-  if (!file) return;
+    if (!file) return;
 
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Maximum file size is 5MB");
+      return;
+    }
 
-  // Check file size (5MB)
-  if (file.size > 5 * 1024 * 1024) {
-    alert("Maximum file size is 5MB");
-    return;
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("Only JPG, PNG and WebP files are allowed");
+      return;
+    }
+
+    const fileExt = file.name.split(".").pop();
+
+    const fileName = `${profile.id}/avatar-${Date.now()}.${fileExt}`;
+
+    const { error } = await supabase.storage
+      .from("avatars")
+      .upload(fileName, file, {
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("Upload error:", error.message);
+      return;
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(fileName);
+
+    setAvatarUrl(publicUrl);
   }
-
-
-  // Check file type
-  const allowedTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-  ];
-
-  if (!allowedTypes.includes(file.type)) {
-    alert("Only JPG, PNG and WebP files are allowed");
-    return;
-  }
-
-
-  const fileExt = file.name.split(".").pop();
-
-  const fileName = `${profile.id}/avatar-${Date.now()}.${fileExt}`;
-
-
-  const { error } = await supabase.storage
-    .from("avatars")
-    .upload(fileName, file, {
-      upsert: true,
-    });
-
-
-  if (error) {
-    console.error("Upload error:", error.message);
-    return;
-  }
-
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage
-    .from("avatars")
-    .getPublicUrl(fileName);
-
-
-  setAvatarUrl(publicUrl);
-}
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -160,26 +150,20 @@ export default function EditProfileDialog({
           overflow-y-auto
           overflow-x-hidden
           rounded-2xl
-          bg-white
+          bg-background
           p-8
         "
       >
-
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
+          <DialogTitle className="text-2xl font-bold text-foreground">
             Edit Profile
           </DialogTitle>
         </DialogHeader>
 
-
         <div className="mt-6 grid gap-8 md:grid-cols-[220px_1fr]">
-
-
           {/* Left */}
           <div className="flex flex-col items-center">
-
             <Avatar className="h-32 w-32">
-
               <AvatarImage src={avatarUrl} />
 
               <AvatarFallback className="bg-primary text-4xl text-white">
@@ -189,11 +173,8 @@ export default function EditProfileDialog({
                   .join("")
                   .toUpperCase()}
               </AvatarFallback>
-
             </Avatar>
 
-
-            <>
             <input
               ref={fileInputRef}
               type="file"
@@ -213,29 +194,23 @@ export default function EditProfileDialog({
             >
               Change Photo
             </Button>
-          </>
 
-
-            <p className="mt-3 text-center text-xs text-muted-foreground">
+            <p className="mt-3 text-center text-xs text-muted">
               JPG, PNG or WebP
               <br />
               Maximum 5 MB
             </p>
-
           </div>
-
-
 
           {/* Right */}
           <div className="space-y-5">
-
-
             <div className="space-y-2">
-              <Label>
+              <Label htmlFor="displayName">
                 Display Name
               </Label>
 
               <Input
+                id="displayName"
                 value={displayName}
                 onChange={(e) =>
                   setDisplayName(e.target.value)
@@ -243,80 +218,61 @@ export default function EditProfileDialog({
               />
             </div>
 
-
-
             <div className="space-y-2">
-
-              <Label>
+              <Label htmlFor="username">
                 Username
               </Label>
 
               <Input
+                id="username"
                 value={username}
                 onChange={(e) =>
                   setUsername(e.target.value)
                 }
               />
 
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted">
                 This appears in your public profile URL.
               </p>
-
             </div>
 
-
-
             <div className="space-y-2">
-
-              <Label>
+              <Label htmlFor="country">
                 Country
               </Label>
 
               <Input
+                id="country"
                 value={country}
                 onChange={(e) =>
                   setCountry(e.target.value)
                 }
               />
-
             </div>
 
             <div className="flex flex-col-reverse gap-3 pt-3 sm:flex-row sm:justify-end">
-
-
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={loading}
               >
                 Cancel
               </Button>
-
-
 
               <Button
                 type="button"
                 disabled={loading}
                 onClick={handleSave}
-                className="
-                  bg-primary 
-                  text-white 
-                  hover:bg-primary 
-                  hover:opacity-90 
-                  transition-opacity
-                "
+                className="transition-opacity hover:opacity-90"
               >
-                {loading ? "Saving..." : "Save Changes"}
+                {loading
+                  ? "Saving..."
+                  : "Save Changes"}
               </Button>
-
-
             </div>
-
-
           </div>
-
         </div>
-
       </DialogContent>
     </Dialog>
   );

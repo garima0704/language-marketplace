@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ export default function BecomeSellerPage() {
     <div className="p-8">
       <div className="mx-auto max-w-7xl">
 
-        <h1 className="text-3xl font-bold text-[#082645]">
+        <h1 className="text-3xl font-bold text-gray-900">
           Become a Seller
         </h1>
 
@@ -16,11 +17,10 @@ export default function BecomeSellerPage() {
           and earn by teaching learners around the world.
         </p>
 
-
         <div className="mt-8 grid gap-6 md:grid-cols-3">
 
           <div className="rounded-xl border bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-[#082645]">
+            <h3 className="text-lg font-semibold text-gray-900">
               Create Your Channel
             </h3>
 
@@ -30,9 +30,8 @@ export default function BecomeSellerPage() {
             </p>
           </div>
 
-
           <div className="rounded-xl border bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-[#082645]">
+            <h3 className="text-lg font-semibold text-gray-900">
               Upload Videos
             </h3>
 
@@ -42,9 +41,8 @@ export default function BecomeSellerPage() {
             </p>
           </div>
 
-
           <div className="rounded-xl border bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-[#082645]">
+            <h3 className="text-lg font-semibold text-gray-900">
               Earn Income
             </h3>
 
@@ -56,21 +54,19 @@ export default function BecomeSellerPage() {
 
         </div>
 
-
-        <div className="mt-10 rounded-xl bg-[#082645] p-8 text-white">
+        <div className="mt-10 rounded-xl bg-gray-900 p-8 text-white">
 
           <h2 className="text-2xl font-semibold">
             Ready to start teaching?
           </h2>
 
-          <p className="mt-2 text-sm text-gray-200">
+          <p className="mt-2 text-sm text-gray-300">
             Create your seller profile and start building your
             language community.
           </p>
 
-
           <Link href="/profile">
-            <Button className="mt-6 bg-secondary text-white hover:bg-secondary/90">
+            <Button className="mt-6 bg-white text-gray-900 hover:bg-gray-100">
               Start Selling
             </Button>
           </Link>

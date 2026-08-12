@@ -1,104 +1,138 @@
 import Link from "next/link";
+import VideoCard from "@/components/VideoCard";
+
+interface Profile {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
+  is_creator: boolean;
+}
+
+interface Channel {
+  id: string;
+  channel_name: string;
+  logo_url: string | null;
+  user_id: string;
+  profiles: Profile | Profile[] | null;
+}
+
+interface CategoryTranslation {
+  name: string;
+  locale_code: string;
+}
+
+interface Category {
+  id: string;
+  slug: string;
+  category_translations:
+    | CategoryTranslation[]
+    | CategoryTranslation
+    | null;
+}
+
+interface Video {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  level: string | null;
+  access_type: "free" | "subscriber";
+  view_count: number;
+  created_at: string;
+  published_at: string | null;
+  channels: Channel | Channel[] | null;
+  categories: Category | Category[] | null;
+}
 
 interface Props {
   title?: string;
   showViewAll?: boolean;
+  videos?: Video[];
 }
 
 export default function VideoSection({
   title,
   showViewAll = true,
+  videos = [],
 }: Props) {
-  const videos = Array.from({ length: 8 });
-
   return (
-    <section className="max-w-7xl mx-auto px-6 py-8">
-
+    <section className="mx-auto max-w-7xl px-6 py-8">
       {title && (
-        <div className="flex items-center justify-between mb-6">
-
-          <h2 className="text-2xl font-semibold text-[#082645]">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-foreground">
             {title}
           </h2>
 
           {showViewAll && (
             <Link
-              href="#"
-              className="text-sm font-medium text-[#082645] hover:text-[#52CCF5] transition"
+              href="/videos"
+              className="text-sm font-medium text-foreground transition hover:text-secondary"
             >
               View All
             </Link>
           )}
-
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {videos.length === 0 ? (
+        <div className="rounded-xl border border-border bg-muted-bg px-6 py-12 text-center">
+          <p className="text-sm text-muted">
+            No videos available yet.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {videos.map((video) => {
+            const channel = Array.isArray(video.channels)
+              ? video.channels[0]
+              : video.channels;
 
-        {videos.map((_, i) => (
+            const profile = Array.isArray(channel?.profiles)
+              ? channel.profiles[0]
+              : channel?.profiles;
 
-          <div
-            key={i}
-            className="group cursor-pointer"
-          >
+            const category = Array.isArray(video.categories)
+              ? video.categories[0]
+              : video.categories;
 
-            {/* Thumbnail */}
-            <div
-              className="
-                aspect-video
-                rounded-xl
-                bg-white
-                overflow-hidden
-                group-hover:shadow-md
-                transition
-              "
-            />
+            const translation = Array.isArray(
+              category?.category_translations
+            )
+              ? category.category_translations[0]
+              : category?.category_translations;
 
-            {/* Details */}
-            <div className="flex gap-3 mt-4">
+            const creatorName =
+              profile?.display_name ||
+              "Creator";
 
-              {/* Creator */}
-              <div
-                className="
-                  w-10
-                  h-10
-                  rounded-full
-                  bg-[#52CCF5]
-                  shrink-0
-                "
+            const avatar =
+              profile?.avatar_url ||
+              channel?.logo_url ||
+              "";
+
+            const categoryLabel =
+              translation?.name ||
+              category?.slug ||
+              "";
+
+            return (
+              <VideoCard
+                key={video.id}
+                id={video.id}
+                title={video.title}
+                creator={creatorName}
+                thumbnail={video.thumbnail_url || ""}
+                avatar={avatar}
+                channelName={channel?.channel_name || ""}
+                views={video.view_count}
+                createdAt={video.created_at}
+                level={video.level}
+                accessType={video.access_type}
+                categoryLabel={categoryLabel}
               />
-
-              <div className="min-w-0">
-
-                <h3
-                  className="
-                    font-semibold
-                    text-[#212427]
-                    leading-5
-                    line-clamp-2
-                  "
-                >
-                  Learn Spanish While Ordering Coffee
-                </h3>
-
-                <p className="text-sm text-gray-500 mt-1">
-                  Spanish With Maria
-                </p>
-
-                <p className="text-xs text-gray-400 mt-1">
-                  Beginner • ⭐ 4.8 • 12K views
-                </p>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        ))}
-
-      </div>
-
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

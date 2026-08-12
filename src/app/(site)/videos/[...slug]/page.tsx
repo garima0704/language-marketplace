@@ -106,7 +106,7 @@ if (!category) {
         <nav className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Link
             href="/"
-            className="transition hover:text-primary"
+            className="transition hover:text-gray-900"
           >
             Home
           </Link>
@@ -115,7 +115,7 @@ if (!category) {
 
           <Link
             href="/videos"
-            className="transition hover:text-primary"
+            className="transition hover:text-gray-900"
           >
             Videos
           </Link>
@@ -138,7 +138,7 @@ if (!category) {
                 ) : (
                   <Link
                     href={href}
-                    className="capitalize transition hover:text-primary"
+                    className="capitalize transition hover:text-gray-900"
                   >
                     {part.replace(/-/g, " ")}
                   </Link>
@@ -148,7 +148,7 @@ if (!category) {
           })}
         </nav>
 
-        <h1 className="text-4xl font-bold text-[#082645]">
+        <h1 className="text-4xl font-bold text-gray-900">
           {translation?.name ?? currentSlug}
         </h1>
 

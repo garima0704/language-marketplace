@@ -50,7 +50,6 @@ export default function CategorySelector({
     );
   };
 
-  // Level 1
   const categoriesLevel1 = useMemo(() => {
     return categories
       .filter(
@@ -64,7 +63,6 @@ export default function CategorySelector({
       );
   }, [categories]);
 
-  // Level 2
   const categoriesLevel2 = useMemo(() => {
     if (!level1) return [];
 
@@ -80,7 +78,6 @@ export default function CategorySelector({
       );
   }, [categories, level1]);
 
-  // Level 3
   const categoriesLevel3 = useMemo(() => {
     if (!level2) return [];
 
@@ -96,7 +93,6 @@ export default function CategorySelector({
       );
   }, [categories, level2]);
 
-  // Level 4
   const categoriesLevel4 = useMemo(() => {
     if (!level3) return [];
 
@@ -130,13 +126,15 @@ export default function CategorySelector({
     setLevel4("");
   }
 
+  const selectClassName =
+    "h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10";
+
   return (
     <div className="space-y-5">
 
       {/* Level 1 */}
-
-      <div>
-        <label className="mb-2 block text-sm font-medium">
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-foreground">
           Category
         </label>
 
@@ -145,7 +143,7 @@ export default function CategorySelector({
           onChange={(e) =>
             handleLevel1Change(e.target.value)
           }
-          className="w-full rounded-lg border bg-background p-2"
+          className={selectClassName}
         >
           <option value="">
             Select Category
@@ -163,10 +161,9 @@ export default function CategorySelector({
       </div>
 
       {/* Level 2 */}
-
       {level1 && categoriesLevel2.length > 0 && (
-        <div>
-          <label className="mb-2 block text-sm font-medium">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-foreground">
             Subcategory
           </label>
 
@@ -175,7 +172,7 @@ export default function CategorySelector({
             onChange={(e) =>
               handleLevel2Change(e.target.value)
             }
-            className="w-full rounded-lg border bg-background p-2"
+            className={selectClassName}
           >
             <option value="">
               Select Subcategory
@@ -194,10 +191,9 @@ export default function CategorySelector({
       )}
 
       {/* Level 3 */}
-
       {level2 && categoriesLevel3.length > 0 && (
-        <div>
-          <label className="mb-2 block text-sm font-medium">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-foreground">
             Subcategory
           </label>
 
@@ -206,7 +202,7 @@ export default function CategorySelector({
             onChange={(e) =>
               handleLevel3Change(e.target.value)
             }
-            className="w-full rounded-lg border bg-background p-2"
+            className={selectClassName}
           >
             <option value="">
               Select Subcategory
@@ -225,10 +221,9 @@ export default function CategorySelector({
       )}
 
       {/* Level 4 */}
-
       {level3 && categoriesLevel4.length > 0 && (
-        <div>
-          <label className="mb-2 block text-sm font-medium">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-foreground">
             Topic
           </label>
 
@@ -238,7 +233,7 @@ export default function CategorySelector({
             onChange={(e) =>
               setLevel4(e.target.value)
             }
-            className="w-full rounded-lg border bg-background p-2"
+            className={selectClassName}
             required
           >
             <option value="">
@@ -258,7 +253,6 @@ export default function CategorySelector({
       )}
 
       {/* If Level 3 is the final category */}
-
       {level3 && categoriesLevel4.length === 0 && (
         <input
           type="hidden"

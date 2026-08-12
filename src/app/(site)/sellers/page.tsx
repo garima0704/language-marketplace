@@ -24,7 +24,7 @@ export default async function SellersPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold text-[#082645]">
+      <h1 className="text-3xl font-bold text-gray-900">
         Sellers
       </h1>
 
@@ -52,7 +52,7 @@ export default async function SellersPage() {
               )}
 
               <div>
-                <h3 className="font-semibold text-[#082645]">
+                <h3 className="font-semibold text-gray-900">
                   {seller.display_name}
                 </h3>
 

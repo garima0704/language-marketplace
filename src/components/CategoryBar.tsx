@@ -37,8 +37,8 @@ export default function CategoryPills({
                 whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition
                 ${
                   selectedCategory === category.id
-                    ? "bg-primary text-[#082645]"
-                    : "bg-[#F5F7F8] text-[#444444] hover:bg-secondary hover:text-white"
+                    ? "bg-primary text-white"
+                    : "bg-muted-bg text-foreground hover:bg-secondary hover:text-white"
                 }
               `}
             >

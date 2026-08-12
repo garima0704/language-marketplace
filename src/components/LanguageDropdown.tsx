@@ -35,6 +35,7 @@ export default function LanguageDropdown({
   return (
     <div ref={ref} className="relative hidden md:block">
       <button
+        type="button"
         onClick={() => setOpen(!open)}
         className="
           flex
@@ -43,11 +44,11 @@ export default function LanguageDropdown({
           items-center
           justify-between
           rounded-full
-          bg-[#F5F7F8]
+          bg-muted-bg
           px-4
           text-sm
           font-medium
-          text-[#444444]
+          text-foreground
           transition
           hover:bg-secondary
           hover:text-white
@@ -56,7 +57,10 @@ export default function LanguageDropdown({
       >
         <div className="flex items-center gap-2">
           <Globe size={18} />
-          <span className="truncate">{selected.name}</span>
+
+          <span className="truncate">
+            {selected?.name}
+          </span>
         </div>
 
         <ChevronDown
@@ -79,27 +83,30 @@ export default function LanguageDropdown({
             overflow-hidden
             rounded-xl
             border
-            border-gray-200
-            bg-white
+            border-border
+            bg-background
             shadow-xl
           "
         >
           {locales.map((locale) => (
             <button
+              type="button"
               key={locale.code}
               onClick={() => {
                 setSelected(locale);
                 setOpen(false);
               }}
               className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm transition ${
-                selected.code === locale.code
-                  ? "bg-primary text-[#082645]"
-                  : "text-[#444444] hover:bg-secondary hover:text-white"
+                selected?.code === locale.code
+                  ? "bg-primary text-white"
+                  : "text-foreground hover:bg-secondary hover:text-white"
               }`}
             >
               <span>{locale.name}</span>
 
-              {selected.code === locale.code && <Check size={16} />}
+              {selected?.code === locale.code && (
+                <Check size={16} />
+              )}
             </button>
           ))}
         </div>

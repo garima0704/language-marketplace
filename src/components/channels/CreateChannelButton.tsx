@@ -10,7 +10,7 @@ export default function CreateChannelButton() {
   return (
     <Button
       onClick={() => router.push("/seller/channels/new")}
-      className="bg-primary text-white hover:bg-primary hover:opacity-90 transition-opacity"
+      className="transition-opacity hover:opacity-90"
     >
       Create Channel
     </Button>

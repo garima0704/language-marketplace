@@ -65,7 +65,7 @@ export default async function SellerProfilePage({
 
 
           <div>
-            <h1 className="text-3xl font-bold text-[#082645]">
+            <h1 className="text-3xl font-bold text-gray-900">
               {seller.display_name}
             </h1>
 
@@ -96,7 +96,7 @@ export default async function SellerProfilePage({
       {/* Channels */}
       <div className="mt-10">
 
-        <h2 className="text-2xl font-bold text-[#082645]">
+        <h2 className="text-2xl font-bold text-gray-900">
           Channels
         </h2>
 
@@ -123,7 +123,7 @@ export default async function SellerProfilePage({
                 )}
 
 
-                <h3 className="font-semibold text-[#082645]">
+                <h3 className="font-semibold text-gray-900">
                   {channel.channel_name}
                 </h3>
 

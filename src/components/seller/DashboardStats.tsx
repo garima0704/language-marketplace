@@ -6,18 +6,15 @@ import {
   Layers,
 } from "lucide-react";
 
-
 interface DashboardStatsProps {
   channelCount: number;
   videoCount: number;
 }
 
-
 export default function DashboardStats({
   channelCount,
   videoCount,
 }: DashboardStatsProps) {
-
   const stats = [
     {
       title: "Channels",
@@ -41,62 +38,34 @@ export default function DashboardStats({
     },
   ];
 
-
   return (
-    <div className="
-      grid
-      gap-5
-      sm:grid-cols-2
-      lg:grid-cols-4
-    ">
-
+    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => {
-
         const Icon = stat.icon;
 
         return (
           <Card
             key={stat.title}
-            className="rounded-2xl p-6 shadow-sm"
+            className="rounded-2xl bg-card p-6 shadow-sm"
           >
-
             <div className="flex items-center justify-between">
-
-
               <div>
-
                 <p className="text-sm text-muted-foreground">
                   {stat.title}
                 </p>
 
-
-                <h3 className="mt-2 text-3xl font-bold">
+                <h3 className="mt-2 text-3xl font-bold text-foreground">
                   {stat.value}
                 </h3>
-
               </div>
 
-
-              <div className="
-                rounded-xl
-                bg-primary/10
-                p-3
-              ">
-
-                <Icon
-                  className="h-6 w-6 text-primary"
-                />
-
+              <div className="rounded-xl bg-primary/10 p-3">
+                <Icon className="h-6 w-6 text-primary" />
               </div>
-
-
             </div>
-
           </Card>
         );
-
       })}
-
     </div>
   );
 }

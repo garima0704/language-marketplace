@@ -37,7 +37,7 @@ export default async function SellerChannelsPage() {
   <div className="px-6 py-6 space-y-6">
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-3xl font-bold text-[#082645]">
+        <h1 className="text-3xl font-bold text-gray-900">
           My Channels
         </h1>
 
@@ -58,7 +58,7 @@ export default async function SellerChannelsPage() {
         channels.map((channel) => (
           <Card
             key={channel.id}
-            className="rounded-xl p-4 hover:border-primary transition"
+            className="rounded-xl border border-transparent p-4 transition hover:border-gray-300"
           >
             <h3 className="font-semibold">
               {channel.channel_name}
@@ -73,7 +73,7 @@ export default async function SellerChannelsPage() {
                 ${channel.subscription_price}/month
               </span>
 
-              <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+              <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
                 Active
               </span>
             </div>

@@ -33,11 +33,11 @@ export default async function SubscriptionsPage() {
 
     return (
       <div className="px-8 py-8">
-        <h1 className="text-3xl font-bold text-[#082645]">
+        <h1 className="text-3xl font-bold text-gray-900">
           My Subscriptions
         </h1>
 
-        <p className="mt-4 text-red-500">
+        <p className="mt-4 text-gray-700">
           Failed to load subscriptions.
         </p>
       </div>
@@ -47,7 +47,7 @@ export default async function SubscriptionsPage() {
   if (!subscriptions || subscriptions.length === 0) {
     return (
       <div className="px-8 py-8">
-        <h1 className="text-3xl font-bold text-[#082645]">
+        <h1 className="text-3xl font-bold text-gray-900">
           My Subscriptions
         </h1>
 
@@ -60,7 +60,7 @@ export default async function SubscriptionsPage() {
             📺
           </div>
 
-          <h2 className="text-2xl font-semibold text-[#082645]">
+          <h2 className="text-2xl font-semibold text-gray-900">
             No subscriptions yet
           </h2>
 
@@ -104,7 +104,7 @@ export default async function SubscriptionsPage() {
   return (
     <div className="px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#082645]">
+        <h1 className="text-3xl font-bold text-gray-900">
           My Subscriptions
         </h1>
 
@@ -169,7 +169,7 @@ export default async function SubscriptionsPage() {
                   )}
 
                   <div>
-                    <h2 className="text-xl font-semibold text-[#082645]">
+                    <h2 className="text-xl font-semibold text-gray-900">
                       {channel.channel_name}
                     </h2>
 
@@ -184,7 +184,7 @@ export default async function SubscriptionsPage() {
                 </p>
 
                 <div className="mt-5 flex items-center justify-between">
-                  <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                  <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
                     Active
                   </span>
 

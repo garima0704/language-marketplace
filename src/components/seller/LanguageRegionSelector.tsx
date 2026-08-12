@@ -69,12 +69,28 @@ export default function LanguageRegionSelector({
     setRegionId("");
   }
 
+  const selectClassName = `
+    w-full
+    rounded-lg
+    border
+    border-border
+    bg-background
+    p-2
+    text-foreground
+    outline-none
+    transition
+    focus:border-primary
+    focus:ring-1
+    focus:ring-primary
+    disabled:cursor-not-allowed
+    disabled:opacity-50
+  `;
+
   return (
     <div className="space-y-5">
-
       {/* Language */}
       <div>
-        <label className="mb-2 block text-sm font-medium">
+        <label className="mb-2 block text-sm font-medium text-foreground">
           Language of Video
         </label>
 
@@ -83,7 +99,7 @@ export default function LanguageRegionSelector({
           onChange={(e) =>
             handleLanguageChange(e.target.value)
           }
-          className="w-full rounded-lg border bg-background p-2"
+          className={selectClassName}
           required
         >
           <option value="">
@@ -110,7 +126,7 @@ export default function LanguageRegionSelector({
 
       {/* Country */}
       <div>
-        <label className="mb-2 block text-sm font-medium">
+        <label className="mb-2 block text-sm font-medium text-foreground">
           Country
         </label>
 
@@ -121,7 +137,7 @@ export default function LanguageRegionSelector({
             handleCountryChange(e.target.value)
           }
           disabled={!languageCode}
-          className="w-full rounded-lg border bg-background p-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className={selectClassName}
           required
         >
           <option value="">
@@ -143,7 +159,7 @@ export default function LanguageRegionSelector({
 
       {/* State / Region */}
       <div>
-        <label className="mb-2 block text-sm font-medium">
+        <label className="mb-2 block text-sm font-medium text-foreground">
           State / Region
         </label>
 
@@ -154,7 +170,7 @@ export default function LanguageRegionSelector({
             setRegionId(e.target.value)
           }
           disabled={!country}
-          className="w-full rounded-lg border bg-background p-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className={selectClassName}
           required
         >
           <option value="">
@@ -174,7 +190,7 @@ export default function LanguageRegionSelector({
         </select>
       </div>
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-muted">
         Select the language, country, and regional variety
         spoken in the video.
       </p>

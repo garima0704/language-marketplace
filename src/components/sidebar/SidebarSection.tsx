@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LucideIcon } from "lucide-react";
 
 import {
   Home,
@@ -62,19 +61,21 @@ export default function SidebarSection({
     <>
       {sections.map((section) => (
         <div key={section.title} className="mb-8">
-          <h3
-            className="
-              px-6
-              mb-3
-              text-xs
-              font-semibold
-              uppercase
-              tracking-wider
-              text-gray-400
-            "
-          >
-            {section.title}
-          </h3>
+          {section.title && (
+            <h3
+              className="
+                mb-3
+                px-6
+                text-xs
+                font-semibold
+                uppercase
+                tracking-wider
+                text-muted
+              "
+            >
+              {section.title}
+            </h3>
+          )}
 
           {section.items.map((item) => {
             const Icon = icons[item.icon];
@@ -84,7 +85,7 @@ export default function SidebarSection({
                 ? pathname === "/"
                 : item.href === "/videos"
                   ? pathname === "/videos"
-                  : pathname.startsWith(item.href);   
+                  : pathname.startsWith(item.href);
 
             return (
               <Link
@@ -104,8 +105,8 @@ export default function SidebarSection({
                   duration-200
                   ${
                     isActive
-                      ? "bg-primary text-[#082645] font-semibold shadow-sm"
-                      : "text-[#444444] hover:bg-secondary hover:text-white"
+                      ? "bg-primary text-white font-semibold shadow-sm"
+                      : "text-foreground hover:bg-muted-bg hover:text-primary"
                   }
                 `}
               >
