@@ -65,6 +65,7 @@ export default async function VideosPage() {
         view_count,
         created_at,
         published_at,
+        category_id,
 
         channels (
           id,
@@ -96,11 +97,118 @@ export default async function VideosPage() {
         nullsFirst: false,
       });
 
-  console.log("languages:", languages);
-  console.log("languages error:", languagesError);
+  // --------------------------------------------------
+// Build category labels
+// First level + last level
+// Example: English - Business
+// --------------------------------------------------
 
-  console.log("videos:", videos);
-  console.log("videos error:", videosError);
+let formattedVideos = videos ?? [];
+
+const categoryIds = [
+  ...new Set(
+    formattedVideos
+      .map((video) => video.category_id)
+      .filter(Boolean)
+  ),
+];
+
+if (categoryIds.length > 0) {
+  const allCategoryIds = new Set<string>(categoryIds);
+  let currentIds = categoryIds;
+
+  // Get all parent categories
+  while (currentIds.length > 0) {
+    const { data: parents } = await supabase
+      .from("categories")
+      .select("id, parent_id, slug, level")
+      .in("id", currentIds);
+
+    if (!parents?.length) break;
+
+    const parentIds = parents
+      .map((category) => category.parent_id)
+      .filter(
+        (id): id is string =>
+          !!id && !allCategoryIds.has(id)
+      );
+
+    if (parentIds.length === 0) break;
+
+    parentIds.forEach((id) => allCategoryIds.add(id));
+    currentIds = parentIds;
+  }
+
+  // Get all categories
+  const { data: allCategories } = await supabase
+    .from("categories")
+    .select("id, parent_id, slug, level")
+    .in("id", Array.from(allCategoryIds));
+
+  // Get English category names
+  const { data: translations } = await supabase
+    .from("category_translations")
+    .select("category_id, name")
+    .eq("locale_code", "en")
+    .in("category_id", Array.from(allCategoryIds));
+
+  const categoryById = new Map(
+    (allCategories ?? []).map((category) => [
+      category.id,
+      category,
+    ])
+  );
+
+  const nameById = new Map(
+    (translations ?? []).map((translation) => [
+      translation.category_id,
+      translation.name,
+    ])
+  );
+
+  // Build label for each video
+  formattedVideos = formattedVideos.map((video) => {
+    if (!video.category_id) {
+      return {
+        ...video,
+        category_label: "",
+      };
+    }
+
+    const current = categoryById.get(video.category_id);
+
+    if (!current) {
+      return {
+        ...video,
+        category_label: "",
+      };
+    }
+
+    const deepestName =
+      nameById.get(current.id) ?? current.slug;
+
+    let root = current;
+
+    while (root.parent_id) {
+      const parent = categoryById.get(root.parent_id);
+
+      if (!parent) break;
+
+      root = parent;
+    }
+
+    const rootName =
+      nameById.get(root.id) ?? root.slug;
+
+    return {
+      ...video,
+      category_label:
+        root.id === current.id
+          ? rootName
+          : `${rootName} - ${deepestName}`,
+    };
+  });
+}
 
   return (
     <div className="px-6 py-6">
@@ -150,7 +258,7 @@ export default async function VideosPage() {
       {/* Videos */}
       <VideoSection
         showViewAll={false}
-        videos={videos ?? []}
+        videos={formattedVideos}
       />
 
     </div>

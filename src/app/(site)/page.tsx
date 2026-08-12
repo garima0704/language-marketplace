@@ -46,6 +46,7 @@ export default async function HomePage() {
     view_count,
     created_at,
     published_at,
+    category_id,
 
     channels (
       id,
@@ -106,17 +107,131 @@ export default async function HomePage() {
       .limit(8);
 
   // --------------------------------------------------
-  // Debug
+  // Build category labels
+  // First level + last level
+  // Example: English - Business
   // --------------------------------------------------
 
-  console.log("languages:", languagePills);
-  console.log("languages error:", languagesError);
+  const allVideos = [
+    ...(trendingVideos ?? []),
+    ...(latestVideos ?? []),
+  ];
 
-  console.log("trending videos:", trendingVideos);
-  console.log("trending error:", trendingError);
+  const categoryIds = [
+    ...new Set(
+      allVideos
+        .map((video) => video.category_id)
+        .filter(Boolean)
+    ),
+  ];
 
-  console.log("latest videos:", latestVideos);
-  console.log("latest error:", latestError);
+  const categoryLabelMap = new Map<string, string>();
+
+  if (categoryIds.length > 0) {
+    const allCategoryIds = new Set<string>(categoryIds);
+    let currentIds = categoryIds;
+
+    // Get all parent categories
+    while (currentIds.length > 0) {
+      const { data: parents } = await supabase
+        .from("categories")
+        .select("id, parent_id, slug, level")
+        .in("id", currentIds);
+
+      if (!parents?.length) break;
+
+      const parentIds = parents
+        .map((category) => category.parent_id)
+        .filter(
+          (id): id is string =>
+            !!id && !allCategoryIds.has(id)
+        );
+
+      if (parentIds.length === 0) break;
+
+      parentIds.forEach((id) => allCategoryIds.add(id));
+      currentIds = parentIds;
+    }
+
+    // Get all categories
+    const { data: allCategories } = await supabase
+      .from("categories")
+      .select("id, parent_id, slug, level")
+      .in("id", Array.from(allCategoryIds));
+
+    // Get category names
+    const { data: translations } = await supabase
+      .from("category_translations")
+      .select("category_id, name")
+      .eq("locale_code", "en")
+      .in("category_id", Array.from(allCategoryIds));
+
+    const categoryById = new Map(
+      (allCategories ?? []).map((category) => [
+        category.id,
+        category,
+      ])
+    );
+
+    const nameById = new Map(
+      (translations ?? []).map((translation) => [
+        translation.category_id,
+        translation.name,
+      ])
+    );
+
+    // Build label for every video
+    allVideos.forEach((video) => {
+      if (!video.category_id) return;
+
+      const current = categoryById.get(video.category_id);
+
+      if (!current) return;
+
+      const deepestName =
+        nameById.get(current.id) ?? current.slug;
+
+      let root = current;
+
+      while (root.parent_id) {
+        const parent = categoryById.get(root.parent_id);
+
+        if (!parent) break;
+
+        root = parent;
+      }
+
+      const rootName =
+        nameById.get(root.id) ?? root.slug;
+
+      const label =
+        root.id === current.id
+          ? rootName
+          : `${rootName} - ${deepestName}`;
+
+      categoryLabelMap.set(video.id, label);
+    });
+  }
+
+  // --------------------------------------------------
+  // Add category labels to videos
+  // --------------------------------------------------
+
+  const formattedTrendingVideos = (trendingVideos ?? []).map(
+    (video) => ({
+      ...video,
+      category_label:
+        categoryLabelMap.get(video.id) ?? "",
+    })
+  );
+
+  const formattedLatestVideos = (latestVideos ?? []).map(
+    (video) => ({
+      ...video,
+      category_label:
+        categoryLabelMap.get(video.id) ?? "",
+    })
+  );
 
   return (
     <div className="px-6 py-6">
@@ -127,14 +242,14 @@ export default async function HomePage() {
 
       <VideoSection
         title="Trending Videos"
-        videos={trendingVideos ?? []}
+        videos={formattedTrendingVideos}
       />
 
       <CreatorSection />
 
       <VideoSection
         title="Latest Videos"
-        videos={latestVideos ?? []}
+        videos={formattedLatestVideos}
       />
     </div>
   );

@@ -41,6 +41,7 @@ interface Video {
   published_at: string | null;
   channels: Channel | Channel[] | null;
   categories: Category | Category[] | null;
+  category_label?: string;
 }
 
 interface Props {
@@ -80,7 +81,7 @@ export default function VideoSection({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {videos.map((video) => {
             const channel = Array.isArray(video.channels)
               ? video.channels[0]
@@ -109,10 +110,7 @@ export default function VideoSection({
               channel?.logo_url ||
               "";
 
-            const categoryLabel =
-              translation?.name ||
-              category?.slug ||
-              "";
+            const categoryLabel = video.category_label || "";
 
             return (
               <VideoCard

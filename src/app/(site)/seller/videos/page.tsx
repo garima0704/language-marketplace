@@ -208,7 +208,7 @@ if (categoryIds.length > 0) {
   {videos.map((video) => (
     <Card
       key={video.id}
-      className="overflow-hidden rounded-xl transition hover:shadow-md"
+      className="group/card overflow-hidden rounded-xl p-0 transition hover:shadow-md"
     >
 {/* Thumbnail */}
 <div className="relative aspect-video bg-muted">
@@ -226,9 +226,9 @@ if (categoryIds.length > 0) {
 
   {/* Category Tag */}
   {video.category_label && (
-                  <span className="absolute right-2 -top-3 z-10 rounded-md bg-primary px-3 py-1 text-xs font-medium text-white shadow-sm">
-                    {video.category_label}
-                  </span>
+                  <span className="absolute right-2 top-2 z-10 max-w-[80%] truncate rounded-md bg-primary px-3 py-1 text-xs font-medium text-white shadow-sm">
+  {video.category_label}
+</span>
                 )}
               </div>
 

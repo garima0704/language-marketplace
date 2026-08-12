@@ -1,31 +1,38 @@
-import ChannelVideoCard from "./ChannelVideoCard";
+import ChannelVideoCard from "@/components/channels/ChannelVideoCard";
+
+interface ChannelVideo {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  access_type: string;
+  view_count: number;
+  created_at: string;
+  level: string | null;
+  category_label?: string;
+}
 
 interface ChannelVideosProps {
-  videos: {
-    id: string;
-    title: string;
-    thumbnail_url: string | null;
-    duration_seconds: number | null;
-    access_type: string;
-    view_count: number;
-  }[];
+  videos?: ChannelVideo[];
+  channelName: string;
 }
 
 export default function ChannelVideos({
-  videos,
+  videos = [],
+  channelName,
 }: ChannelVideosProps) {
   return (
-    <section className="space-y-5">
+    <section className="mx-auto max-w-7xl space-y-5">
       <h2 className="text-2xl font-bold text-foreground">
         Videos
       </h2>
 
       {videos.length > 0 ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {videos.map((video) => (
             <ChannelVideoCard
               key={video.id}
               video={video}
+              channelName={channelName}
             />
           ))}
         </div>

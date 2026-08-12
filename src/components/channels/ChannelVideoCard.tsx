@@ -4,29 +4,55 @@ import { Card } from "@/components/ui/card";
 
 interface VideoCardProps {
   video: {
+    id: string;
     title: string;
     thumbnail_url: string | null;
-    duration_seconds: number | null;
     access_type: string;
     view_count: number;
+    created_at: string;
+    level: string | null;
+    category_label?: string;
   };
+  channelName: string;
 }
 
-function formatDuration(seconds: number | null) {
-  if (!seconds) return "";
+function formatTimeAgo(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
 
-  const minutes = Math.floor(seconds / 60);
-  const remaining = seconds % 60;
+  const diffSeconds = Math.floor(
+    (now.getTime() - date.getTime()) / 1000
+  );
 
-  return `${minutes}:${remaining.toString().padStart(2, "0")}`;
+  const days = Math.floor(diffSeconds / 86400);
+
+  if (days > 0) {
+    return `${days} ${days === 1 ? "day" : "days"} ago`;
+  }
+
+  const hours = Math.floor(diffSeconds / 3600);
+
+  if (hours > 0) {
+    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  }
+
+  const minutes = Math.floor(diffSeconds / 60);
+
+  if (minutes > 0) {
+    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
+  }
+
+  return "Just now";
 }
 
 export default function ChannelVideoCard({
   video,
+  channelName,
 }: VideoCardProps) {
   return (
-    <Card className="overflow-hidden rounded-xl border shadow-sm transition hover:shadow-md">
-      <div className="aspect-video bg-muted-bg">
+    <Card className="group/card overflow-hidden rounded-xl p-0 transition hover:shadow-md">
+      {/* Thumbnail */}
+      <div className="relative aspect-video bg-muted">
         {video.thumbnail_url ? (
           <img
             src={video.thumbnail_url}
@@ -34,36 +60,57 @@ export default function ChannelVideoCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-muted">
+          <div className="flex h-full items-center justify-center bg-primary text-sm font-medium text-white">
             No thumbnail
           </div>
         )}
+
+        {/* Category */}
+        {video.category_label && (
+          <span className="absolute right-2 top-2 z-10 max-w-[80%] truncate rounded-md bg-primary px-3 py-1 text-xs font-medium text-white shadow-sm">
+            {video.category_label}
+          </span>
+        )}
       </div>
 
-      <div className="space-y-2 p-4">
-        <h3 className="line-clamp-2 font-semibold text-foreground">
+      {/* Video information */}
+      <div className="space-y-2 p-4 pt-2">
+        <h3 className="line-clamp-2 font-semibold">
           {video.title}
         </h3>
 
-        <div className="flex items-center justify-between text-sm text-muted">
-          <span>{video.view_count} views</span>
+        {/* Channel name */}
+        <p className="truncate text-sm text-muted-foreground">
+          {channelName}
+        </p>
 
-          <span>
-            {formatDuration(video.duration_seconds)}
+        {/* Meta */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{video.view_count} views</span>
+
+            <span aria-hidden="true">•</span>
+
+            <span>{formatTimeAgo(video.created_at)}</span>
+          </div>
+
+        {/* Tags / Access */}
+        <div className="flex flex-wrap items-center gap-2">
+          {video.level && (
+            <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+              {video.level}
+            </span>
+          )}
+
+          <span
+            className={
+              video.access_type === "free"
+                ? "rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700"
+                : "rounded-full bg-gray-900 px-2.5 py-1 text-xs font-medium text-white"
+            }
+          >
+            {video.access_type === "free" ? "Free" : "Subscribers only"}
           </span>
         </div>
-
-        <span
-          className={
-            video.access_type === "free"
-              ? "text-sm font-medium text-primary"
-              : "text-sm text-secondary"
-          }
-        >
-          {video.access_type === "free"
-            ? "Free"
-            : "Subscribers only"}
-        </span>
       </div>
     </Card>
   );
