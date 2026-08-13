@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
+
 import { Card } from "@/components/ui/card";
 
 interface VideoCardProps {
   video: {
     id: string;
+    slug: string;
     title: string;
     thumbnail_url: string | null;
     access_type: string;
@@ -52,6 +55,10 @@ export default function ChannelVideoCard({
   channelLogo,
 }: VideoCardProps) {
   return (
+    <Link
+      href={`/videos/${video.slug}`}
+      className="block"
+    >
     <Card className="group/card overflow-hidden rounded-xl p-0 transition hover:shadow-md">
       {/* Thumbnail */}
       <div className="relative aspect-video bg-muted">
@@ -133,5 +140,6 @@ export default function ChannelVideoCard({
         </div>
       </div>
     </Card>
+    </Link>
   );
 }

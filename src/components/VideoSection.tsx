@@ -32,6 +32,7 @@ interface Category {
 
 interface Video {
   id: string;
+  slug: string;
   title: string;
   thumbnail_url: string | null;
   level: string | null;
@@ -116,6 +117,7 @@ export default function VideoSection({
               <VideoCard
                 key={video.id}
                 id={video.id}
+                slug={video.slug}
                 title={video.title}
                 creator={creatorName}
                 thumbnail={video.thumbnail_url || ""}

@@ -148,6 +148,7 @@ const { data: videos, error: videosError } = await supabase
   .from("videos")
   .select(`
     id,
+    slug,
     title,
     thumbnail_url,
     level,

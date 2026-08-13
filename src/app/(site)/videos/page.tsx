@@ -58,6 +58,7 @@ export default async function VideosPage() {
       .from("videos")
       .select(`
         id,
+        slug,
         title,
         thumbnail_url,
         level,

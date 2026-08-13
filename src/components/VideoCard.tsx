@@ -3,6 +3,7 @@ import Image from "next/image";
 
 interface VideoCardProps {
   id: string;
+  slug: string;
   title: string;
   creator: string;
   thumbnail: string;
@@ -59,6 +60,7 @@ function formatTimeAgo(dateString: string) {
 
 export default function VideoCard({
   id,
+  slug,
   title,
   creator,
   thumbnail,
@@ -74,7 +76,7 @@ export default function VideoCard({
   return (
     <div className="group overflow-hidden rounded-xl border border-border bg-background transition hover:shadow-md">
       {/* Thumbnail */}
-      <Link href={`/videos/${id}`}>
+      <Link href={`/videos/${slug}`}>
         <div className="relative aspect-video overflow-hidden bg-muted-bg">
           {thumbnail ? (
             <Image
@@ -104,8 +106,7 @@ export default function VideoCard({
       {/* Details */}
       <div className="space-y-2 p-4">
         {/* Title */}
-        <Link
-          href={`/videos/${id}`}
+        <Link href={`/videos/${slug}`}
           className="mb-3 block"
         >
           <h3 className="line-clamp-2 font-semibold leading-5 text-foreground transition hover:text-secondary">

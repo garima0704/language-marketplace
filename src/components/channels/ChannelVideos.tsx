@@ -2,6 +2,7 @@ import ChannelVideoCard from "@/components/channels/ChannelVideoCard";
 
 interface ChannelVideo {
   id: string;
+  slug: string;
   title: string;
   thumbnail_url: string | null;
   access_type: string;

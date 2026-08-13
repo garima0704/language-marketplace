@@ -39,6 +39,7 @@ export default async function HomePage() {
 
   const videoSelect = `
     id,
+    slug,
     title,
     thumbnail_url,
     level,
