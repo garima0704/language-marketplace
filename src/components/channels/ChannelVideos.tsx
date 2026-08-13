@@ -14,11 +14,13 @@ interface ChannelVideo {
 interface ChannelVideosProps {
   videos?: ChannelVideo[];
   channelName: string;
+  channelLogo?: string | null;
 }
 
 export default function ChannelVideos({
   videos = [],
   channelName,
+  channelLogo,
 }: ChannelVideosProps) {
   return (
     <section className="mx-auto max-w-7xl space-y-5">
@@ -33,6 +35,7 @@ export default function ChannelVideos({
               key={video.id}
               video={video}
               channelName={channelName}
+              channelLogo={channelLogo}
             />
           ))}
         </div>

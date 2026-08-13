@@ -237,7 +237,7 @@ export default async function HomePage() {
     <div className="px-6 py-6">
       <CategoryBar
         categories={languagePills}
-        basePath="/categories"
+        basePath="/videos"
       />
 
       <VideoSection

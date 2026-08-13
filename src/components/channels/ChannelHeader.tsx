@@ -28,7 +28,7 @@ export default function ChannelHeader({
   channel,
 }: ChannelHeaderProps) {
   return (
-    <Card className="overflow-hidden rounded-2xl border-border bg-background shadow-sm">
+    <Card className="overflow-hidden rounded-2xl border-border bg-background shadow-sm pt-0">
 
       {/* Banner */}
       <div className="h-48 bg-light-bg">

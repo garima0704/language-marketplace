@@ -46,7 +46,8 @@ if (channelIds.length > 0) {
       channels (
         id,
         channel_name,
-        slug
+        slug,
+        logo_url
       )
     `)
     .in("channel_id", channelIds)
@@ -226,22 +227,39 @@ if (categoryIds.length > 0) {
 
   {/* Category Tag */}
   {video.category_label && (
-                  <span className="absolute right-2 top-2 z-10 max-w-[80%] truncate rounded-md bg-primary px-3 py-1 text-xs font-medium text-white shadow-sm">
-  {video.category_label}
-</span>
-                )}
-              </div>
+      <span className="absolute right-2 top-2 z-10 max-w-[80%] truncate rounded-md bg-primary px-3 py-1 text-xs font-medium text-white shadow-sm">
+         {video.category_label}
+      </span>
+    )}
+ </div>
+
 
 {/* Video information */}
-<div className="space-y-2 p-4 pt-2">
+      <div className="space-y-2 p-4 pt-2">
         <h3 className="line-clamp-2 font-semibold">
           {video.title}
         </h3>
 
-        <p className="truncate text-sm text-muted-foreground">
-          {video.channels?.channel_name}
-        </p>
+        {/* Channel */}
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-gray-100">
+            {video.channels?.logo_url ? (
+              <img
+                src={video.channels.logo_url}
+                alt={video.channels.channel_name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-xs font-medium text-gray-500">
+                {video.channels?.channel_name?.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
 
+          <p className="truncate text-sm text-muted-foreground">
+            {video.channels?.channel_name}
+          </p>
+        </div>
         {/* Tags */}
         <div className="flex flex-wrap items-center gap-2">
           <span

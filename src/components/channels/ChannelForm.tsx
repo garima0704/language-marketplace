@@ -15,6 +15,8 @@ interface Channel {
   channel_name: string;
   slug: string;
   description: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
   subscription_price: number;
 }
 
@@ -22,6 +24,26 @@ interface Props {
   mode: "create" | "edit";
   userId?: string;
   channel?: Channel;
+}
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+function validateImage(file: File) {
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    return "Please upload a JPG, PNG, or WEBP image.";
+  }
+
+  if (file.size > MAX_IMAGE_SIZE) {
+    return "Image size must be 5 MB or less.";
+  }
+
+  return null;
 }
 
 export default function ChannelForm({
@@ -51,6 +73,28 @@ export default function ChannelForm({
 
   const [slugEdited, setSlugEdited] = useState(mode === "edit");
 
+  // --------------------------------------------------
+  // Branding
+  // --------------------------------------------------
+
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+
+  const [logoPreview, setLogoPreview] = useState<string | null>(
+    channel?.logo_url ?? null
+  );
+
+  const [bannerPreview, setBannerPreview] = useState<string | null>(
+    channel?.banner_url ?? null
+  );
+
+  const [removeLogo, setRemoveLogo] = useState(false);
+  const [removeBanner, setRemoveBanner] = useState(false);
+
+  // --------------------------------------------------
+  // Generated slug
+  // --------------------------------------------------
+
   const generatedSlug = useMemo(() => {
     return channelName
       .toLowerCase()
@@ -64,6 +108,173 @@ export default function ChannelForm({
       setSlug(generatedSlug);
     }
   }, [generatedSlug, slugEdited]);
+
+  // --------------------------------------------------
+  // Image preview cleanup
+  // --------------------------------------------------
+
+  useEffect(() => {
+    return () => {
+      if (logoPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(logoPreview);
+      }
+    };
+  }, [logoPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (bannerPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(bannerPreview);
+      }
+    };
+  }, [bannerPreview]);
+
+  // --------------------------------------------------
+  // Logo selection
+  // --------------------------------------------------
+
+  function handleLogoChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const validationError = validateImage(file);
+
+    if (validationError) {
+      setError(validationError);
+      event.target.value = "";
+      return;
+    }
+
+    setError("");
+
+    if (logoPreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(logoPreview);
+    }
+
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+    setRemoveLogo(false);
+  }
+
+  // --------------------------------------------------
+  // Banner selection
+  // --------------------------------------------------
+
+  function handleBannerChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const validationError = validateImage(file);
+
+    if (validationError) {
+      setError(validationError);
+      event.target.value = "";
+      return;
+    }
+
+    setError("");
+
+    if (bannerPreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(bannerPreview);
+    }
+
+    setBannerFile(file);
+    setBannerPreview(URL.createObjectURL(file));
+    setRemoveBanner(false);
+  }
+
+  // --------------------------------------------------
+  // Remove logo
+  // --------------------------------------------------
+
+  function handleRemoveLogo() {
+    if (logoPreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(logoPreview);
+    }
+
+    setLogoFile(null);
+    setLogoPreview(null);
+    setRemoveLogo(true);
+  }
+
+  // --------------------------------------------------
+  // Remove banner
+  // --------------------------------------------------
+
+  function handleRemoveBanner() {
+    if (bannerPreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(bannerPreview);
+    }
+
+    setBannerFile(null);
+    setBannerPreview(null);
+    setRemoveBanner(true);
+  }
+
+  // --------------------------------------------------
+  // Upload asset
+  // --------------------------------------------------
+
+  async function uploadChannelAsset(
+    channelId: string,
+    type: "logo" | "banner",
+    file: File
+  ) {
+    const path = `${channelId}/${type}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("channel-assets")
+      .upload(path, file, {
+        cacheControl: "3600",
+        upsert: true,
+        contentType: file.type,
+      });
+
+    if (uploadError) {
+      throw new Error(
+        `Failed to upload channel ${type}: ${uploadError.message}`
+      );
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage
+      .from("channel-assets")
+      .getPublicUrl(path);
+
+    return publicUrl;
+  }
+
+  // --------------------------------------------------
+  // Delete asset
+  // --------------------------------------------------
+
+  async function deleteChannelAsset(
+    channelId: string,
+    type: "logo" | "banner"
+  ) {
+    const path = `${channelId}/${type}`;
+
+    const { error: deleteError } = await supabase.storage
+      .from("channel-assets")
+      .remove([path]);
+
+    if (deleteError) {
+      throw new Error(
+        `Failed to remove channel ${type}: ${deleteError.message}`
+      );
+    }
+  }
+
+  // --------------------------------------------------
+  // Submit
+  // --------------------------------------------------
 
   async function handleSubmit() {
     if (loading) return;
@@ -100,20 +311,33 @@ export default function ChannelForm({
     setLoading(true);
 
     try {
-      const { data: existing } = await supabase
+      // --------------------------------------------------
+      // Check slug
+      // --------------------------------------------------
+
+      const { data: existing, error: slugError } = await supabase
         .from("channels")
         .select("id")
         .eq("slug", trimmedSlug)
         .neq("id", channel?.id ?? "")
         .maybeSingle();
 
+      if (slugError) {
+        setError(slugError.message);
+        return;
+      }
+
       if (existing) {
         setError("This channel URL is already taken.");
         return;
       }
 
+      // --------------------------------------------------
+      // CREATE
+      // --------------------------------------------------
+
       if (mode === "create") {
-        const { data, error } = await supabase
+        const { data, error: createError } = await supabase
           .from("channels")
           .insert({
             user_id: userId,
@@ -125,30 +349,117 @@ export default function ChannelForm({
           .select("id")
           .single();
 
-        if (error) {
-          setError(error.message);
+        if (createError) {
+          setError(createError.message);
           return;
         }
 
-        router.push(`/seller/channels/${data.id}`);
-      } else {
-        const { error } = await supabase
-          .from("channels")
-          .update({
-            channel_name: trimmedName,
-            slug: trimmedSlug,
-            description: trimmedDescription,
-            subscription_price: subscriptionPrice,
-          })
-          .eq("id", channel!.id);
+        const channelId = data.id;
 
-        if (error) {
-          setError(error.message);
-          return;
+        let logoUrl: string | null = null;
+        let bannerUrl: string | null = null;
+
+        // Upload logo
+        if (logoFile) {
+          logoUrl = await uploadChannelAsset(
+            channelId,
+            "logo",
+            logoFile
+          );
         }
 
-        router.refresh();
+        // Upload banner
+        if (bannerFile) {
+          bannerUrl = await uploadChannelAsset(
+            channelId,
+            "banner",
+            bannerFile
+          );
+        }
+
+        // Save asset URLs
+        if (logoUrl || bannerUrl) {
+          const { error: assetUpdateError } = await supabase
+            .from("channels")
+            .update({
+              ...(logoUrl ? { logo_url: logoUrl } : {}),
+              ...(bannerUrl ? { banner_url: bannerUrl } : {}),
+            })
+            .eq("id", channelId);
+
+          if (assetUpdateError) {
+            setError(assetUpdateError.message);
+            return;
+          }
+        }
+
+        router.push(`/seller/channels/${channelId}`);
+        return;
       }
+
+      // --------------------------------------------------
+      // EDIT
+      // --------------------------------------------------
+
+      const channelId = channel!.id;
+
+      let logoUrl = channel?.logo_url ?? null;
+      let bannerUrl = channel?.banner_url ?? null;
+
+      // Replace logo
+      if (logoFile) {
+        logoUrl = await uploadChannelAsset(
+          channelId,
+          "logo",
+          logoFile
+        );
+      }
+
+      // Remove logo
+      if (removeLogo && !logoFile) {
+        await deleteChannelAsset(channelId, "logo");
+        logoUrl = null;
+      }
+
+      // Replace banner
+      if (bannerFile) {
+        bannerUrl = await uploadChannelAsset(
+          channelId,
+          "banner",
+          bannerFile
+        );
+      }
+
+      // Remove banner
+      if (removeBanner && !bannerFile) {
+        await deleteChannelAsset(channelId, "banner");
+        bannerUrl = null;
+      }
+
+      const { error: updateError } = await supabase
+        .from("channels")
+        .update({
+          channel_name: trimmedName,
+          slug: trimmedSlug,
+          description: trimmedDescription,
+          subscription_price: subscriptionPrice,
+          logo_url: logoUrl,
+          banner_url: bannerUrl,
+        })
+        .eq("id", channelId);
+
+      if (updateError) {
+        setError(updateError.message);
+        return;
+      }
+
+      router.refresh();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -157,7 +468,10 @@ export default function ChannelForm({
   return (
     <div className="max-w-4xl space-y-10">
 
-      {/* General Information */}
+      {/* ==================================================
+          General Information
+      ================================================== */}
+
       <div className="rounded-2xl border border-border bg-background p-8 shadow-sm">
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-foreground">
@@ -249,7 +563,10 @@ export default function ChannelForm({
         </div>
       </div>
 
-      {/* Pricing */}
+      {/* ==================================================
+          Pricing
+      ================================================== */}
+
       <div className="rounded-2xl border border-border bg-background p-8 shadow-sm">
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-foreground">
@@ -285,6 +602,134 @@ export default function ChannelForm({
           <p className="text-xs text-muted">
             You can change this later.
           </p>
+        </div>
+      </div>
+
+    {/* ==================================================
+          Channel Branding
+      ================================================== */}
+
+    <div className="rounded-2xl border border-border bg-background p-8 shadow-sm">
+      <div className="mb-8">
+          <h2 className="text-xl font-semibold text-foreground">
+            Channel Branding
+          </h2>
+
+          <p className="mt-1 text-sm text-muted">
+            Add a logo and banner to give your channel its own identity.
+          </p>
+        </div>
+
+        <div className="space-y-10">
+
+          {/* Logo */}
+          <div className="space-y-4">
+            <div>
+              <Label>
+                Channel Logo
+              </Label>
+
+              <p className="mt-1 text-xs text-muted">
+                Recommended: 400 × 400 px. JPG, PNG or WEBP. Max 5 MB.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-6">
+              <div className="flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted-bg">
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt="Channel logo preview"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="px-4 text-center text-xs text-muted">
+                    No logo
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <Input
+                    id="channelLogo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleLogoChange}
+                    disabled={loading}
+                    className="max-w-sm"
+                  />
+                </div>
+
+                {logoPreview && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={loading}
+                    onClick={handleRemoveLogo}
+                  >
+                    Remove Logo
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Banner */}
+          <div className="space-y-4">
+            <div>
+              <Label>
+                Channel Banner
+              </Label>
+
+              <p className="mt-1 text-xs text-muted">
+                Recommended: 1600 × 400 px. JPG, PNG or WEBP. Max 5 MB.
+              </p>
+            </div>
+
+            <div className="overflow-hidden rounded-xl border border-border bg-muted-bg">
+              <div className="aspect-[4/1] w-full">
+                {bannerPreview ? (
+                  <img
+                    src={bannerPreview}
+                    alt="Channel banner preview"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <span className="text-xs text-muted">
+                      No banner
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Input
+                id="channelBanner"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleBannerChange}
+                disabled={loading}
+                className="max-w-sm"
+              />
+
+              {bannerPreview && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={loading}
+                  onClick={handleRemoveBanner}
+                >
+                  Remove Banner
+                </Button>
+              )}
+            </div>
+          </div>
+
         </div>
       </div>
 

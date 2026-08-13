@@ -14,6 +14,7 @@ interface VideoCardProps {
     category_label?: string;
   };
   channelName: string;
+  channelLogo?: string | null;
 }
 
 function formatTimeAgo(dateString: string) {
@@ -48,6 +49,7 @@ function formatTimeAgo(dateString: string) {
 export default function ChannelVideoCard({
   video,
   channelName,
+  channelLogo,
 }: VideoCardProps) {
   return (
     <Card className="group/card overflow-hidden rounded-xl p-0 transition hover:shadow-md">
@@ -79,19 +81,35 @@ export default function ChannelVideoCard({
           {video.title}
         </h3>
 
-        {/* Channel name */}
-        <p className="truncate text-sm text-muted-foreground">
-          {channelName}
-        </p>
+        {/* Channel */}
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-gray-100">
+            {channelLogo ? (
+              <img
+                src={channelLogo}
+                alt={channelName}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-xs font-medium text-gray-500">
+                {channelName.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          <p className="truncate text-sm text-muted-foreground">
+            {channelName}
+          </p>
+        </div>
 
         {/* Meta */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{video.view_count} views</span>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{video.view_count} views</span>
 
-            <span aria-hidden="true">•</span>
+          <span aria-hidden="true">•</span>
 
-            <span>{formatTimeAgo(video.created_at)}</span>
-          </div>
+          <span>{formatTimeAgo(video.created_at)}</span>
+        </div>
 
         {/* Tags / Access */}
         <div className="flex flex-wrap items-center gap-2">
@@ -108,7 +126,9 @@ export default function ChannelVideoCard({
                 : "rounded-full bg-gray-900 px-2.5 py-1 text-xs font-medium text-white"
             }
           >
-            {video.access_type === "free" ? "Free" : "Subscribers only"}
+            {video.access_type === "free"
+              ? "Free"
+              : "Subscribers only"}
           </span>
         </div>
       </div>

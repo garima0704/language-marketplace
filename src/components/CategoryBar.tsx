@@ -14,7 +14,7 @@ interface CategoryPillsProps {
 export default function CategoryPills({
   categories,
   selectedCategory,
-  basePath = "/categories",
+  basePath = "/videos",
 }: CategoryPillsProps) {
   return (
     <section className="bg-white">

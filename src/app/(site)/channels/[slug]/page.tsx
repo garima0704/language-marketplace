@@ -156,8 +156,9 @@ export default async function ChannelPage({
     });
   }
 
-  // Channel name
+  // Channel name & logo
   const channelName = channel.channel_name;
+  const channelLogo = channel.logo_url;
 
   return (
     <div className="space-y-6 px-6 py-6">
@@ -166,6 +167,7 @@ export default async function ChannelPage({
       <ChannelVideos
         videos={channelVideos}
         channelName={channelName}
+        channelLogo={channelLogo}
       />
     </div>
   );
