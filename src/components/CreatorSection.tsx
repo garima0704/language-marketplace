@@ -48,7 +48,7 @@ export default async function CreatorSection() {
             {creators.map((creator) => (
               <Link
                 key={creator.id}
-                href={`/creators/${creator.username}`}
+                href={`/sellers/${creator.username}`}
                 className="group text-center"
               >
                 {/* Creator Avatar */}
