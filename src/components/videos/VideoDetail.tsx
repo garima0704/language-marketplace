@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
+import SaveVideoButton from "@/components/videos/SaveVideoButton";
 
 interface VideoDetailProps {
   video: any;
@@ -223,6 +224,10 @@ export default function VideoDetail({
   const isFree =
     video.access_type === "free";
 
+  const canWatch =
+  video.can_watch === true &&
+  !!video.video_url;
+
   const subscriptionPrice = formatPrice(
     channel?.subscription_price,
     channel?.currency
@@ -367,56 +372,70 @@ export default function VideoDetail({
             {video.title}
           </h1>
 
-          {/* Creator */}
+          {/* Creator + Save */}
 
-          <Link
-            href={
-              username
-                ? `/profile/${username}`
-                : "#"
-            }
-            className="group mt-8 inline-flex items-center gap-3 rounded-lg transition"
-          >
-            <Avatar className="h-10 w-10 shrink-0">
-              <AvatarImage
-                src={userAvatar}
-                alt={userName}
-              />
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
-              <AvatarFallback className="bg-primary text-white">
-                {getInitials(userName)}
-              </AvatarFallback>
-            </Avatar>
+            {/* Creator */}
 
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold text-foreground transition group-hover:underline">
-                  {userName}
-                </span>
+            <Link
+              href={
+                username
+                  ? `/profile/${username}`
+                  : "#"
+              }
+              className="group inline-flex items-center gap-3 rounded-lg transition"
+            >
+              <Avatar className="h-10 w-10 shrink-0">
+                <AvatarImage
+                  src={userAvatar}
+                  alt={userName}
+                />
 
-                {username && (
-                  <span className="text-sm text-muted transition group-hover:text-foreground">
-                    @{username}
+                <AvatarFallback className="bg-primary text-white">
+                  {getInitials(userName)}
+                </AvatarFallback>
+              </Avatar>
+
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold text-foreground transition group-hover:underline">
+                    {userName}
                   </span>
-                )}
-              </div>
 
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
-                <span>
-                  {video.view_count ?? 0} views
-                </span>
-
-                <span>•</span>
-
-                <span>
-                  {formatTimeAgo(
-                    video.published_at ??
-                      video.created_at
+                  {username && (
+                    <span className="text-sm text-muted transition group-hover:text-foreground">
+                      @{username}
+                    </span>
                   )}
-                </span>
+                </div>
+
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
+                  <span>
+                    {video.view_count ?? 0} views
+                  </span>
+
+                  <span>•</span>
+
+                  <span>
+                    {formatTimeAgo(
+                      video.published_at ??
+                        video.created_at
+                    )}
+                  </span>
+                </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+
+            {/* Save Video */}
+
+            <SaveVideoButton
+              videoId={video.id}
+              isSaved={video.is_saved}
+              isAuthenticated={video.is_authenticated}
+            />
+
+          </div>
         </div>
 
         {/* =================================================
@@ -439,7 +458,7 @@ export default function VideoDetail({
 
               {/* Free video */}
 
-              {isFree ? (
+              {canWatch ? (
                 <div className="aspect-video">
 
                   <video
@@ -498,38 +517,69 @@ export default function VideoDetail({
                     </div>
                   )}
 
-                  {/* Subscribe message */}
+                  {/* Locked video message */}
 
-                  <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+                    <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+                      <div className="max-w-sm">
 
-                    <div className="max-w-sm">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
+                          <LockKeyhole className="h-6 w-6 text-white" />
+                        </div>
 
-                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
-                        <LockKeyhole className="h-6 w-6 text-white" />
+                        {/* Logged out */}
+                        {!video.is_authenticated && (
+                          <>
+                            <h2 className="mt-4 text-xl font-semibold text-white">
+                              Login to watch
+                            </h2>
+
+                            <p className="mt-2 text-sm leading-6 text-white/80">
+                              {isFree
+                                ? "Log in to your account to watch this free video."
+                                : "Log in to your account to watch this video."}
+                            </p>
+
+                            <Link href="/login">
+                              <Button className="mt-4 rounded-lg bg-white px-5 text-black hover:bg-white/90">
+                                Log in to Watch
+                              </Button>
+                            </Link>
+                          </>
+                        )}
+
+                        {/* Logged in but subscriber-only */}
+                        {video.is_authenticated &&
+                          !isFree &&
+                          !video.has_active_subscription && (
+                            <>
+                              <h2 className="mt-4 text-xl font-semibold text-white">
+                                Subscribers only
+                              </h2>
+
+                              <p className="mt-2 text-sm leading-6 text-white/80">
+                                Subscribe to this channel to watch this video.
+                              </p>
+
+                              {subscriptionPrice && (
+                                <p className="mt-3 text-sm font-medium text-white">
+                                  {subscriptionPrice} / month
+                                </p>
+                              )}
+
+                              {channel?.slug && (
+                                <Link
+                                  href={`/channels/${channel.slug}`}
+                                >
+                                  <Button className="mt-4 rounded-lg bg-white px-5 text-black hover:bg-white/90">
+                                    Subscribe to Channel
+                                  </Button>
+                                </Link>
+                              )}
+                            </>
+                          )}
+
                       </div>
-
-                      <h2 className="mt-4 text-xl font-semibold text-white">
-                        Subscribers only
-                      </h2>
-
-                      <p className="mt-2 text-sm leading-6 text-white/80">
-                        Subscribe to this channel
-                        to watch this video.
-                      </p>
-
-                      {subscriptionPrice && (
-                        <p className="mt-3 text-sm font-medium text-white">
-                          {subscriptionPrice} / month
-                        </p>
-                      )}
-
-                      <Button className="mt-4 rounded-lg bg-white px-5 text-black hover:bg-white/90">
-                        Subscribe to Channel
-                      </Button>
-
-                    </div>
                   </div>
-
                 </div>
               )}
 
@@ -777,24 +827,6 @@ export default function VideoDetail({
                   <p className="text-sm text-muted">
                     Channel subscription
                   </p>
-
-                  {subscriptionPrice && (
-                    <div className="mt-1 flex items-baseline gap-1">
-
-                      <span className="text-2xl font-bold text-foreground">
-                        {subscriptionPrice}
-                      </span>
-
-                      <span className="text-sm text-muted">
-                        / month
-                      </span>
-
-                    </div>
-                  )}
-
-                  <Button className="mt-4 h-11 w-full rounded-lg bg-primary text-white hover:bg-primary/90">
-                    Subscribe to Channel
-                  </Button>
 
                 </div>
               )}

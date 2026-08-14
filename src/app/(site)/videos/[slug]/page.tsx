@@ -27,6 +27,10 @@ export default async function VideoPage({
 
   const supabase = await createClient();
 
+  const {
+  data: { user },
+} = await supabase.auth.getUser();
+
   /* ========================================================
      Get video
   ======================================================== */
@@ -180,10 +184,6 @@ export default async function VideoPage({
 
   /* ========================================================
      Language region
-
-     Example:
-
-     Spanish from Argentina, Buenos Aires
   ======================================================== */
 
   const languageRegion =
@@ -204,33 +204,100 @@ export default async function VideoPage({
     .join(", ");
 
   /* ========================================================
-     VIDEO URL
+   VIDEO ACCESS
+======================================================== */
 
-     video.video_id contains something like:
+let hasActiveSubscription = false;
+let canWatch = false;
+let videoUrl: string | null = null;
 
-     1efeb750-.../90957...-niceconvo.mp4
+/*
+ * Nobody can watch without authentication.
+ */
+if (user) {
+  /*
+   * FREE VIDEO
+   *
+   * Any authenticated user can watch.
+   */
+  if (video.access_type === "free") {
+    canWatch = true;
+  }
 
-     This is a Supabase Storage path.
+  /*
+   * SUBSCRIBER VIDEO
+   *
+   * Check whether the current user has
+   * an active subscription to this channel.
+   */
+  if (
+    video.access_type === "subscriber" &&
+    video.channel_id
+  ) {
+    const { data: subscription } =
+      await supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("buyer_id", user.id)
+        .eq("channel_id", video.channel_id)
+        .eq("status", "active")
+        .gt(
+          "current_period_end",
+          new Date().toISOString()
+        )
+        .maybeSingle();
 
-     We convert it into the actual public URL here.
+    if (subscription) {
+      hasActiveSubscription = true;
+      canWatch = true;
+    }
+  }
+}
+  /* ========================================================
+     SIGNED VIDEO URL
   ======================================================== */
 
-  let videoUrl = video.video_id;
-
+  /*
+   * Only generate a signed URL when the user
+   * is actually authorized to watch.
+   */
   if (
+    canWatch &&
     video.video_provider === "supabase" &&
     video.video_id
   ) {
     const {
-      data: publicVideo,
-    } = supabase.storage
+      data: signedVideo,
+      error: signedUrlError,
+    } = await supabase.storage
       .from("videos")
-      .getPublicUrl(video.video_id);
+      .createSignedUrl(
+        video.video_id,
+        60 * 60
+      );
 
-    videoUrl =
-      publicVideo?.publicUrl ||
-      video.video_id;
+    if (
+      !signedUrlError &&
+      signedVideo?.signedUrl
+    ) {
+      videoUrl = signedVideo.signedUrl;
+    } else {
+      canWatch = false;
+    }
   }
+
+  let isSaved = false;
+
+if (user) {
+  const { data: savedVideo } = await supabase
+    .from("saved_videos")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("video_id", video.id)
+    .maybeSingle();
+
+  isSaved = !!savedVideo;
+}
 
   /* ========================================================
      Render
@@ -239,29 +306,35 @@ export default async function VideoPage({
   return (
     <div className="px-6 py-6">
       <VideoDetail
-        video={{
-          ...video,
+      video={{
+        ...video,
 
-          /* Creator */
+        language_name: languageName,
 
-          language_name: languageName,
+        subtitle_language_name:
+          subtitleLanguageName,
 
-          subtitle_language_name:
-            subtitleLanguageName,
+        language_description:
+          languageDescription,
 
-          language_description:
-            languageDescription,
+        category_path:
+          categoryPathWithNames,
 
-          /* Breadcrumbs */
+        is_authenticated: !!user,
 
-          category_path:
-            categoryPathWithNames,
+        has_active_subscription:
+          hasActiveSubscription,
 
-          /* Actual playable video URL */
+        can_watch:
+          canWatch,
 
-          video_url: videoUrl,
-        }}
-      />
+        video_url:
+          videoUrl,
+
+        is_saved:
+          isSaved,
+      }}
+    />
     </div>
   );
 }
