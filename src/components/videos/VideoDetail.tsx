@@ -243,6 +243,108 @@ export default function VideoDetail({
     useState<number | null>(null);
 
   useEffect(() => {
+  const videoElement = videoRef.current;
+
+  if (!videoElement) return;
+
+  if (!video.is_authenticated) return;
+
+  if (!video.can_watch || !video.video_url) {
+    return;
+  }
+
+  let lastSavedTime = 0;
+
+  const saveHistory = async () => {
+    const currentTime =
+      videoElement.currentTime;
+
+    if (!Number.isFinite(currentTime)) {
+      return;
+    }
+
+    // Avoid sending requests too frequently
+    if (
+      currentTime - lastSavedTime < 5 &&
+      !videoElement.paused
+    ) {
+      return;
+    }
+
+    lastSavedTime = currentTime;
+
+    try {
+      await fetch("/api/watch-history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          videoId: video.id,
+          progressSeconds: Math.floor(
+            currentTime
+          ),
+        }),
+      });
+    } catch (error) {
+      console.error(
+        "Failed to save watch history:",
+        error
+      );
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    saveHistory();
+  };
+
+  const handlePause = () => {
+    saveHistory();
+  };
+
+  const handleEnded = () => {
+    saveHistory();
+  };
+
+  videoElement.addEventListener(
+    "timeupdate",
+    handleTimeUpdate
+  );
+
+  videoElement.addEventListener(
+    "pause",
+    handlePause
+  );
+
+  videoElement.addEventListener(
+    "ended",
+    handleEnded
+  );
+
+  return () => {
+    videoElement.removeEventListener(
+      "timeupdate",
+      handleTimeUpdate
+    );
+
+    videoElement.removeEventListener(
+      "pause",
+      handlePause
+    );
+
+    videoElement.removeEventListener(
+      "ended",
+      handleEnded
+    );
+  };
+}, [
+  video.id,
+  video.is_authenticated,
+  video.can_watch,
+  video.video_url,
+]);
+
+  useEffect(() => {
     const videoElement = videoRef.current;
 
     if (!videoElement) return;
