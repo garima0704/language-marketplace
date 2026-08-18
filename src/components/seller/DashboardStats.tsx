@@ -9,11 +9,15 @@ import {
 interface DashboardStatsProps {
   channelCount: number;
   videoCount: number;
+  subscriberCount: number;
+  monthlyEarnings: number;
 }
 
 export default function DashboardStats({
   channelCount,
   videoCount,
+  subscriberCount,
+  monthlyEarnings,
 }: DashboardStatsProps) {
   const stats = [
     {
@@ -28,12 +32,12 @@ export default function DashboardStats({
     },
     {
       title: "Subscribers",
-      value: "0",
+      value: subscriberCount,
       icon: Users,
     },
     {
-      title: "Monthly Earnings",
-      value: "$0",
+      title: "Earnings",
+      value: `$${monthlyEarnings.toFixed(2)}`,
       icon: DollarSign,
     },
   ];

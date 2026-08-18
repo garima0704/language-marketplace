@@ -1,10 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 
-import CategoryBar from "@/components/CategoryBar";
-import VideoSection from "@/components/VideoSection";
+import CategoryVideos from "@/components/videos/CategoryVideos";
+import VideoDetail from "@/components/videos/VideoDetail";
 
 type Props = {
   params: Promise<{
@@ -12,25 +11,31 @@ type Props = {
   }>;
 };
 
-export default async function CategoryPage({ params }: Props) {
+export default async function VideosSlugPage({
+  params,
+}: Props) {
   const { slug } = await params;
 
-  const currentSlug = slug[slug.length - 1];
+  if (!slug?.length) {
+    notFound();
+  }
 
   const supabase = await createClient();
 
-  // --------------------------------------------------
-  // Resolve category path
-  // --------------------------------------------------
+  function formatText(value?: string | null) {
+  if (!value) return "";
 
-  let category: {
-    id: string;
-    slug: string;
-    parent_id: string | null;
-    level: number;
-  } | null = null;
+  return value
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+  // ==================================================
+  // 1. Try to resolve the complete path as a category
+  // ==================================================
 
   let parentId: string | null = null;
+  let categoryFound = true;
 
   for (const segment of slug) {
     let query = supabase
@@ -45,356 +50,366 @@ export default async function CategoryPage({ params }: Props) {
       query = query.eq("parent_id", parentId);
     }
 
-    const { data, error } = await query.maybeSingle();
+    const { data, error } =
+      await query.maybeSingle();
 
     if (error || !data) {
-      console.log("Failed to resolve:", segment, error);
-      notFound();
+      categoryFound = false;
+      break;
     }
 
-    category = data;
     parentId = data.id;
   }
 
-  if (!category) {
+  // ==================================================
+  // 2. Category URL
+  // ==================================================
+
+  if (categoryFound) {
+    return <CategoryVideos slug={slug} />;
+  }
+
+  // ==================================================
+  // 3. Video URL
+  // ==================================================
+
+// ==================================================
+// 3. Video URL
+// ==================================================
+
+if (slug.length === 1) {
+  const videoSlug = slug[0];
+
+  // --------------------------------------------------
+  // Current authenticated user
+  // --------------------------------------------------
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // --------------------------------------------------
+  // Fetch video
+  // --------------------------------------------------
+
+  const {
+    data: videoData,
+    error: videoError,
+  } = await supabase
+    .from("videos")
+    .select(`
+      *,
+      channels (
+        *,
+        profiles (*)
+      )
+    `)
+    .eq("slug", videoSlug)
+    .eq("status", "published")
+    .maybeSingle();
+
+  if (videoError) {
+    console.error(
+      "Video lookup error:",
+      videoError
+    );
+
     notFound();
   }
 
-  // --------------------------------------------------
-  // Current category name
-  // --------------------------------------------------
+  if (!videoData) {
+    notFound();
+  }
 
-  const { data: translation } = await supabase
-    .from("category_translations")
-    .select("name")
-    .eq("category_id", category.id)
-    .eq("locale_code", "en")
-    .maybeSingle();
+  // ==================================================
+// CATEGORY PATH
+// ==================================================
 
-  // --------------------------------------------------
-  // Child categories for pills
-  // --------------------------------------------------
+const categoryPath: {
+  id: string;
+  slug: string;
+  name: string;
+}[] = [];
 
-  const { data: children } = await supabase
+let currentCategoryId =
+  videoData.category_id as string | null;
+
+while (currentCategoryId) {
+  const { data: category } = await supabase
     .from("categories")
     .select(`
       id,
       slug,
-      display_order,
-      category_translations!inner(
-        locale_code,
-        name
-      )
-    `)
-    .eq("parent_id", category.id)
-    .eq("is_active", true)
-    .eq("category_translations.locale_code", "en")
-    .order("display_order");
-
-  const pills = [
-    {
-      id: "all",
-      slug: currentSlug,
-      name: "All",
-    },
-
-    ...(children ?? []).map((child: any) => ({
-      id: child.id,
-      slug: child.slug,
-      name: child.category_translations[0]?.name ?? child.slug,
-    })),
-  ];
-
-  // --------------------------------------------------
-  // Find current category + all descendants
-  // --------------------------------------------------
-
-  const categoryIds = new Set<string>([category.id]);
-
-  let currentIds = [category.id];
-
-  while (currentIds.length > 0) {
-    const { data: descendants } = await supabase
-      .from("categories")
-      .select("id")
-      .in("parent_id", currentIds)
-      .eq("is_active", true);
-
-    if (!descendants?.length) {
-      break;
-    }
-
-    const newIds: string[] = [];
-
-    for (const descendant of descendants) {
-      if (!categoryIds.has(descendant.id)) {
-        categoryIds.add(descendant.id);
-        newIds.push(descendant.id);
-      }
-    }
-
-    if (newIds.length === 0) {
-      break;
-    }
-
-    currentIds = newIds;
-  }
-
-  // --------------------------------------------------
-  // Fetch videos belonging to this category tree
-  // --------------------------------------------------
-
-const { data: videos, error: videosError } = await supabase
-  .from("videos")
-  .select(`
-    id,
-    slug,
-    title,
-    thumbnail_url,
-    level,
-    access_type,
-    view_count,
-    created_at,
-    published_at,
-    category_id,
-
-    channels (
-      id,
-      channel_name,
-      logo_url,
-      user_id,
-
-      profiles (
-        id,
-        display_name,
-        avatar_url,
-        is_creator
-      )
-    ),
-
-    categories (
-      id,
-      slug,
       parent_id,
-      level,
-
       category_translations (
         name,
         locale_code
       )
-    )
-  `)
-  .eq("status", "published")
-  .in("category_id", Array.from(categoryIds))
-  .order("published_at", {
-    ascending: false,
-    nullsFirst: false,
+    `)
+    .eq("id", currentCategoryId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (!category) {
+    break;
+  }
+
+  const translations = Array.isArray(
+    category.category_translations
+  )
+    ? category.category_translations
+    : [];
+
+  const translation =
+    translations.find(
+      (item: any) =>
+        item.locale_code === "en"
+    ) ?? translations[0];
+
+  categoryPath.unshift({
+    id: category.id,
+    slug: category.slug,
+    name:
+      translation?.name ??
+      formatText(category.slug),
   });
 
-  if (videosError) {
-    console.error("Category videos error:", videosError);
+  currentCategoryId =
+    category.parent_id;
+}
+
+
+  // ==================================================
+// LANGUAGE + REGION
+// ==================================================
+
+let languageName =
+  videoData.language_code || "";
+
+let languageDescription =
+  languageName;
+
+// --------------------------------------------------
+// Language name
+// --------------------------------------------------
+
+if (videoData.language_code) {
+  const { data: language } =
+    await supabase
+      .from("locales")
+      .select("code, name")
+      .eq("code", videoData.language_code)
+      .maybeSingle();
+
+  if (language?.name) {
+    languageName = language.name;
   }
+}
 
-  // --------------------------------------------------
-  // Build category labels
-  // Example: English - Business
-  // --------------------------------------------------
+// --------------------------------------------------
+// Language region
+// --------------------------------------------------
 
-  let formattedVideos = videos ?? [];
+if (videoData.language_region_id) {
+  const { data: languageRegion } =
+    await supabase
+      .from("language_regions")
+      .select(`
+        id,
+        language_code,
+        country,
+        state
+      `)
+      .eq("id", videoData.language_region_id)
+      .maybeSingle();
 
-  const videoCategoryIds = [
-    ...new Set(
-      formattedVideos
-        .map((video) => video.category_id)
-        .filter(Boolean)
-    ),
-  ];
+  if (languageRegion) {
+    const locationParts = [
+      languageRegion.country,
+      languageRegion.state,
+    ].filter(Boolean);
 
-  if (videoCategoryIds.length > 0) {
-    const allCategoryIds = new Set<string>(videoCategoryIds);
-    let currentIds = videoCategoryIds;
-
-    // Get all parents
-    while (currentIds.length > 0) {
-      const { data: parents } = await supabase
-        .from("categories")
-        .select("id, parent_id, slug, level")
-        .in("id", currentIds);
-
-      if (!parents?.length) break;
-
-      const parentIds = parents
-        .map((item) => item.parent_id)
-        .filter(
-          (id): id is string =>
-            !!id && !allCategoryIds.has(id)
-        );
-
-      if (parentIds.length === 0) break;
-
-      parentIds.forEach((id) => allCategoryIds.add(id));
-      currentIds = parentIds;
+    if (locationParts.length > 0) {
+      languageDescription =
+        `${languageName} from ${locationParts.join(", ")}`;
+    } else {
+      languageDescription = languageName;
     }
+  }
+}
 
-    // Get category names
-    const { data: categoryTranslations } = await supabase
-      .from("category_translations")
-      .select("category_id, name")
-      .eq("locale_code", "en")
-      .in("category_id", Array.from(allCategoryIds));
+  // ==================================================
+  // SUBTITLE LANGUAGE
+  // ==================================================
 
-    const { data: allCategories } = await supabase
-      .from("categories")
-      .select("id, parent_id, slug, level")
-      .in("id", Array.from(allCategoryIds));
+  let subtitleLanguageName =
+    videoData.subtitle_language_code;
 
-    const categoryById = new Map(
-      (allCategories ?? []).map((item) => [
-        item.id,
-        item,
-      ])
-    );
+  if (videoData.subtitle_language_code) {
+    const { data: subtitleLanguage } =
+      await supabase
+        .from("locales")
+        .select("code, name")
+        .eq(
+          "code",
+          videoData.subtitle_language_code
+        )
+        .maybeSingle();
 
-    const nameById = new Map(
-      (categoryTranslations ?? []).map((item) => [
-        item.category_id,
-        item.name,
-      ])
-    );
-
-    formattedVideos = formattedVideos.map((video) => {
-      if (!video.category_id) {
-        return {
-          ...video,
-          category_label: "",
-        };
-      }
-
-      const current = categoryById.get(video.category_id);
-
-      if (!current) {
-        return {
-          ...video,
-          category_label: "",
-        };
-      }
-
-      const deepestName =
-        nameById.get(current.id) ?? current.slug;
-
-      let root = current;
-
-      while (root.parent_id) {
-        const parent = categoryById.get(root.parent_id);
-
-        if (!parent) break;
-
-        root = parent;
-      }
-
-      const rootName =
-        nameById.get(root.id) ?? root.slug;
-
-      return {
-        ...video,
-        category_label:
-          root.id === current.id
-            ? rootName
-            : `${rootName} - ${deepestName}`,
-      };
-    });
+    if (subtitleLanguage?.name) {
+      subtitleLanguageName =
+        subtitleLanguage.name;
+    }
   }
 
-  // --------------------------------------------------
-  // Render
-  // --------------------------------------------------
+// ==================================================
+// AUTHENTICATION
+// ==================================================
 
-  return (
-    <div className="px-6 py-6">
+const isAuthenticated = !!user;
 
-      {/* Header */}
-      <div className="mx-auto mb-6 max-w-7xl">
+// ==================================================
+// SAVED VIDEO
+// ==================================================
 
-        <nav className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+let isSaved = false;
 
-          <Link
-            href="/"
-            className="transition hover:text-gray-900"
-          >
-            Home
-          </Link>
+if (user) {
+  const {
+    data: savedVideo,
+    error: savedVideoError,
+  } = await supabase
+    .from("saved_videos")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("video_id", videoData.id)
+    .maybeSingle();
 
-          <span>/</span>
+  if (savedVideoError) {
+    console.error(
+      "Saved video lookup error:",
+      savedVideoError
+    );
+  }
 
-          <Link
-            href="/videos"
-            className="transition hover:text-gray-900"
-          >
-            Videos
-          </Link>
+  isSaved = !!savedVideo;
+}
 
-          {slug.map((part, index) => {
-            const href =
-              "/videos/" +
-              slug.slice(0, index + 1).join("/");
+// ==================================================
+// SUBSCRIPTION
+// ==================================================
 
-            const isCurrent =
-              index === slug.length - 1;
+let hasActiveSubscription = false;
 
-            return (
-              <div
-                key={href}
-                className="flex items-center gap-2"
-              >
-                <span>/</span>
+if (user && videoData.channel_id) {
+  const {
+    data: subscription,
+    error: subscriptionError,
+  } = await supabase
+    .from("subscriptions")
+    .select(`
+      id,
+      status,
+      current_period_end
+    `)
+    .eq("buyer_id", user.id)
+    .eq("channel_id", videoData.channel_id)
+    .eq("status", "active")
+    .maybeSingle();
 
-                {isCurrent ? (
-                  <span className="font-medium capitalize text-foreground">
-                    {part.replace(/-/g, " ")}
-                  </span>
-                ) : (
-                  <Link
-                    href={href}
-                    className="capitalize transition hover:text-gray-900"
-                  >
-                    {part.replace(/-/g, " ")}
-                  </Link>
-                )}
-              </div>
-            );
-          })}
+  if (subscriptionError) {
+    console.error(
+      "Subscription lookup error:",
+      subscriptionError
+    );
+  }
 
-        </nav>
+  hasActiveSubscription =
+    !!subscription;
+}
 
-        <h1 className="text-4xl font-bold text-gray-900">
-          {translation?.name ?? currentSlug}
-        </h1>
+// ==================================================
+// WATCH ACCESS
+// ==================================================
 
-      </div>
-
-      {/* Category filter */}
-      <CategoryBar
-        categories={pills}
-        selectedCategory="all"
-        basePath={`/videos/${slug.join("/")}`}
-      />
-
-      {/* Result count */}
-      <div className="mx-auto max-w-7xl px-6 py-4">
-        <p className="text-sm font-medium text-gray-600">
-          {formattedVideos.length}{" "}
-          {formattedVideos.length === 1
-            ? "Video"
-            : "Videos"}
-        </p>
-      </div>
-
-      {/* Videos */}
-      <VideoSection
-        showViewAll={false}
-        videos={formattedVideos}
-      />
-
-    </div>
+const canWatch =
+  isAuthenticated &&
+  (
+    videoData.access_type === "free" ||
+    hasActiveSubscription
   );
+
+// ==================================================
+// VIDEO URL
+// ==================================================
+
+let videoUrl: string | null = null;
+
+if (
+  canWatch &&
+  videoData.video_provider === "supabase" &&
+  videoData.video_id
+) {
+  const {
+    data: signedUrlData,
+    error: signedUrlError,
+  } = await supabase.storage
+    .from("videos")
+    .createSignedUrl(
+      videoData.video_id,
+      60 * 60 // 1 hour
+    );
+
+  if (signedUrlError) {
+    console.error(
+      "Video signed URL error:",
+      signedUrlError
+    );
+  } else {
+    videoUrl =
+      signedUrlData?.signedUrl ?? null;
+  }
+}
+
+// ==================================================
+// BUILD VIDEO OBJECT
+// ==================================================
+
+const video = {
+  ...videoData,
+
+  category_path: categoryPath,
+
+  language_name: languageName,
+
+  language_description:
+    languageDescription,
+
+  subtitle_language_name:
+    subtitleLanguageName,
+
+  is_authenticated:
+    isAuthenticated,
+
+  is_saved:
+    isSaved,
+
+  can_watch:
+    canWatch,
+
+  has_active_subscription:
+    hasActiveSubscription,
+
+  video_url:
+    videoUrl,
+};
+
+return <VideoDetail video={video} />;
+
+// ==================================================
+// 4. Nothing found
+// ==================================================
+
+notFound();
+}
 }

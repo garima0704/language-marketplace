@@ -22,11 +22,31 @@ export const creatorMenu = [
         label: "Subscribers",
         icon: "Users",
       },
+
+      // --------------------------------------------
+      // Earnings
+      // --------------------------------------------
+
       {
         href: "/seller/earnings",
         label: "Earnings",
         icon: "DollarSign",
+        children: [
+          {
+            href: "/seller/earnings",
+            label: "Overview",
+          },
+          {
+            href: "/seller/earnings/transactions",
+            label: "Transactions",
+          },
+          {
+            href: "/seller/earnings/payouts",
+            label: "Payouts",
+          },
+        ],
       },
+
       {
         href: "/seller/analytics",
         label: "Analytics",
@@ -34,6 +54,7 @@ export const creatorMenu = [
       },
     ],
   },
+
   {
     title: "Library",
     items: [

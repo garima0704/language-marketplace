@@ -23,39 +23,52 @@ export default function SaveVideoButton({
   const [loading, setLoading] = useState(false);
 
   async function handleSave() {
-  if (!isAuthenticated) {
-    window.location.href = "/login";
-    return;
-  }
-
-  if (loading) return;
-
-  setLoading(true);
-
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    if (!isAuthenticated) {
       window.location.href = "/login";
       return;
     }
 
-    if (isSaved) {
-      const { error } = await supabase
-        .from("saved_videos")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("video_id", videoId);
+    if (loading) return;
 
-      if (error) {
-        console.error("Error removing saved video:", error);
+    setLoading(true);
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        window.location.href = "/login";
         return;
       }
 
-      setIsSaved(false);
-    } else {
+      // ================================================
+      // REMOVE SAVED VIDEO
+      // ================================================
+
+      if (isSaved) {
+        const { error } = await supabase
+          .from("saved_videos")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("video_id", videoId);
+
+        if (error) {
+          console.error(
+            "Error removing saved video:",
+            error
+          );
+          return;
+        }
+
+        setIsSaved(false);
+        return;
+      }
+
+      // ================================================
+      // SAVE VIDEO
+      // ================================================
+
       const { error } = await supabase
         .from("saved_videos")
         .insert({
@@ -64,16 +77,29 @@ export default function SaveVideoButton({
         });
 
       if (error) {
-        console.error("Error saving video:", error);
+        // Already saved — local state was stale
+        if (error.code === "23505") {
+          setIsSaved(true);
+          return;
+        }
+
+        console.error(
+          "Error saving video:",
+          error
+        );
         return;
       }
 
       setIsSaved(true);
+    } catch (error) {
+      console.error(
+        "Unexpected error saving video:",
+        error
+      );
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
   }
-}
 
   return (
     <Button

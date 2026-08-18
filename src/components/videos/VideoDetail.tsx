@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 import {
   Avatar,
@@ -23,7 +24,6 @@ import {
   UserRound,
   Volume2,
   LockKeyhole,
-  Play,
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
@@ -239,6 +239,12 @@ export default function VideoDetail({
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  const supabase = createClient();
+
+  const viewRecordedRef = useRef(false);
+  const watchedForViewRef = useRef(0);
+  const lastPlaybackTimeRef = useRef<number | null>(null);
+
   const [duration, setDuration] =
     useState<number | null>(null);
 
@@ -322,6 +328,8 @@ export default function VideoDetail({
   );
 
   return () => {
+    saveHistory();
+    
     videoElement.removeEventListener(
       "timeupdate",
       handleTimeUpdate
@@ -335,6 +343,171 @@ export default function VideoDetail({
     videoElement.removeEventListener(
       "ended",
       handleEnded
+    );
+  };
+}, [
+  video.id,
+  video.is_authenticated,
+  video.can_watch,
+  video.video_url,
+]);
+
+useEffect(() => {
+  const videoElement = videoRef.current;
+
+  if (!videoElement) return;
+
+  // Only track videos the user is actually allowed to watch.
+  if (!video.is_authenticated) return;
+  if (!video.can_watch || !video.video_url) return;
+
+  let mounted = true;
+
+  const recordView = async () => {
+    if (!mounted) return;
+    if (viewRecordedRef.current) return;
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error(
+          "Unable to get user for view tracking:",
+          userError
+        );
+        return;
+      }
+
+      const { error } = await supabase.rpc(
+        "record_video_view",
+        {
+          p_video_id: video.id,
+          p_viewer_id: user.id,
+          p_session_id: null,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "Failed to record video view:",
+          error
+        );
+        return;
+      }
+
+      viewRecordedRef.current = true;
+
+      console.log(
+        "Video view recorded:",
+        video.id
+      );
+    } catch (error) {
+      console.error(
+        "Failed to record video view:",
+        error
+      );
+    }
+  };
+
+  const handlePlay = () => {
+    lastPlaybackTimeRef.current =
+      videoElement.currentTime;
+  };
+
+  const handlePause = () => {
+    lastPlaybackTimeRef.current = null;
+  };
+
+  const handleEnded = () => {
+    lastPlaybackTimeRef.current = null;
+  };
+
+  const handleTimeUpdate = () => {
+    if (viewRecordedRef.current) return;
+
+    const currentTime =
+      videoElement.currentTime;
+
+    if (!Number.isFinite(currentTime)) return;
+
+    const previousTime =
+      lastPlaybackTimeRef.current;
+
+    if (previousTime !== null) {
+      const delta =
+        currentTime - previousTime;
+
+      /*
+       * Only count normal forward playback.
+       *
+       * Ignore:
+       * - seeking forward
+       * - seeking backward
+       * - large jumps
+       */
+      if (delta > 0 && delta <= 2) {
+        watchedForViewRef.current += delta;
+      }
+    }
+
+    lastPlaybackTimeRef.current =
+      currentTime;
+
+    /*
+     * Ten seconds of actual playback
+     * counts as one view.
+     */
+    if (
+      watchedForViewRef.current >= 10
+    ) {
+      recordView();
+    }
+  };
+
+  videoElement.addEventListener(
+    "play",
+    handlePlay
+  );
+
+  videoElement.addEventListener(
+    "pause",
+    handlePause
+  );
+
+  videoElement.addEventListener(
+    "ended",
+    handleEnded
+  );
+
+  videoElement.addEventListener(
+    "timeupdate",
+    handleTimeUpdate
+  );
+
+  return () => {
+    mounted = false;
+
+    videoElement.removeEventListener(
+      "play",
+      handlePlay
+    );
+
+    videoElement.removeEventListener(
+      "pause",
+      handlePause
+    );
+
+    videoElement.removeEventListener(
+      "ended",
+      handleEnded
+    );
+
+    videoElement.removeEventListener(
+      "timeupdate",
+      handleTimeUpdate
     );
   };
 }, [
