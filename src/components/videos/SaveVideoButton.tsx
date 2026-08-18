@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Bookmark, Check } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 interface SaveVideoButtonProps {
@@ -19,12 +18,19 @@ export default function SaveVideoButton({
 }: SaveVideoButtonProps) {
   const supabase = createClient();
 
-  const [isSaved, setIsSaved] = useState(initialIsSaved);
-  const [loading, setLoading] = useState(false);
+  const [isSaved, setIsSaved] =
+    useState(initialIsSaved);
+
+  const [loading, setLoading] =
+    useState(false);
 
   async function handleSave() {
     if (!isAuthenticated) {
-      window.location.href = "/login";
+      window.location.href =
+        `/login?redirect=${encodeURIComponent(
+          window.location.pathname
+        )}`;
+
       return;
     }
 
@@ -38,7 +44,11 @@ export default function SaveVideoButton({
       } = await supabase.auth.getUser();
 
       if (!user) {
-        window.location.href = "/login";
+        window.location.href =
+          `/login?redirect=${encodeURIComponent(
+            window.location.pathname
+          )}`;
+
         return;
       }
 
@@ -58,6 +68,7 @@ export default function SaveVideoButton({
             "Error removing saved video:",
             error
           );
+
           return;
         }
 
@@ -87,6 +98,7 @@ export default function SaveVideoButton({
           "Error saving video:",
           error
         );
+
         return;
       }
 
@@ -102,24 +114,55 @@ export default function SaveVideoButton({
   }
 
   return (
-    <Button
+    <button
       type="button"
-      variant="outline"
       onClick={handleSave}
       disabled={loading}
-      className="rounded-lg border-border"
+      aria-label={
+        isSaved
+          ? "Remove from saved"
+          : "Save video"
+      }
+      title={
+        isAuthenticated
+          ? isSaved
+            ? "Remove from saved"
+            : "Save video"
+          : "Log in to save"
+      }
+      className={`
+        inline-flex
+        h-9
+        items-center
+        gap-2
+        rounded-full
+        px-3
+        text-sm
+        font-medium
+        transition-all
+        duration-150
+        hover:bg-muted-bg
+        active:scale-[0.96]
+        disabled:cursor-wait
+        disabled:opacity-60
+        ${
+          isSaved
+            ? "text-foreground"
+            : "text-secondary"
+        }
+      `}
     >
       {isSaved ? (
-        <>
-          <Check className="mr-2 h-4 w-4" />
-          Saved
-        </>
+        <Bookmark
+          className="h-4 w-4 fill-current"
+        />
       ) : (
-        <>
-          <Bookmark className="mr-2 h-4 w-4" />
-          Save
-        </>
+        <Bookmark className="h-4 w-4" />
       )}
-    </Button>
+
+      <span>
+        {isSaved ? "Saved" : "Save"}
+      </span>
+    </button>
   );
 }

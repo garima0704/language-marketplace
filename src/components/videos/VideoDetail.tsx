@@ -28,6 +28,8 @@ import {
 
 import { useEffect, useRef, useState } from "react";
 import SaveVideoButton from "@/components/videos/SaveVideoButton";
+import VideoLikeButton from "@/components/videos/VideoLikeButton";
+import VideoComments from "@/components/videos/VideoComments";
 
 interface VideoDetailProps {
   video: any;
@@ -329,7 +331,7 @@ export default function VideoDetail({
 
   return () => {
     saveHistory();
-    
+
     videoElement.removeEventListener(
       "timeupdate",
       handleTimeUpdate
@@ -701,15 +703,6 @@ useEffect(() => {
                 </div>
               </div>
             </Link>
-
-            {/* Save Video */}
-
-            <SaveVideoButton
-              videoId={video.id}
-              isSaved={video.is_saved}
-              isAuthenticated={video.is_authenticated}
-            />
-
           </div>
         </div>
 
@@ -859,6 +852,27 @@ useEffect(() => {
               )}
 
             </div>
+
+            {/* =================================================
+                  VIDEO ACTIONS
+              ================================================= */}
+
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+
+                <VideoLikeButton
+                  videoId={video.id}
+                  isAuthenticated={video.is_authenticated}
+                />
+
+                {/* Save Video */}
+
+                <SaveVideoButton
+                  videoId={video.id}
+                  isSaved={video.is_saved}
+                  isAuthenticated={video.is_authenticated}
+                />
+
+              </div>
 
             {/* =================================================
                 DESCRIPTION
@@ -1184,6 +1198,16 @@ useEffect(() => {
           </div>
 
         </section>
+
+         {/* =================================================
+            COMMENTS
+            FULL WIDTH
+        ================================================== */}
+
+        <VideoComments
+          videoId={video.id}
+          isAuthenticated={video.is_authenticated}
+        />
 
         {/* =================================================
             RELATED VIDEOS
