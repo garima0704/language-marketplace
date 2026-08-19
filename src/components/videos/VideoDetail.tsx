@@ -3,6 +3,13 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { 
+  formatTimeAgo,
+  formatText, 
+  getInitials, 
+  formatPrice,
+  formatDuration 
+} from "@/lib/utils";
 
 import {
   Avatar,
@@ -21,7 +28,6 @@ import {
   LockKeyhole,
   MessageCircle,
   Sparkles,
-  Star,
   UserRound,
   Volume2,
 } from "lucide-react";
@@ -32,140 +38,10 @@ import SaveVideoButton from "@/components/videos/SaveVideoButton";
 import VideoLikeButton from "@/components/videos/VideoLikeButton";
 import VideoComments from "@/components/videos/VideoComments";
 import ReportVideoButton from "@/components/videos/ReportVideoButton";
+import VideoRatings from "@/components/videos/VideoRatings";
 
 interface VideoDetailProps {
   video: any;
-}
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function formatTimeAgo(dateString?: string | null) {
-  if (!dateString) return "";
-
-  const date = new Date(dateString);
-  const now = new Date();
-
-  const diffSeconds = Math.floor(
-    (now.getTime() - date.getTime()) / 1000
-  );
-
-  if (diffSeconds < 60) {
-    return "Just now";
-  }
-
-  const minutes = Math.floor(diffSeconds / 60);
-
-  if (minutes < 60) {
-    return `${minutes} ${
-      minutes === 1 ? "minute" : "minutes"
-    } ago`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-
-  if (hours < 24) {
-    return `${hours} ${
-      hours === 1 ? "hour" : "hours"
-    } ago`;
-  }
-
-  const days = Math.floor(hours / 24);
-
-  if (days < 30) {
-    return `${days} ${
-      days === 1 ? "day" : "days"
-    } ago`;
-  }
-
-  const months = Math.floor(days / 30);
-
-  if (months < 12) {
-    return `${months} ${
-      months === 1 ? "month" : "months"
-    } ago`;
-  }
-
-  const years = Math.floor(months / 12);
-
-  return `${years} ${
-    years === 1 ? "year" : "years"
-  } ago`;
-}
-
-function formatText(value?: string | null) {
-  if (!value) return "";
-
-  return value
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function getInitials(name?: string | null) {
-  if (!name) return "NC";
-
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .map((word: string) => word[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function formatPrice(
-  price?: number | string | null,
-  currency?: string | null
-) {
-  if (price === null || price === undefined) {
-    return null;
-  }
-
-  const numericPrice = Number(price);
-
-  if (Number.isNaN(numericPrice)) {
-    return null;
-  }
-
-  const currencyCode = (currency || "USD").toUpperCase();
-
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currencyCode,
-    }).format(numericPrice);
-  } catch {
-    return `${numericPrice.toFixed(2)} ${currencyCode}`;
-  }
-}
-
-function formatDuration(seconds: number) {
-  if (!Number.isFinite(seconds) || seconds <= 0) {
-    return "";
-  }
-
-  const totalSeconds = Math.floor(seconds);
-
-  const hours = Math.floor(totalSeconds / 3600);
-
-  const minutes = Math.floor(
-    (totalSeconds % 3600) / 60
-  );
-
-  const secs = totalSeconds % 60;
-
-  if (hours > 0) {
-    return `${hours}:${minutes
-      .toString()
-      .padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  }
-
-  return `${minutes}:${secs
-    .toString()
-    .padStart(2, "0")}`;
 }
 
 /* =========================================================
@@ -892,68 +768,6 @@ export default function VideoDetail({
                 </p>
               )}
             </Card>
-
-            {/* =================================================
-                RATINGS & REVIEWS
-            ================================================== */}
-
-            <section className="mt-8">
-
-              <div className="mb-5 flex items-center justify-between border-b border-border pb-3">
-                <h2 className="text-xl font-semibold text-foreground">
-                  Ratings & Reviews
-                </h2>
-
-                <span className="text-sm text-muted">
-                  0 reviews
-                </span>
-              </div>
-
-              <div className="grid gap-6 sm:grid-cols-[180px_minmax(0,1fr)]">
-
-                <div className="rounded-xl bg-muted-bg p-5">
-                  <div className="text-4xl font-bold tracking-tight text-foreground">
-                    —
-                  </div>
-
-                  <div className="mt-2 flex gap-1 text-muted">
-                    {[1, 2, 3, 4, 5].map(
-                      (star) => (
-                        <Star
-                          key={star}
-                          className="h-4 w-4"
-                        />
-                      )
-                    )}
-                  </div>
-
-                  <p className="mt-2 text-sm text-muted">
-                    No ratings yet
-                  </p>
-                </div>
-
-                <div className="flex flex-col justify-center">
-                  <p className="font-medium text-foreground">
-                    Be the first to review this video
-                  </p>
-
-                  <p className="mt-1 max-w-lg text-sm leading-6 text-muted">
-                    Share your experience and help
-                    other learners decide if this
-                    video is right for them.
-                  </p>
-
-                  <Button
-                    variant="outline"
-                    className="mt-4 w-fit rounded-lg border-border"
-                  >
-                    Write a Review
-                  </Button>
-                </div>
-
-              </div>
-            </section>
-
           </main>
 
           {/* =================================================
@@ -1226,6 +1040,19 @@ export default function VideoDetail({
           </aside>
 
         </div>
+
+
+        {/* =================================================
+            RATINGS & REVIEWS
+        ================================================== */}
+
+        <section className="mt-10 w-full">
+          <VideoRatings
+            videoId={video.id}
+            isAuthenticated={video.is_authenticated}
+          />
+        </section>
+
 
         {/* =================================================
             COMMENTS

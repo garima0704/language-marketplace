@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bookmark, Check } from "lucide-react";
+import { Bookmark } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 

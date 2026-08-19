@@ -2,12 +2,15 @@
 
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   ChevronDown,
   LogOut,
   Settings,
   User as UserIcon,
 } from "lucide-react";
+
+import { createClient } from "@/lib/supabase/client";
 
 import {
   DropdownMenu,
@@ -25,13 +28,84 @@ type UserMenuProps = {
   user: User;
 };
 
-export default function UserMenu({ user }: UserMenuProps) {
-  const username = user.email?.split("@")[0] ?? "User";
-  const initial = username.charAt(0).toUpperCase();
+type Profile = {
+  display_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+};
+
+export default function UserMenu({
+  user,
+}: UserMenuProps) {
+  const supabase = createClient();
+
+  const [profile, setProfile] =
+    useState<Profile | null>(null);
+
+  const [loadingProfile, setLoadingProfile] =
+    useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadProfile = async () => {
+      setLoadingProfile(true);
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select(
+          "display_name, username, avatar_url"
+        )
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error(
+          "Failed to load user profile:",
+          error
+        );
+      }
+
+      if (mounted) {
+        setProfile(data ?? null);
+        setLoadingProfile(false);
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, [user.id]);
+
+  /* =====================================================
+     USER DISPLAY DATA
+  ===================================================== */
+
+  const displayName =
+    profile?.display_name ||
+    profile?.username ||
+    user.email?.split("@")[0] ||
+    "User";
+
+  const username =
+    profile?.username ||
+    user.email?.split("@")[0] ||
+    "User";
+
+  const avatarUrl =
+    profile?.avatar_url || "";
+
+  const initial =
+    displayName.charAt(0).toUpperCase();
 
   return (
     <DropdownMenu>
-      {/* User button */}
+      {/* =================================================
+          USER BUTTON
+      ================================================== */}
+
       <DropdownMenuTrigger
         className="
           flex
@@ -46,13 +120,17 @@ export default function UserMenu({ user }: UserMenuProps) {
           focus:outline-none
         "
       >
+        {/* Avatar */}
+
         <div
           className="
             flex
             h-10
             w-10
+            shrink-0
             items-center
             justify-center
+            overflow-hidden
             rounded-full
             bg-primary
             text-sm
@@ -60,7 +138,15 @@ export default function UserMenu({ user }: UserMenuProps) {
             text-white
           "
         >
-          {initial}
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={displayName}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            initial
+          )}
         </div>
 
         <ChevronDown
@@ -69,7 +155,10 @@ export default function UserMenu({ user }: UserMenuProps) {
         />
       </DropdownMenuTrigger>
 
-      {/* Dropdown */}
+      {/* =================================================
+          DROPDOWN
+      ================================================== */}
+
       <DropdownMenuContent
         align="end"
         className="
@@ -82,10 +171,15 @@ export default function UserMenu({ user }: UserMenuProps) {
           shadow-lg
         "
       >
-        {/* User information */}
+        {/* =================================================
+            USER INFORMATION
+        ================================================== */}
+
         <DropdownMenuGroup>
           <DropdownMenuLabel className="px-3 py-3">
             <div className="flex items-center gap-3">
+
+              {/* Avatar */}
 
               <div
                 className="
@@ -95,22 +189,37 @@ export default function UserMenu({ user }: UserMenuProps) {
                   shrink-0
                   items-center
                   justify-center
+                  overflow-hidden
                   rounded-full
                   bg-primary
                   font-semibold
                   text-white
                 "
               >
-                {initial}
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  initial
+                )}
               </div>
+
+              {/* Name */}
 
               <div className="min-w-0">
                 <p className="truncate font-semibold text-foreground">
-                  {username}
+                  {loadingProfile
+                    ? "Loading..."
+                    : displayName}
                 </p>
 
                 <p className="truncate text-xs text-muted">
-                  {user.email}
+                  {profile?.username
+                    ? `@${profile.username}`
+                    : user.email}
                 </p>
               </div>
 
@@ -120,7 +229,10 @@ export default function UserMenu({ user }: UserMenuProps) {
 
         <DropdownMenuSeparator className="bg-border" />
 
-        {/* My Profile */}
+        {/* =================================================
+            MY PROFILE
+        ================================================== */}
+
         <DropdownMenuItem
           className="
             h-11
@@ -138,7 +250,10 @@ export default function UserMenu({ user }: UserMenuProps) {
           My Profile
         </DropdownMenuItem>
 
-        {/* Settings */}
+        {/* =================================================
+            SETTINGS
+        ================================================== */}
+
         <DropdownMenuItem
           className="
             h-11
@@ -158,7 +273,10 @@ export default function UserMenu({ user }: UserMenuProps) {
 
         <DropdownMenuSeparator className="bg-border" />
 
-        {/* Sign Out */}
+        {/* =================================================
+            SIGN OUT
+        ================================================== */}
+
         <form action={signOut}>
           <button
             type="submit"

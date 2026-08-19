@@ -7,6 +7,7 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
+import { getInitials } from "@/lib/utils";
 
 interface Subscriber {
   id: string;
@@ -62,16 +63,6 @@ function formatCurrency(
       currency || "USD"
     }`;
   }
-}
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .map((word) => word[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 }
 
 export default function SubscribersTable({

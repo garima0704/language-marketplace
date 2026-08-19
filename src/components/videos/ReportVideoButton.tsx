@@ -57,12 +57,6 @@ export default function ReportVideoButton({
   const [alreadyReported, setAlreadyReported] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /*
-   * Reset only the form state.
-   *
-   * Do NOT reset alreadyReported here because the user
-   * should continue seeing "Reported" after closing the dialog.
-   */
   const resetForm = () => {
     setReason("");
     setDetails("");
@@ -70,10 +64,8 @@ export default function ReportVideoButton({
     setSubmitted(false);
   };
 
-  /*
-   * Check whether the current user has already reported
-   * this video when the component loads.
-   */
+  // Check whether the current user has already reported this video when the component loads.
+
   useEffect(() => {
     if (!isAuthenticated) {
       return;
@@ -114,9 +106,9 @@ export default function ReportVideoButton({
     };
   }, [videoId, isAuthenticated, supabase]);
 
-  /*
-   * Open report dialog.
-   */
+  
+  // Open report dialog.
+  
   const handleOpen = () => {
     if (!isAuthenticated) {
       window.location.href = "/login";
@@ -127,9 +119,8 @@ export default function ReportVideoButton({
     setOpen(true);
   };
 
-  /*
-   * Submit report.
-   */
+  // Submit report.
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -170,9 +161,6 @@ export default function ReportVideoButton({
           hint: insertError.hint,
         });
 
-        /*
-         * User already reported this video.
-         */
         if (insertError.code === "23505") {
           setAlreadyReported(true);
           return;
@@ -186,9 +174,6 @@ export default function ReportVideoButton({
         return;
       }
 
-      /*
-       * Report was successfully created.
-       */
       setSubmitted(true);
       setAlreadyReported(true);
       setReason("");
@@ -198,9 +183,6 @@ export default function ReportVideoButton({
     }
   };
 
-  /*
-   * Close dialog.
-   */
   const handleClose = () => {
     if (loading) {
       return;

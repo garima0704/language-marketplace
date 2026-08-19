@@ -54,7 +54,7 @@ export default async function SellerDashboardPage() {
 
   let videoCount = 0;
   let subscriberCount = 0;
-  let monthlyEarnings = 0;
+  let earnings = 0;
 
   // --------------------------------------------------
   // SELLER STATS
@@ -139,7 +139,7 @@ export default async function SellerDashboardPage() {
       );
     }
 
-    monthlyEarnings = (payments ?? []).reduce(
+      earnings = (payments ?? []).reduce(
       (total, payment) =>
         total + Number(payment.creator_amount || 0),
       0
@@ -167,7 +167,7 @@ export default async function SellerDashboardPage() {
         channelCount={sellerChannels.length}
         videoCount={videoCount}
         subscriberCount={subscriberCount}
-        monthlyEarnings={monthlyEarnings}
+        earnings={earnings}
       />
 
       <section className="space-y-4">

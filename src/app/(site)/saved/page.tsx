@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import ChannelVideoCard from "@/components/channels/ChannelVideoCard";
+import VideoCard from "@/components/VideoCard";
+import { getCategoryLabel } from "@/lib/categories";
 
 export default async function SavedVideosPage() {
   const supabase = await createClient();
@@ -55,7 +56,15 @@ export default async function SavedVideosPage() {
           id,
           channel_name,
           slug,
-          logo_url
+          logo_url,
+          user_id,
+
+          profiles (
+            id,
+            display_name,
+            avatar_url,
+            is_creator
+          )
         )
       )
     `)
@@ -70,146 +79,77 @@ export default async function SavedVideosPage() {
   }
 
   /* ========================================================
-   PREPARE VIDEOS
-======================================================== */
+     PREPARE VIDEOS
+  ======================================================== */
 
-const videos: any[] = [];
+  const videos: any[] = [];
 
-for (const saved of savedVideos ?? []) {
-  const video = Array.isArray(saved.videos)
-    ? saved.videos[0]
-    : saved.videos;
+  for (const saved of savedVideos ?? []) {
+    const video = Array.isArray(saved.videos)
+      ? saved.videos[0]
+      : saved.videos;
 
-  if (!video) continue;
+    if (!video) continue;
 
-  const channel = Array.isArray(video.channels)
-    ? video.channels[0]
-    : video.channels;
+    const channel = Array.isArray(video.channels)
+      ? video.channels[0]
+      : video.channels;
 
-  /* ======================================================
-     BUILD CATEGORY PATH
-  ====================================================== */
-
-  const categoryPath: any[] = [];
-
-  let currentCategory = Array.isArray(
-    video.categories
-  )
-    ? video.categories[0]
-    : video.categories;
-
-  while (currentCategory) {
-    categoryPath.unshift(currentCategory);
-
-    if (!currentCategory.parent_id) {
-      break;
-    }
-
-    const { data: parentCategory } =
-      await supabase
-        .from("categories")
-        .select(`
-          id,
-          slug,
-          parent_id,
-          level,
-
-          category_translations (
-            name,
-            locale_code
-          )
-        `)
-        .eq("id", currentCategory.parent_id)
-        .single();
-
-    if (!parentCategory) {
-      break;
-    }
-
-    currentCategory = parentCategory;
-  }
-
-  /* ======================================================
-    CATEGORY LABEL
+    /* ======================================================
+       CREATOR
     ====================================================== */
 
-function getCategoryName(category: any) {
-  if (!category) return "";
+    const profile = Array.isArray(channel?.profiles)
+      ? channel.profiles[0]
+      : channel?.profiles;
 
-  const translations =
-    category.category_translations ?? [];
+    const creatorName =
+      profile?.display_name ||
+      "Creator";
 
-  const translation =
-    translations.find(
-      (item: any) =>
-        item.locale_code === "en"
-    ) ??
-    translations[0];
+    const avatar =
+      profile?.avatar_url ||
+      channel?.logo_url ||
+      "";
 
-  return (
-    translation?.name ??
-    formatText(category.slug)
-  );
-}
+    /* ======================================================
+       CATEGORY
+    ====================================================== */
 
-/*
- * First category = top-level language
- * Last category = actual category assigned to video
- */
-const topCategory =
-  categoryPath[0];
+    const category = Array.isArray(video.categories)
+      ? video.categories[0]
+      : video.categories;
 
-const selectedCategory =
-  categoryPath[categoryPath.length - 1];
+    const categoryLabel =
+      await getCategoryLabel(
+        category?.id
+      );
 
-const topCategoryName =
-  getCategoryName(topCategory);
+    /* ======================================================
+       ADD VIDEO
+    ====================================================== */
 
-const selectedCategoryName =
-  getCategoryName(selectedCategory);
+    videos.push({
+      id: video.id,
+      slug: video.slug,
+      title: video.title,
+      thumbnail_url: video.thumbnail_url,
+      access_type: video.access_type,
+      view_count: video.view_count ?? 0,
+      created_at: video.created_at,
+      level: video.level,
 
-/*
- * Avoid:
- *
- * Arabic - Arabic
- *
- * when the video itself belongs directly
- * to the top-level category.
- */
-const categoryLabel =
-  topCategory?.id === selectedCategory?.id
-    ? topCategoryName
-    : `${topCategoryName} - ${selectedCategoryName}`;
+      category_label: categoryLabel,
 
-  /* ======================================================
-     ADD VIDEO
-  ====================================================== */
+      creator: creatorName,
+      avatar,
 
-  videos.push({
-    id: video.id,
-    slug: video.slug,
-    title: video.title,
-    thumbnail_url: video.thumbnail_url,
-    access_type: video.access_type,
-    view_count: video.view_count ?? 0,
-    created_at: video.created_at,
-    level: video.level,
+      channel_name:
+        channel?.channel_name ?? "",
 
-    category_label:
-      categoryLabel || undefined,
-
-    channel_name:
-      channel?.channel_name ?? null,
-
-    channel_slug:
-      channel?.slug ?? null,
-
-    channel_logo:
-      channel?.logo_url ?? null,
-
-    saved_at: saved.created_at,
-  });
-}
+      saved_at: saved.created_at,
+    });
+  }
 
   /* ========================================================
      RENDER
@@ -256,17 +196,30 @@ const categoryLabel =
              VIDEO GRID
           ================================================== */
 
-          <div className="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
             {videos.map((video: any) => (
-              <ChannelVideoCard
+              <VideoCard
                 key={video.id}
-                video={video}
-                channelName={
-                  video.channel_name ?? "Channel"
+                id={video.id}
+                slug={video.slug}
+                title={video.title}
+                creator={video.creator}
+                thumbnail={
+                  video.thumbnail_url || ""
                 }
-                channelLogo={
-                  video.channel_logo
+                avatar={video.avatar}
+                channelName={
+                  video.channel_name
+                }
+                views={video.view_count}
+                createdAt={video.created_at}
+                level={video.level}
+                accessType={
+                  video.access_type
+                }
+                categoryLabel={
+                  video.category_label || ""
                 }
               />
             ))}
@@ -277,20 +230,4 @@ const categoryLabel =
       </div>
     </div>
   );
-}
-
-/* =========================================================
-   Helper
-========================================================= */
-
-function formatText(
-  value?: string | null
-) {
-  if (!value) return "";
-
-  return value
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (char) =>
-      char.toUpperCase()
-    );
 }

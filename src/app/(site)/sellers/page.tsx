@@ -36,7 +36,7 @@ export default async function SellersPage() {
         {sellers?.map((seller) => (
           <div
             key={seller.id}
-            className="rounded-xl border bg-white p-6 shadow-sm"
+            className="rounded-xl border border-border bg-background transition hover:shadow-md p-6"
           >
             <div className="flex items-center gap-4">
               {seller.avatar_url ? (

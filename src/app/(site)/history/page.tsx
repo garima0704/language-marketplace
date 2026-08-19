@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import ChannelVideoCard from "@/components/channels/ChannelVideoCard";
+import VideoCard from "@/components/VideoCard";
+import { getCategoryLabel } from "@/lib/categories";
 
 export default async function WatchHistoryPage() {
   const supabase = await createClient();
@@ -56,12 +57,22 @@ export default async function WatchHistoryPage() {
           id,
           channel_name,
           slug,
-          logo_url
+          logo_url,
+          user_id,
+
+          profiles (
+            id,
+            display_name,
+            avatar_url,
+            is_creator
+          )
         )
       )
     `)
     .eq("user_id", user.id)
-    .order("watched_at", { ascending: false });
+    .order("watched_at", {
+      ascending: false,
+    });
 
   if (error) {
     console.error(
@@ -86,87 +97,42 @@ export default async function WatchHistoryPage() {
     // Don't show unpublished/deleted videos
     if (video.status !== "published") continue;
 
+    /* ======================================================
+       CHANNEL
+    ====================================================== */
+
     const channel = Array.isArray(video.channels)
       ? video.channels[0]
       : video.channels;
 
     /* ======================================================
-       BUILD CATEGORY PATH
+       CREATOR
     ====================================================== */
 
-    const categoryPath: any[] = [];
+    const profile = Array.isArray(channel?.profiles)
+      ? channel.profiles[0]
+      : channel?.profiles;
 
-    let currentCategory = Array.isArray(
-      video.categories
-    )
+    const creatorName =
+      profile?.display_name ||
+      "Creator";
+
+    const avatar =
+      profile?.avatar_url ||
+      channel?.logo_url ||
+      "";
+
+    /* ======================================================
+       CATEGORY
+    ====================================================== */
+
+    const category = Array.isArray(video.categories)
       ? video.categories[0]
       : video.categories;
 
-    while (currentCategory) {
-      categoryPath.unshift(currentCategory);
-
-      if (!currentCategory.parent_id) {
-        break;
-      }
-
-      const { data: parentCategory } =
-        await supabase
-          .from("categories")
-          .select(`
-            id,
-            slug,
-            parent_id,
-            level,
-
-            category_translations (
-              name,
-              locale_code
-            )
-          `)
-          .eq("id", currentCategory.parent_id)
-          .single();
-
-      if (!parentCategory) {
-        break;
-      }
-
-      currentCategory = parentCategory;
-    }
-
-    /* ======================================================
-       CATEGORY LABEL
-       
-       Example:
-       English - Business
-       Arabic - General
-       English - Specific Topics
-    ====================================================== */
-
-    const categoryLabels = categoryPath
-      .filter(
-        (category) =>
-          category.level <= 2
-      )
-      .map((category) => {
-        const translations =
-          category.category_translations ?? [];
-
-        const translation =
-          translations.find(
-            (item: any) =>
-              item.locale_code === "en"
-          ) ??
-          translations[0];
-
-        return (
-          translation?.name ??
-          formatText(category.slug)
-        );
-      })
-      .filter(Boolean);
-
-    const categoryLabel =
-      categoryLabels.join(" - ");
+    const categoryLabel = await getCategoryLabel(
+      category?.id
+    );
 
     /* ======================================================
        ADD VIDEO
@@ -182,17 +148,13 @@ export default async function WatchHistoryPage() {
       created_at: video.created_at,
       level: video.level,
 
-      category_label:
-        categoryLabel || undefined,
+      category_label: categoryLabel,
+
+      creator: creatorName,
+      avatar,
 
       channel_name:
-        channel?.channel_name ?? null,
-
-      channel_slug:
-        channel?.slug ?? null,
-
-      channel_logo:
-        channel?.logo_url ?? null,
+        channel?.channel_name ?? "",
 
       watched_at: item.watched_at,
       progress_seconds:
@@ -245,41 +207,30 @@ export default async function WatchHistoryPage() {
              VIDEO GRID
           ================================================== */
 
-          <div className="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {videos.map((video: any) => (
-              <ChannelVideoCard
+              <VideoCard
                 key={video.id}
-                video={video}
-                channelName={
-                  video.channel_name ?? "Channel"
-                }
-                channelLogo={
-                  video.channel_logo
+                id={video.id}
+                slug={video.slug}
+                title={video.title}
+                creator={video.creator}
+                thumbnail={video.thumbnail_url || ""}
+                avatar={video.avatar}
+                channelName={video.channel_name}
+                views={video.view_count}
+                createdAt={video.created_at}
+                level={video.level}
+                accessType={video.access_type}
+                categoryLabel={
+                  video.category_label || ""
                 }
               />
             ))}
-
           </div>
         )}
 
       </div>
     </div>
   );
-}
-
-/* =========================================================
-   Helper
-========================================================= */
-
-function formatText(
-  value?: string | null
-) {
-  if (!value) return "";
-
-  return value
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (char) =>
-      char.toUpperCase()
-    );
 }

@@ -1,4 +1,3 @@
-
 @import "tailwindcss";
 
 :root {
@@ -8,26 +7,30 @@
 
   --primary: #111111;
   --secondary: #666666;
-
+  
   --light-bg: #f7f7f7;
-
   --border: #e5e5e5;
   --muted: #737373;
   --muted-bg: #f1f1f1;
+
+  /* Rating */
+  --rating: #F8BA29;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-
+  
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
-
+  
   --color-light-bg: var(--light-bg);
-
   --color-border: var(--border);
   --color-muted: var(--muted);
   --color-muted-bg: var(--muted-bg);
+
+  /* Rating */
+  --color-rating: var(--rating);
 }
 
 body {
