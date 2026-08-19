@@ -18,25 +18,27 @@ import {
   ChevronRight,
   Globe2,
   Languages,
+  LockKeyhole,
   MessageCircle,
   Sparkles,
   Star,
   UserRound,
   Volume2,
-  LockKeyhole,
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
+
 import SaveVideoButton from "@/components/videos/SaveVideoButton";
 import VideoLikeButton from "@/components/videos/VideoLikeButton";
 import VideoComments from "@/components/videos/VideoComments";
+import ReportVideoButton from "@/components/videos/ReportVideoButton";
 
 interface VideoDetailProps {
   video: any;
 }
 
 /* =========================================================
-   Helpers
+   HELPERS
 ========================================================= */
 
 function formatTimeAgo(dateString?: string | null) {
@@ -167,14 +169,14 @@ function formatDuration(seconds: number) {
 }
 
 /* =========================================================
-   Main Component
+   MAIN COMPONENT
 ========================================================= */
 
 export default function VideoDetail({
   video,
 }: VideoDetailProps) {
   /* -------------------------------------------------------
-     Channel
+     CHANNEL
   ------------------------------------------------------- */
 
   const channel = Array.isArray(video.channels)
@@ -182,7 +184,7 @@ export default function VideoDetail({
     : video.channels;
 
   /* -------------------------------------------------------
-     Profile / Creator
+     PROFILE / CREATOR
   ------------------------------------------------------- */
 
   const profile = Array.isArray(channel?.profiles)
@@ -200,7 +202,7 @@ export default function VideoDetail({
     profile?.avatar_url || "";
 
   /* -------------------------------------------------------
-     Language
+     LANGUAGE
   ------------------------------------------------------- */
 
   const language =
@@ -212,7 +214,7 @@ export default function VideoDetail({
     language;
 
   /* -------------------------------------------------------
-     Subtitle
+     SUBTITLES
   ------------------------------------------------------- */
 
   const subtitleLanguage =
@@ -220,15 +222,15 @@ export default function VideoDetail({
     formatText(video.subtitle_language_code);
 
   /* -------------------------------------------------------
-     Access
+     ACCESS
   ------------------------------------------------------- */
 
   const isFree =
     video.access_type === "free";
 
   const canWatch =
-  video.can_watch === true &&
-  !!video.video_url;
+    video.can_watch === true &&
+    !!video.video_url;
 
   const subscriptionPrice = formatPrice(
     channel?.subscription_price,
@@ -236,288 +238,301 @@ export default function VideoDetail({
   );
 
   /* -------------------------------------------------------
-     Duration
+     VIDEO REFS / STATE
   ------------------------------------------------------- */
 
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef =
+    useRef<HTMLVideoElement>(null);
 
   const supabase = createClient();
 
-  const viewRecordedRef = useRef(false);
-  const watchedForViewRef = useRef(0);
-  const lastPlaybackTimeRef = useRef<number | null>(null);
+  const viewRecordedRef =
+    useRef(false);
+
+  const watchedForViewRef =
+    useRef(0);
+
+  const lastPlaybackTimeRef =
+    useRef<number | null>(null);
 
   const [duration, setDuration] =
     useState<number | null>(null);
 
+  /* =======================================================
+     WATCH HISTORY
+  ======================================================= */
+
   useEffect(() => {
-  const videoElement = videoRef.current;
+    const videoElement = videoRef.current;
 
-  if (!videoElement) return;
+    if (!videoElement) return;
 
-  if (!video.is_authenticated) return;
+    if (!video.is_authenticated) return;
 
-  if (!video.can_watch || !video.video_url) {
-    return;
-  }
-
-  let lastSavedTime = 0;
-
-  const saveHistory = async () => {
-    const currentTime =
-      videoElement.currentTime;
-
-    if (!Number.isFinite(currentTime)) {
+    if (!video.can_watch || !video.video_url) {
       return;
     }
 
-    // Avoid sending requests too frequently
-    if (
-      currentTime - lastSavedTime < 5 &&
-      !videoElement.paused
-    ) {
-      return;
-    }
+    let lastSavedTime = 0;
 
-    lastSavedTime = currentTime;
+    const saveHistory = async () => {
+      const currentTime =
+        videoElement.currentTime;
 
-    try {
-      await fetch("/api/watch-history", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          videoId: video.id,
-          progressSeconds: Math.floor(
-            currentTime
-          ),
-        }),
-      });
-    } catch (error) {
-      console.error(
-        "Failed to save watch history:",
-        error
-      );
-    }
-  };
+      if (!Number.isFinite(currentTime)) {
+        return;
+      }
 
-  const handleTimeUpdate = () => {
-    saveHistory();
-  };
+      if (
+        currentTime - lastSavedTime < 5 &&
+        !videoElement.paused
+      ) {
+        return;
+      }
 
-  const handlePause = () => {
-    saveHistory();
-  };
+      lastSavedTime = currentTime;
 
-  const handleEnded = () => {
-    saveHistory();
-  };
+      try {
+        await fetch("/api/watch-history", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            videoId: video.id,
+            progressSeconds: Math.floor(
+              currentTime
+            ),
+          }),
+        });
+      } catch (error) {
+        console.error(
+          "Failed to save watch history:",
+          error
+        );
+      }
+    };
 
-  videoElement.addEventListener(
-    "timeupdate",
-    handleTimeUpdate
-  );
+    const handleTimeUpdate = () => {
+      saveHistory();
+    };
 
-  videoElement.addEventListener(
-    "pause",
-    handlePause
-  );
+    const handlePause = () => {
+      saveHistory();
+    };
 
-  videoElement.addEventListener(
-    "ended",
-    handleEnded
-  );
+    const handleEnded = () => {
+      saveHistory();
+    };
 
-  return () => {
-    saveHistory();
-
-    videoElement.removeEventListener(
+    videoElement.addEventListener(
       "timeupdate",
       handleTimeUpdate
     );
 
-    videoElement.removeEventListener(
+    videoElement.addEventListener(
       "pause",
       handlePause
     );
 
-    videoElement.removeEventListener(
+    videoElement.addEventListener(
       "ended",
       handleEnded
     );
-  };
-}, [
-  video.id,
-  video.is_authenticated,
-  video.can_watch,
-  video.video_url,
-]);
 
-useEffect(() => {
-  const videoElement = videoRef.current;
+    return () => {
+      saveHistory();
 
-  if (!videoElement) return;
-
-  // Only track videos the user is actually allowed to watch.
-  if (!video.is_authenticated) return;
-  if (!video.can_watch || !video.video_url) return;
-
-  let mounted = true;
-
-  const recordView = async () => {
-    if (!mounted) return;
-    if (viewRecordedRef.current) return;
-
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        console.error(
-          "Unable to get user for view tracking:",
-          userError
-        );
-        return;
-      }
-
-      const { error } = await supabase.rpc(
-        "record_video_view",
-        {
-          p_video_id: video.id,
-          p_viewer_id: user.id,
-          p_session_id: null,
-        }
+      videoElement.removeEventListener(
+        "timeupdate",
+        handleTimeUpdate
       );
 
-      if (error) {
+      videoElement.removeEventListener(
+        "pause",
+        handlePause
+      );
+
+      videoElement.removeEventListener(
+        "ended",
+        handleEnded
+      );
+    };
+  }, [
+    video.id,
+    video.is_authenticated,
+    video.can_watch,
+    video.video_url,
+  ]);
+
+  /* =======================================================
+     VIEW TRACKING
+  ======================================================= */
+
+  useEffect(() => {
+    const videoElement = videoRef.current;
+
+    if (!videoElement) return;
+
+    if (!video.is_authenticated) return;
+
+    if (!video.can_watch || !video.video_url) {
+      return;
+    }
+
+    let mounted = true;
+
+    const recordView = async () => {
+      if (!mounted) return;
+
+      if (viewRecordedRef.current) return;
+
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          console.error(
+            "Unable to get user for view tracking:",
+            userError
+          );
+          return;
+        }
+
+        const { error } =
+          await supabase.rpc(
+            "record_video_view",
+            {
+              p_video_id: video.id,
+              p_viewer_id: user.id,
+              p_session_id: null,
+            }
+          );
+
+        if (error) {
+          console.error(
+            "Failed to record video view:",
+            error
+          );
+          return;
+        }
+
+        viewRecordedRef.current = true;
+
+        console.log(
+          "Video view recorded:",
+          video.id
+        );
+      } catch (error) {
         console.error(
           "Failed to record video view:",
           error
         );
+      }
+    };
+
+    const handlePlay = () => {
+      lastPlaybackTimeRef.current =
+        videoElement.currentTime;
+    };
+
+    const handlePause = () => {
+      lastPlaybackTimeRef.current = null;
+    };
+
+    const handleEnded = () => {
+      lastPlaybackTimeRef.current = null;
+    };
+
+    const handleTimeUpdate = () => {
+      if (viewRecordedRef.current) {
         return;
       }
 
-      viewRecordedRef.current = true;
+      const currentTime =
+        videoElement.currentTime;
 
-      console.log(
-        "Video view recorded:",
-        video.id
-      );
-    } catch (error) {
-      console.error(
-        "Failed to record video view:",
-        error
-      );
-    }
-  };
-
-  const handlePlay = () => {
-    lastPlaybackTimeRef.current =
-      videoElement.currentTime;
-  };
-
-  const handlePause = () => {
-    lastPlaybackTimeRef.current = null;
-  };
-
-  const handleEnded = () => {
-    lastPlaybackTimeRef.current = null;
-  };
-
-  const handleTimeUpdate = () => {
-    if (viewRecordedRef.current) return;
-
-    const currentTime =
-      videoElement.currentTime;
-
-    if (!Number.isFinite(currentTime)) return;
-
-    const previousTime =
-      lastPlaybackTimeRef.current;
-
-    if (previousTime !== null) {
-      const delta =
-        currentTime - previousTime;
-
-      /*
-       * Only count normal forward playback.
-       *
-       * Ignore:
-       * - seeking forward
-       * - seeking backward
-       * - large jumps
-       */
-      if (delta > 0 && delta <= 2) {
-        watchedForViewRef.current += delta;
+      if (!Number.isFinite(currentTime)) {
+        return;
       }
-    }
 
-    lastPlaybackTimeRef.current =
-      currentTime;
+      const previousTime =
+        lastPlaybackTimeRef.current;
 
-    /*
-     * Ten seconds of actual playback
-     * counts as one view.
-     */
-    if (
-      watchedForViewRef.current >= 10
-    ) {
-      recordView();
-    }
-  };
+      if (previousTime !== null) {
+        const delta =
+          currentTime - previousTime;
 
-  videoElement.addEventListener(
-    "play",
-    handlePlay
-  );
+        if (delta > 0 && delta <= 2) {
+          watchedForViewRef.current += delta;
+        }
+      }
 
-  videoElement.addEventListener(
-    "pause",
-    handlePause
-  );
+      lastPlaybackTimeRef.current =
+        currentTime;
 
-  videoElement.addEventListener(
-    "ended",
-    handleEnded
-  );
+      if (
+        watchedForViewRef.current >= 10
+      ) {
+        recordView();
+      }
+    };
 
-  videoElement.addEventListener(
-    "timeupdate",
-    handleTimeUpdate
-  );
-
-  return () => {
-    mounted = false;
-
-    videoElement.removeEventListener(
+    videoElement.addEventListener(
       "play",
       handlePlay
     );
 
-    videoElement.removeEventListener(
+    videoElement.addEventListener(
       "pause",
       handlePause
     );
 
-    videoElement.removeEventListener(
+    videoElement.addEventListener(
       "ended",
       handleEnded
     );
 
-    videoElement.removeEventListener(
+    videoElement.addEventListener(
       "timeupdate",
       handleTimeUpdate
     );
-  };
-}, [
-  video.id,
-  video.is_authenticated,
-  video.can_watch,
-  video.video_url,
-]);
+
+    return () => {
+      mounted = false;
+
+      videoElement.removeEventListener(
+        "play",
+        handlePlay
+      );
+
+      videoElement.removeEventListener(
+        "pause",
+        handlePause
+      );
+
+      videoElement.removeEventListener(
+        "ended",
+        handleEnded
+      );
+
+      videoElement.removeEventListener(
+        "timeupdate",
+        handleTimeUpdate
+      );
+    };
+  }, [
+    video.id,
+    video.is_authenticated,
+    video.can_watch,
+    video.video_url,
+  ]);
+
+  /* =======================================================
+     VIDEO DURATION
+  ======================================================= */
 
   useEffect(() => {
     const videoElement = videoRef.current;
@@ -550,9 +565,9 @@ useEffect(() => {
     };
   }, [video.video_id]);
 
-  /* -------------------------------------------------------
-     Category breadcrumbs
-  ------------------------------------------------------- */
+  /* =======================================================
+     CATEGORY BREADCRUMBS
+  ======================================================= */
 
   const categoryPath =
     Array.isArray(video.category_path)
@@ -560,6 +575,10 @@ useEffect(() => {
       : Array.isArray(video.categories)
         ? video.categories
         : [];
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <div className="w-full">
@@ -571,10 +590,8 @@ useEffect(() => {
 
         <nav
           aria-label="Breadcrumb"
-          className="mb-8 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-sm"
+          className="mb-6 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-sm"
         >
-          {/* Home */}
-
           <Link
             href="/"
             className="shrink-0 text-muted transition hover:text-foreground"
@@ -584,8 +601,6 @@ useEffect(() => {
 
           <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
 
-          {/* Videos */}
-
           <Link
             href="/videos"
             className="shrink-0 text-muted transition hover:text-foreground"
@@ -593,16 +608,19 @@ useEffect(() => {
             Videos
           </Link>
 
-          {/* Categories */}
-
           {categoryPath.map(
-            (category: any, index: number) => {
-              const categorySlug = categoryPath
-                .slice(0, index + 1)
-                .map(
-                  (item: any) => item.slug
-                )
-                .join("/");
+            (
+              category: any,
+              index: number
+            ) => {
+              const categorySlug =
+                categoryPath
+                  .slice(0, index + 1)
+                  .map(
+                    (item: any) =>
+                      item.slug
+                  )
+                  .join("/");
 
               return (
                 <div
@@ -616,7 +634,7 @@ useEffect(() => {
 
                   <Link
                     href={`/categories/${categorySlug}`}
-                    className="shrink-0 text-muted transition hover:text-foreground"
+                    className="text-muted transition hover:text-foreground"
                   >
                     {category.name}
                   </Link>
@@ -625,43 +643,33 @@ useEffect(() => {
             }
           )}
 
-          {/* Current Video */}
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
 
-          <div className="flex min-w-0 shrink-0 items-center gap-1.5">
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
-
-            <span
-              className="max-w-[280px] truncate text-muted"
-              title={video.title}
-            >
-              {video.title}
-            </span>
-          </div>
+          <span
+            className="max-w-[300px] truncate text-muted"
+            title={video.title}
+          >
+            {video.title}
+          </span>
         </nav>
 
         {/* =================================================
             TITLE + CREATOR
         ================================================== */}
 
-        <div className="mb-8">
-
+        <div className="mb-6">
           <h1 className="max-w-5xl text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl lg:text-4xl">
             {video.title}
           </h1>
 
-          {/* Creator + Save */}
-
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
-            {/* Creator */}
-
+          <div className="mt-4">
             <Link
               href={
                 username
                   ? `/profile/${username}`
                   : "#"
               }
-              className="group inline-flex items-center gap-3 rounded-lg transition"
+              className="group inline-flex items-center gap-3"
             >
               <Avatar className="h-10 w-10 shrink-0">
                 <AvatarImage
@@ -676,18 +684,18 @@ useEffect(() => {
 
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-semibold text-foreground transition group-hover:underline">
+                  <span className="text-sm font-semibold text-foreground group-hover:underline">
                     {userName}
                   </span>
 
                   {username && (
-                    <span className="text-sm text-muted transition group-hover:text-foreground">
+                    <span className="text-sm text-muted">
                       @{username}
                     </span>
                   )}
                 </div>
 
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
+                <div className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-muted">
                   <span>
                     {video.view_count ?? 0} views
                   </span>
@@ -707,7 +715,7 @@ useEffect(() => {
         </div>
 
         {/* =================================================
-            VIDEO + DETAILS
+            MAIN CONTENT
         ================================================== */}
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -716,7 +724,7 @@ useEffect(() => {
               LEFT COLUMN
           ================================================== */}
 
-          <div className="min-w-0">
+          <main className="min-w-0">
 
             {/* =================================================
                 VIDEO PLAYER
@@ -724,11 +732,8 @@ useEffect(() => {
 
             <div className="relative overflow-hidden rounded-xl bg-black">
 
-              {/* Free video */}
-
               {canWatch ? (
                 <div className="aspect-video">
-
                   <video
                     ref={videoRef}
                     controls
@@ -748,19 +753,13 @@ useEffect(() => {
                     the video player.
                   </video>
 
-                  {/* Duration */}
-
                   {duration && (
                     <div className="pointer-events-none absolute bottom-12 right-3 rounded bg-black/80 px-2 py-1 text-xs font-medium text-white">
                       {formatDuration(duration)}
                     </div>
                   )}
-
                 </div>
               ) : (
-
-                /* Subscriber-only video */
-
                 <div className="relative aspect-video">
 
                   {video.thumbnail_url ? (
@@ -773,11 +772,7 @@ useEffect(() => {
                     <div className="h-full w-full bg-muted-bg" />
                   )}
 
-                  {/* Dark overlay */}
-
                   <div className="absolute inset-0 bg-black/55" />
-
-                  {/* Duration */}
 
                   {duration && (
                     <div className="absolute bottom-3 right-3 rounded bg-black/80 px-2 py-1 text-xs font-medium text-white">
@@ -785,68 +780,64 @@ useEffect(() => {
                     </div>
                   )}
 
-                  {/* Locked video message */}
+                  <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+                    <div className="max-w-sm">
 
-                    <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
-                      <div className="max-w-sm">
+                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
+                        <LockKeyhole className="h-6 w-6 text-white" />
+                      </div>
 
-                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
-                          <LockKeyhole className="h-6 w-6 text-white" />
-                        </div>
+                      {!video.is_authenticated && (
+                        <>
+                          <h2 className="mt-4 text-xl font-semibold text-white">
+                            Login to watch
+                          </h2>
 
-                        {/* Logged out */}
-                        {!video.is_authenticated && (
+                          <p className="mt-2 text-sm leading-6 text-white/80">
+                            {isFree
+                              ? "Log in to your account to watch this free video."
+                              : "Log in to your account to watch this video."}
+                          </p>
+
+                          <Link href="/login">
+                            <Button className="mt-4 rounded-lg bg-white px-5 text-black hover:bg-white/90">
+                              Log in to Watch
+                            </Button>
+                          </Link>
+                        </>
+                      )}
+
+                      {video.is_authenticated &&
+                        !isFree &&
+                        !video.has_active_subscription && (
                           <>
                             <h2 className="mt-4 text-xl font-semibold text-white">
-                              Login to watch
+                              Subscribers only
                             </h2>
 
                             <p className="mt-2 text-sm leading-6 text-white/80">
-                              {isFree
-                                ? "Log in to your account to watch this free video."
-                                : "Log in to your account to watch this video."}
+                              Subscribe to this channel to watch this video.
                             </p>
 
-                            <Link href="/login">
-                              <Button className="mt-4 rounded-lg bg-white px-5 text-black hover:bg-white/90">
-                                Log in to Watch
-                              </Button>
-                            </Link>
+                            {subscriptionPrice && (
+                              <p className="mt-3 text-sm font-medium text-white">
+                                {subscriptionPrice} / month
+                              </p>
+                            )}
+
+                            {channel?.slug && (
+                              <Link
+                                href={`/channels/${channel.slug}`}
+                              >
+                                <Button className="mt-4 rounded-lg bg-white px-5 text-black hover:bg-white/90">
+                                  Subscribe to Channel
+                                </Button>
+                              </Link>
+                            )}
                           </>
                         )}
 
-                        {/* Logged in but subscriber-only */}
-                        {video.is_authenticated &&
-                          !isFree &&
-                          !video.has_active_subscription && (
-                            <>
-                              <h2 className="mt-4 text-xl font-semibold text-white">
-                                Subscribers only
-                              </h2>
-
-                              <p className="mt-2 text-sm leading-6 text-white/80">
-                                Subscribe to this channel to watch this video.
-                              </p>
-
-                              {subscriptionPrice && (
-                                <p className="mt-3 text-sm font-medium text-white">
-                                  {subscriptionPrice} / month
-                                </p>
-                              )}
-
-                              {channel?.slug && (
-                                <Link
-                                  href={`/channels/${channel.slug}`}
-                                >
-                                  <Button className="mt-4 rounded-lg bg-white px-5 text-black hover:bg-white/90">
-                                    Subscribe to Channel
-                                  </Button>
-                                </Link>
-                              )}
-                            </>
-                          )}
-
-                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -854,33 +845,39 @@ useEffect(() => {
             </div>
 
             {/* =================================================
-                  VIDEO ACTIONS
-              ================================================= */}
+                VIDEO ACTIONS
+            ================================================== */}
 
-              <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <VideoLikeButton
+                videoId={video.id}
+                isAuthenticated={
+                  video.is_authenticated
+                }
+              />
 
-                <VideoLikeButton
-                  videoId={video.id}
-                  isAuthenticated={video.is_authenticated}
-                />
+              <SaveVideoButton
+                videoId={video.id}
+                isSaved={video.is_saved}
+                isAuthenticated={
+                  video.is_authenticated
+                }
+              />
 
-                {/* Save Video */}
-
-                <SaveVideoButton
-                  videoId={video.id}
-                  isSaved={video.is_saved}
-                  isAuthenticated={video.is_authenticated}
-                />
-
-              </div>
+              <ReportVideoButton
+                videoId={video.id}
+                isAuthenticated={
+                  video.is_authenticated
+                }
+              />
+            </div>
 
             {/* =================================================
                 DESCRIPTION
             ================================================== */}
 
-            <Card className="mt-6 rounded-xl border-border p-6 shadow-none">
-
-              <h2 className="text-lg font-semibold text-foreground">
+            <Card className="mt-5 rounded-xl border-border bg-white p-5 shadow-none">
+              <h2 className="text-base font-semibold text-foreground">
                 Description
               </h2>
 
@@ -894,98 +891,97 @@ useEffect(() => {
                   for this video.
                 </p>
               )}
-
             </Card>
 
             {/* =================================================
-                CHANNEL
+                RATINGS & REVIEWS
             ================================================== */}
 
-            <Card className="mt-6 rounded-xl border-border p-5 shadow-none">
+            <section className="mt-8">
 
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mb-5 flex items-center justify-between border-b border-border pb-3">
+                <h2 className="text-xl font-semibold text-foreground">
+                  Ratings & Reviews
+                </h2>
 
-                <Link
-                  href={
-                    channel?.slug
-                      ? `/channels/${channel.slug}`
-                      : "#"
-                  }
-                  className="group flex items-center gap-4"
-                >
-                  <Avatar className="h-12 w-12">
-
-                    <AvatarImage
-                      src={
-                        channel?.logo_url ?? ""
-                      }
-                      alt={
-                        channel?.channel_name ??
-                        userName
-                      }
-                    />
-
-                    <AvatarFallback className="bg-primary text-white">
-                      {getInitials(
-                        channel?.channel_name
-                      )}
-                    </AvatarFallback>
-
-                  </Avatar>
-
-                  <div>
-
-                    <p className="text-xs text-muted">
-                      Posted under
-                    </p>
-
-                    <p className="font-semibold text-foreground group-hover:underline">
-                      {channel?.channel_name ||
-                        "Channel"}
-                    </p>
-
-                  </div>
-                </Link>
-
-                {channel?.slug && (
-                  <Link
-                    href={`/channels/${channel.slug}`}
-                  >
-                    <Button
-                      variant="outline"
-                      className="rounded-lg border-border"
-                    >
-                      View Channel
-                    </Button>
-                  </Link>
-                )}
-
+                <span className="text-sm text-muted">
+                  0 reviews
+                </span>
               </div>
 
-            </Card>
+              <div className="grid gap-6 sm:grid-cols-[180px_minmax(0,1fr)]">
 
-          </div>
+                <div className="rounded-xl bg-muted-bg p-5">
+                  <div className="text-4xl font-bold tracking-tight text-foreground">
+                    —
+                  </div>
+
+                  <div className="mt-2 flex gap-1 text-muted">
+                    {[1, 2, 3, 4, 5].map(
+                      (star) => (
+                        <Star
+                          key={star}
+                          className="h-4 w-4"
+                        />
+                      )
+                    )}
+                  </div>
+
+                  <p className="mt-2 text-sm text-muted">
+                    No ratings yet
+                  </p>
+                </div>
+
+                <div className="flex flex-col justify-center">
+                  <p className="font-medium text-foreground">
+                    Be the first to review this video
+                  </p>
+
+                  <p className="mt-1 max-w-lg text-sm leading-6 text-muted">
+                    Share your experience and help
+                    other learners decide if this
+                    video is right for them.
+                  </p>
+
+                  <Button
+                    variant="outline"
+                    className="mt-4 w-fit rounded-lg border-border"
+                  >
+                    Write a Review
+                  </Button>
+                </div>
+
+              </div>
+            </section>
+
+          </main>
 
           {/* =================================================
-              RIGHT COLUMN — VIDEO DETAILS
+              RIGHT SIDEBAR
           ================================================== */}
 
-          <aside>
+          <aside className="self-start">
 
-            <Card className="rounded-xl border-border p-5 shadow-none">
+            {/* =================================================
+                VIDEO DETAILS
+            ================================================== */}
 
-              <h2 className="text-base font-semibold text-foreground">
-                Video Details
-              </h2>
+            <Card className="rounded-xl border-border bg-muted-bg p-4 shadow-none">
 
-              <div className="mt-3 space-y-0.5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold text-foreground">
+                  Video Details
+                </h2>
+              </div>
 
-                {/* Skill */}
+              {/* Compact 2-column details */}
+
+              <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-3">
 
                 {video.level && (
-                  <DetailLine
+                  <CompactDetail
                     icon={
-                      <Sparkles className="h-4 w-4" />
+                      <Sparkles className="h-3.5 w-3.5" />
                     }
                     label="Skill"
                     value={formatText(
@@ -994,11 +990,9 @@ useEffect(() => {
                   />
                 )}
 
-                {/* Language */}
-
-                <DetailLine
+                <CompactDetail
                   icon={
-                    <Globe2 className="h-4 w-4" />
+                    <Globe2 className="h-3.5 w-3.5" />
                   }
                   label="Language"
                   value={
@@ -1007,23 +1001,19 @@ useEffect(() => {
                   }
                 />
 
-                {/* Subtitles */}
-
                 {subtitleLanguage && (
-                  <DetailLine
+                  <CompactDetail
                     icon={
-                      <Languages className="h-4 w-4" />
+                      <Languages className="h-3.5 w-3.5" />
                     }
                     label="Subtitles"
                     value={subtitleLanguage}
                   />
                 )}
 
-                {/* Native Speaker */}
-
-                <DetailLine
+                <CompactDetail
                   icon={
-                    <UserRound className="h-4 w-4" />
+                    <UserRound className="h-3.5 w-3.5" />
                   }
                   label="Native Speaker"
                   value={
@@ -1033,27 +1023,23 @@ useEffect(() => {
                   }
                 />
 
-                {/* Original Captions */}
-
-                <DetailLine
+                <CompactDetail
                   icon={
-                    <Captions className="h-4 w-4" />
+                    <Captions className="h-3.5 w-3.5" />
                   }
-                  label="Original Captions"
+                  label="Captions"
                   value={
                     video.captions_original
-                      ? "Yes"
+                      ? "Original"
                       : "No"
                   }
                 />
 
-                {/* Idioms */}
-
-                <DetailLine
+                <CompactDetail
                   icon={
-                    <MessageCircle className="h-4 w-4" />
+                    <MessageCircle className="h-3.5 w-3.5" />
                   }
-                  label="Explains Idioms"
+                  label="Idioms"
                   value={
                     video.explains_idioms
                       ? "Yes"
@@ -1061,13 +1047,11 @@ useEffect(() => {
                   }
                 />
 
-                {/* Technical */}
-
-                <DetailLine
+                <CompactDetail
                   icon={
-                    <Sparkles className="h-4 w-4" />
+                    <Sparkles className="h-3.5 w-3.5" />
                   }
-                  label="Technical Language"
+                  label="Technical"
                   value={
                     video.explains_technical_lingo
                       ? "Yes"
@@ -1075,12 +1059,9 @@ useEffect(() => {
                   }
                 />
 
-                {/* Profanity */}
-
-                <DetailLine
+                <CompactDetail
                   icon={
-                    <MessageCircle className="h-4 w-4"
-                    />
+                    <MessageCircle className="h-3.5 w-3.5" />
                   }
                   label="Profanity"
                   value={
@@ -1090,11 +1071,9 @@ useEffect(() => {
                   }
                 />
 
-                {/* AI Voice */}
-
-                <DetailLine
+                <CompactDetail
                   icon={
-                    <Volume2 className="h-4 w-4" />
+                    <Volume2 className="h-3.5 w-3.5" />
                   }
                   label="AI Voice"
                   value={
@@ -1106,122 +1085,171 @@ useEffect(() => {
 
               </div>
 
-              {/* =================================================
-                  ACCESS
-              ================================================== */}
+              {/* Access / Subscription */}
 
-              {!isFree && (
-                <div className="mt-5 border-t border-border pt-5">
+<div className="mt-2 border-t border-border/70 pt-2">
 
-                  <p className="text-sm text-muted">
-                    Channel subscription
-                  </p>
+  {isFree ? (
+    <div className="flex items-center justify-between gap-3">
+      <div>
+        <p className="text-xs text-muted">
+          Video access
+        </p>
 
-                </div>
-              )}
+        <p className="mt-0.5 text-base font-semibold text-foreground">
+          Free
+        </p>
+      </div>
 
-              {isFree && (
-                <div className="mt-5 flex items-center gap-2 border-t border-border pt-5 text-sm font-medium text-foreground">
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-foreground">
+        <Check className="h-3.5 w-3.5" />
+        Available
+      </span>
+    </div>
+  ) : (
+    <div className="flex items-center justify-between gap-3">
 
-                  <Check className="h-4 w-4" />
+      <div>
+        <p className="text-xs text-muted">
+          Channel subscription
+        </p>
 
-                  Free to watch
+        {subscriptionPrice && (
+          <p className="mt-0.5 text-base font-semibold text-foreground">
+            {subscriptionPrice}
 
-                </div>
-              )}
+            <span className="ml-1 text-xs font-normal text-muted">
+              / month
+            </span>
+          </p>
+        )}
+      </div>
+
+      {video.has_active_subscription ? (
+        <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-foreground">
+          <Check className="h-3.5 w-3.5" />
+          Subscribed
+        </span>
+      ) : (
+        channel?.slug && (
+          <Link href={`/channels/${channel.slug}`}>
+            <Button
+              size="sm"
+              className="rounded-lg px-3"
+            >
+              Subscribe
+            </Button>
+          </Link>
+        )
+      )}
+
+    </div>
+  )}
+
+</div>
+
 
             </Card>
 
+          
+
+{/* =================================================
+    CHANNEL
+================================================= */}
+
+<Card className="mt-7 rounded-xl border-border bg-white p-4 shadow-none">
+
+  {/* Posted under */}
+  <p className="text-xs font-medium text-muted">
+    Posted under
+  </p>
+
+  {/* Channel */}
+  <div className="flex items-center gap-3">
+
+    <Link
+      href={
+        channel?.slug
+          ? `/channels/${channel.slug}`
+          : "#"
+      }
+      className="group flex min-w-0 items-center gap-3"
+    >
+      <Avatar className="h-11 w-11 shrink-0">
+        <AvatarImage
+          src={channel?.logo_url ?? ""}
+          alt={
+            channel?.channel_name ??
+            userName
+          }
+        />
+
+        <AvatarFallback className="bg-primary text-white">
+          {getInitials(
+            channel?.channel_name ||
+              userName
+          )}
+        </AvatarFallback>
+      </Avatar>
+
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-foreground group-hover:underline">
+          {channel?.channel_name || "Channel"}
+        </p>
+
+        {username && (
+          <p className="truncate text-xs text-muted">
+            @{username}
+          </p>
+        )}
+      </div>
+    </Link>
+
+  </div>
+
+  {/* View Channel button */}
+  {channel?.slug && (
+    <Link
+      href={`/channels/${channel.slug}`}
+      className="block"
+    >
+      <Button
+        variant="outline"
+        className="w-full rounded-lg border-border"
+      >
+        View Channel
+      </Button>
+    </Link>
+  )}
+
+</Card>
           </aside>
 
         </div>
 
         {/* =================================================
-            RATINGS & REVIEWS
-            FULL WIDTH
+            COMMENTS
+        ================================================== */}
+
+        <section className="mt-10">
+          <VideoComments
+            videoId={video.id}
+            isAuthenticated={
+              video.is_authenticated
+            }
+          />
+        </section>
+
+        {/* =================================================
+            RELATED VIDEOS
         ================================================== */}
 
         <section className="mt-10">
 
           <div className="border-b border-border pb-3">
-
-            <h2 className="text-xl font-semibold text-foreground">
-              Ratings & Reviews
-            </h2>
-
-          </div>
-
-          <div className="py-6">
-
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-
-              <div>
-
-                <div className="text-3xl font-bold text-foreground">
-                  —
-                </div>
-
-                <div className="mt-2 flex gap-0.5 text-muted">
-
-                  <Star className="h-4 w-4" />
-                  <Star className="h-4 w-4" />
-                  <Star className="h-4 w-4" />
-                  <Star className="h-4 w-4" />
-                  <Star className="h-4 w-4" />
-
-                </div>
-
-              </div>
-
-              <div>
-
-                <p className="font-medium text-foreground">
-                  No reviews yet
-                </p>
-
-                <p className="mt-1 text-sm text-muted">
-                  Be the first to rate and
-                  review this video.
-                </p>
-
-              </div>
-
-            </div>
-
-            <Button
-              variant="outline"
-              className="mt-5 rounded-lg border-border"
-            >
-              Write a Review
-            </Button>
-
-          </div>
-
-        </section>
-
-         {/* =================================================
-            COMMENTS
-            FULL WIDTH
-        ================================================== */}
-
-        <VideoComments
-          videoId={video.id}
-          isAuthenticated={video.is_authenticated}
-        />
-
-        {/* =================================================
-            RELATED VIDEOS
-            FULL WIDTH
-        ================================================== */}
-
-        <section className="mt-8">
-
-          <div className="border-b border-border pb-3">
-
             <h2 className="text-xl font-semibold text-foreground">
               Related Videos
             </h2>
-
           </div>
 
           <div className="py-6">
@@ -1249,10 +1277,10 @@ useEffect(() => {
 }
 
 /* =========================================================
-   Detail Line
+   COMPACT DETAIL
 ========================================================= */
 
-function DetailLine({
+function CompactDetail({
   icon,
   label,
   value,
@@ -1261,25 +1289,30 @@ function DetailLine({
   label: string;
   value: string;
 }) {
+  const isLongValue =
+    label === "Language" ||
+    label === "Subtitles";
+
   return (
-    <div className="flex items-start gap-3 py-2">
-
-      <div className="mt-0.5 shrink-0 text-muted">
+    <div className="min-w-0">
+      <div className="flex items-center gap-1.5 text-muted">
         {icon}
+
+        <span className="truncate text-[11px] font-medium">
+          {label}
+        </span>
       </div>
 
-      <div className="flex min-w-0 flex-1 items-start gap-2">
-
-        <span className="shrink-0 text-sm text-muted">
-          {label}:
-        </span>
-
-        <span className="min-w-0 text-sm font-medium leading-5 text-foreground">
-          {value}
-        </span>
-
-      </div>
-
+      <p
+        className={`mt-0.5 pl-5 text-xs font-semibold leading-4 text-foreground ${
+          isLongValue
+            ? "line-clamp-2"
+            : "truncate"
+        }`}
+        title={value}
+      >
+        {value}
+      </p>
     </div>
   );
 }
