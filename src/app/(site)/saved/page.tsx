@@ -61,8 +61,6 @@ export default async function SavedVideosPage() {
 
           profiles (
             id,
-            display_name,
-            avatar_url,
             is_creator
           )
         )
@@ -72,10 +70,7 @@ export default async function SavedVideosPage() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error(
-      "Error loading saved videos:",
-      error
-    );
+    console.error("Error loading saved videos:", error);
   }
 
   /* ========================================================
@@ -96,23 +91,6 @@ export default async function SavedVideosPage() {
       : video.channels;
 
     /* ======================================================
-       CREATOR
-    ====================================================== */
-
-    const profile = Array.isArray(channel?.profiles)
-      ? channel.profiles[0]
-      : channel?.profiles;
-
-    const creatorName =
-      profile?.display_name ||
-      "Creator";
-
-    const avatar =
-      profile?.avatar_url ||
-      channel?.logo_url ||
-      "";
-
-    /* ======================================================
        CATEGORY
     ====================================================== */
 
@@ -120,10 +98,9 @@ export default async function SavedVideosPage() {
       ? video.categories[0]
       : video.categories;
 
-    const categoryLabel =
-      await getCategoryLabel(
-        category?.id
-      );
+    const categoryLabel = await getCategoryLabel(
+      category?.id
+    );
 
     /* ======================================================
        ADD VIDEO
@@ -141,11 +118,9 @@ export default async function SavedVideosPage() {
 
       category_label: categoryLabel,
 
-      creator: creatorName,
-      avatar,
-
-      channel_name:
-        channel?.channel_name ?? "",
+      channel_name: channel?.channel_name ?? "",
+      channel_slug: channel?.slug ?? "",
+      channel_logo: channel?.logo_url ?? "",
 
       saved_at: saved.created_at,
     });
@@ -179,7 +154,6 @@ export default async function SavedVideosPage() {
 
         {videos.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border px-6 py-16 text-center">
-
             <h2 className="text-lg font-semibold text-foreground">
               No saved videos
             </h2>
@@ -188,7 +162,6 @@ export default async function SavedVideosPage() {
               Videos you save will appear here so you
               can easily find them later.
             </p>
-
           </div>
         ) : (
 
@@ -197,33 +170,23 @@ export default async function SavedVideosPage() {
           ================================================== */
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-
             {videos.map((video: any) => (
               <VideoCard
                 key={video.id}
                 id={video.id}
                 slug={video.slug}
                 title={video.title}
-                creator={video.creator}
-                thumbnail={
-                  video.thumbnail_url || ""
-                }
-                avatar={video.avatar}
-                channelName={
-                  video.channel_name
-                }
+                thumbnail={video.thumbnail_url || ""}
+                channelName={video.channel_name}
+                channelSlug={video.channel_slug}
+                channelLogo={video.channel_logo}
                 views={video.view_count}
                 createdAt={video.created_at}
                 level={video.level}
-                accessType={
-                  video.access_type
-                }
-                categoryLabel={
-                  video.category_label || ""
-                }
+                accessType={video.access_type}
+                categoryLabel={video.category_label || ""}
               />
             ))}
-
           </div>
         )}
 

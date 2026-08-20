@@ -39,41 +39,40 @@ export default async function HomePage() {
   // --------------------------------------------------
 
   const videoSelect = `
+  id,
+  slug,
+  title,
+  thumbnail_url,
+  level,
+  access_type,
+  view_count,
+  created_at,
+  published_at,
+  category_id,
+
+  channels (
+    id,
+    channel_name,
+    slug,
+    logo_url,
+    user_id,
+
+    profiles (
+      id,
+      is_creator
+    )
+  ),
+
+  categories (
     id,
     slug,
-    title,
-    thumbnail_url,
-    level,
-    access_type,
-    view_count,
-    created_at,
-    published_at,
-    category_id,
 
-    channels (
-      id,
-      channel_name,
-      logo_url,
-      user_id,
-
-      profiles (
-        id,
-        display_name,
-        avatar_url,
-        is_creator
-      )
-    ),
-
-    categories (
-      id,
-      slug,
-
-      category_translations (
-        name,
-        locale_code
-      )
+    category_translations (
+      name,
+      locale_code
     )
-  `;
+  )
+`;
 
   // --------------------------------------------------
   // Trending videos

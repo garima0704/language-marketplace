@@ -152,55 +152,47 @@ export default async function CategoryVideos({
   // ==================================================
 
   const { data: videos, error: videosError } =
-    await supabase
-      .from("videos")
-      .select(`
+  await supabase
+    .from("videos")
+    .select(`
+      id,
+      slug,
+      title,
+      thumbnail_url,
+      level,
+      access_type,
+      view_count,
+      created_at,
+      published_at,
+      category_id,
+      channels (
+        id,
+        channel_name,
+        slug,
+        logo_url,
+        user_id,
+        profiles (
+          id,
+          is_creator
+        )
+      ),
+      categories (
         id,
         slug,
-        title,
-        thumbnail_url,
+        parent_id,
         level,
-        access_type,
-        view_count,
-        created_at,
-        published_at,
-        category_id,
-
-        channels (
-          id,
-          channel_name,
-          logo_url,
-          user_id,
-
-          profiles (
-            id,
-            display_name,
-            avatar_url,
-            is_creator
-          )
-        ),
-
-        categories (
-          id,
-          slug,
-          parent_id,
-          level,
-
-          category_translations (
-            name,
-            locale_code
-          )
+        category_translations (
+          name,
+          locale_code
         )
-      `)
-      .eq("status", "published")
-      .in(
-        "category_id",
-        Array.from(categoryIds)
       )
-      .order("published_at", {
-        ascending: false,
-        nullsFirst: false,
-      });
+    `)
+    .eq("status", "published")
+    .in("category_id", Array.from(categoryIds))
+    .order("published_at", {
+      ascending: false,
+      nullsFirst: false,
+    });
 
   if (videosError) {
     console.error(

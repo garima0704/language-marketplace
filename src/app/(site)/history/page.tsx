@@ -62,8 +62,6 @@ export default async function WatchHistoryPage() {
 
           profiles (
             id,
-            display_name,
-            avatar_url,
             is_creator
           )
         )
@@ -106,23 +104,6 @@ export default async function WatchHistoryPage() {
       : video.channels;
 
     /* ======================================================
-       CREATOR
-    ====================================================== */
-
-    const profile = Array.isArray(channel?.profiles)
-      ? channel.profiles[0]
-      : channel?.profiles;
-
-    const creatorName =
-      profile?.display_name ||
-      "Creator";
-
-    const avatar =
-      profile?.avatar_url ||
-      channel?.logo_url ||
-      "";
-
-    /* ======================================================
        CATEGORY
     ====================================================== */
 
@@ -150,15 +131,12 @@ export default async function WatchHistoryPage() {
 
       category_label: categoryLabel,
 
-      creator: creatorName,
-      avatar,
-
-      channel_name:
-        channel?.channel_name ?? "",
+      channel_name: channel?.channel_name ?? "",
+      channel_slug: channel?.slug ?? "",
+      channel_logo: channel?.logo_url ?? "",
 
       watched_at: item.watched_at,
-      progress_seconds:
-        item.progress_seconds ?? 0,
+      progress_seconds: item.progress_seconds ?? 0,
     });
   }
 
@@ -190,7 +168,6 @@ export default async function WatchHistoryPage() {
 
         {videos.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border px-6 py-16 text-center">
-
             <h2 className="text-lg font-semibold text-foreground">
               No watch history
             </h2>
@@ -199,7 +176,6 @@ export default async function WatchHistoryPage() {
               Videos you watch will appear here so
               you can easily continue watching them later.
             </p>
-
           </div>
         ) : (
 
@@ -214,22 +190,19 @@ export default async function WatchHistoryPage() {
                 id={video.id}
                 slug={video.slug}
                 title={video.title}
-                creator={video.creator}
                 thumbnail={video.thumbnail_url || ""}
-                avatar={video.avatar}
                 channelName={video.channel_name}
+                channelSlug={video.channel_slug}
+                channelLogo={video.channel_logo}
                 views={video.view_count}
                 createdAt={video.created_at}
                 level={video.level}
                 accessType={video.access_type}
-                categoryLabel={
-                  video.category_label || ""
-                }
+                categoryLabel={video.category_label || ""}
               />
             ))}
           </div>
         )}
-
       </div>
     </div>
   );

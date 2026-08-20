@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   Avatar,
   AvatarFallback,
@@ -22,15 +24,20 @@ interface ChannelHeaderProps {
       avatar_url: string | null;
     };
   };
+isSubscribed?: boolean;
 }
 
 export default function ChannelHeader({
   channel,
+  isSubscribed = false,
 }: ChannelHeaderProps) {
   return (
-    <Card className="overflow-hidden rounded-2xl border-border bg-background shadow-sm pt-0">
+    <Card className="overflow-hidden rounded-2xl border-border bg-background pt-0 shadow-sm">
 
-      {/* Banner */}
+      {/* =================================================
+          BANNER
+      ================================================== */}
+
       <div className="h-48 bg-light-bg">
         {channel.banner_url && (
           <img
@@ -43,7 +50,10 @@ export default function ChannelHeader({
 
       <div className="relative p-8">
 
-        {/* Logo */}
+        {/* =================================================
+            CHANNEL LOGO
+        ================================================== */}
+
         <div className="-mt-20 mb-5">
           <Avatar className="h-32 w-32 border-4 border-background">
             <AvatarImage
@@ -63,34 +73,61 @@ export default function ChannelHeader({
 
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
 
-          {/* Channel Information */}
-          <div className="space-y-3">
+          {/* =================================================
+              CHANNEL INFORMATION
+          ================================================== */}
+
+          <div className="min-w-0">
+
+            {/* Channel Name */}
 
             <h1 className="text-3xl font-bold text-foreground">
               {channel.channel_name}
             </h1>
 
-            <p className="text-muted">
-              @{channel.profiles.username}
-            </p>
+            {/* Seller */}
 
-            <p className="text-sm text-muted">
-              By {channel.profiles.display_name}
-            </p>
+            <div className="mt-2 flex items-center gap-1.5 text-sm">
+              <span className="text-muted">
+                Created by:
+              </span>
+
+              <Link
+                href={`/sellers/${channel.profiles.username}`}
+                className="font-semibold text-foreground transition hover:text-secondary hover:underline"
+              >
+                @{channel.profiles.username}
+              </Link>
+            </div>
+
+            {/* About */}
 
             {channel.description && (
-              <p className="max-w-2xl leading-7 text-muted">
+              <p className="mt-5 max-w-2xl text-sm italic leading-7 text-secondary">
                 {channel.description}
               </p>
             )}
 
           </div>
 
-          {/* Subscribe */}
-          <div>
-            <Button className="rounded-xl bg-primary px-6 text-white hover:bg-secondary">
-              Subscribe ${channel.subscription_price}/{channel.currency}
-            </Button>
+          {/* =================================================
+              SUBSCRIBE
+          ================================================== */}
+
+          <div className="shrink-0">
+            {isSubscribed ? (
+              <Button
+                disabled
+                className="rounded-xl bg-muted-bg px-6 text-foreground"
+              >
+                Subscribed
+              </Button>
+            ) : (
+              <Button className="rounded-xl bg-primary px-6 text-white hover:bg-secondary">
+                Subscribe ${channel.subscription_price}/
+                {channel.currency}
+              </Button>
+            )}
           </div>
 
         </div>

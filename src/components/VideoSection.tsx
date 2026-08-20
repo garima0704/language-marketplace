@@ -3,14 +3,13 @@ import VideoCard from "@/components/VideoCard";
 
 interface Profile {
   id: string;
-  display_name: string;
-  avatar_url: string | null;
   is_creator: boolean;
 }
 
 interface Channel {
   id: string;
   channel_name: string;
+  slug: string;
   logo_url: string | null;
   user_id: string;
   profiles: Profile | Profile[] | null;
@@ -88,28 +87,9 @@ export default function VideoSection({
               ? video.channels[0]
               : video.channels;
 
-            const profile = Array.isArray(channel?.profiles)
-              ? channel.profiles[0]
-              : channel?.profiles;
-
             const category = Array.isArray(video.categories)
               ? video.categories[0]
               : video.categories;
-
-            const translation = Array.isArray(
-              category?.category_translations
-            )
-              ? category.category_translations[0]
-              : category?.category_translations;
-
-            const creatorName =
-              profile?.display_name ||
-              "Creator";
-
-            const avatar =
-              profile?.avatar_url ||
-              channel?.logo_url ||
-              "";
 
             const categoryLabel = video.category_label || "";
 
@@ -119,10 +99,10 @@ export default function VideoSection({
                 id={video.id}
                 slug={video.slug}
                 title={video.title}
-                creator={creatorName}
                 thumbnail={video.thumbnail_url || ""}
-                avatar={avatar}
                 channelName={channel?.channel_name || ""}
+                channelSlug={channel?.slug || ""}
+                channelLogo={channel?.logo_url || ""}
                 views={video.view_count}
                 createdAt={video.created_at}
                 level={video.level}

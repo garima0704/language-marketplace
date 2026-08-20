@@ -6,10 +6,10 @@ interface VideoCardProps {
   id: string;
   slug: string;
   title: string;
-  creator: string;
   thumbnail: string;
-  avatar: string;
   channelName: string;
+  channelSlug: string;
+  channelLogo: string;
   views: number;
   createdAt: string;
   level: string | null;
@@ -22,10 +22,10 @@ export default function VideoCard({
   id,
   slug,
   title,
-  creator,
   thumbnail,
-  avatar,
   channelName,
+  channelSlug,
+  channelLogo,
   views,
   createdAt,
   level,
@@ -33,7 +33,6 @@ export default function VideoCard({
   categoryLabel,
   showManage = false,
 }: VideoCardProps) {
-  
   return (
     <div className="group overflow-hidden rounded-xl border border-border bg-background transition hover:shadow-md">
       {/* Thumbnail */}
@@ -67,7 +66,8 @@ export default function VideoCard({
       {/* Details */}
       <div className="space-y-2 p-4">
         {/* Title */}
-        <Link href={`/videos/${slug}`}
+        <Link
+          href={`/videos/${slug}`}
           className="mb-3 block"
         >
           <h3 className="line-clamp-2 font-semibold leading-5 text-foreground transition hover:text-secondary">
@@ -75,34 +75,33 @@ export default function VideoCard({
           </h3>
         </Link>
 
-        {/* Creator */}
-        <div className="flex items-center gap-3">
+        {/* Channel */}
+        <Link
+          href={`/channels/${channelSlug}`}
+          className="group/channel flex items-center gap-3"
+        >
+          {/* Channel Logo */}
           <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-muted-bg">
-            {avatar ? (
+            {channelLogo ? (
               <Image
-                src={avatar}
-                alt={creator}
+                src={channelLogo}
+                alt={channelName}
                 width={36}
                 height={36}
                 className="h-full w-full object-cover"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-primary text-sm font-medium text-white">
-                {creator.charAt(0).toUpperCase()}
+                {channelName.charAt(0).toUpperCase()}
               </div>
             )}
           </div>
 
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-foreground">
-              {creator}
-            </p>
-
-            <p className="truncate text-xs text-muted">
-              {channelName}
-            </p>
-          </div>
-        </div>
+          {/* Channel Name */}
+          <p className="min-w-0 truncate text-sm font-medium text-foreground transition group-hover/channel:text-secondary">
+            {channelName}
+          </p>
+        </Link>
 
         {/* Metadata */}
         <div className="text-xs text-muted">

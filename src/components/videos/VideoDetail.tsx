@@ -2,13 +2,15 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+
 import { createClient } from "@/lib/supabase/client";
-import { 
+
+import {
   formatTimeAgo,
-  formatText, 
-  getInitials, 
+  formatText,
+  getInitials,
   formatPrice,
-  formatDuration 
+  formatDuration,
 } from "@/lib/utils";
 
 import {
@@ -16,6 +18,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -42,6 +45,7 @@ import VideoRatings from "@/components/videos/VideoRatings";
 
 interface VideoDetailProps {
   video: any;
+  relatedVideos: any[];
 }
 
 /* =========================================================
@@ -50,6 +54,7 @@ interface VideoDetailProps {
 
 export default function VideoDetail({
   video,
+  relatedVideos,
 }: VideoDetailProps) {
   /* -------------------------------------------------------
      CHANNEL
@@ -74,8 +79,14 @@ export default function VideoDetail({
 
   const username = profile?.username;
 
-  const userAvatar =
-    profile?.avatar_url || "";
+  const channelLogo =
+    channel?.logo_url ||
+    profile?.avatar_url ||
+    "";
+
+  const channelName =
+    channel?.channel_name ||
+    "Channel";
 
   /* -------------------------------------------------------
      LANGUAGE
@@ -233,6 +244,7 @@ export default function VideoDetail({
         "ended",
         handleEnded
       );
+
     };
   }, [
     video.id,
@@ -274,6 +286,7 @@ export default function VideoDetail({
             "Unable to get user for view tracking:",
             userError
           );
+
           return;
         }
 
@@ -292,6 +305,7 @@ export default function VideoDetail({
             "Failed to record video view:",
             error
           );
+
           return;
         }
 
@@ -420,7 +434,9 @@ export default function VideoDetail({
         Number.isFinite(videoElement.duration) &&
         videoElement.duration > 0
       ) {
-        setDuration(videoElement.duration);
+        setDuration(
+          videoElement.duration
+        );
       }
     };
 
@@ -452,6 +468,13 @@ export default function VideoDetail({
         ? video.categories
         : [];
 
+  const categoryVideosHref =
+  categoryPath.length > 0
+    ? `/videos/${categoryPath
+        .map((category: any) => category.slug)
+        .join("/")}`
+    : "/videos";
+
   /* =======================================================
      RENDER
   ======================================================= */
@@ -466,7 +489,7 @@ export default function VideoDetail({
 
         <nav
           aria-label="Breadcrumb"
-          className="mb-6 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-sm"
+          className="mb-5 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-sm"
         >
           <Link
             href="/"
@@ -498,6 +521,10 @@ export default function VideoDetail({
                   )
                   .join("/");
 
+              const isLast =
+                index ===
+                categoryPath.length - 1;
+
               return (
                 <div
                   key={
@@ -508,12 +535,18 @@ export default function VideoDetail({
                 >
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
 
-                  <Link
-                    href={`/categories/${categorySlug}`}
-                    className="text-muted transition hover:text-foreground"
-                  >
-                    {category.name}
-                  </Link>
+                  {isLast ? (
+                    <span className="font-medium text-foreground">
+                      {category.name}
+                    </span>
+                  ) : (
+                    <Link
+                      href={`/videos/${categorySlug}`}
+                      className="text-muted transition hover:text-foreground"
+                    >
+                      {category.name}
+                    </Link>
+                  )}
                 </div>
               );
             }
@@ -530,7 +563,7 @@ export default function VideoDetail({
         </nav>
 
         {/* =================================================
-            TITLE + CREATOR
+            TITLE + CHANNEL INFORMATION
         ================================================== */}
 
         <div className="mb-6">
@@ -538,73 +571,77 @@ export default function VideoDetail({
             {video.title}
           </h1>
 
-          <div className="mt-4">
+          <div className="mt-4 flex items-center gap-3">
+
             <Link
               href={
-                username
-                  ? `/profile/${username}`
+                channel?.slug
+                  ? `/channels/${channel.slug}`
                   : "#"
               }
-              className="group inline-flex items-center gap-3"
+              className="shrink-0"
             >
-              <Avatar className="h-10 w-10 shrink-0">
+              <Avatar className="h-11 w-11">
                 <AvatarImage
-                  src={userAvatar}
-                  alt={userName}
+                  src={channelLogo}
+                  alt={channelName}
                 />
 
                 <AvatarFallback className="bg-primary text-white">
-                  {getInitials(userName)}
+                  {getInitials(
+                    channelName
+                  )}
                 </AvatarFallback>
               </Avatar>
-
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-semibold text-foreground group-hover:underline">
-                    {userName}
-                  </span>
-
-                  {username && (
-                    <span className="text-sm text-muted">
-                      @{username}
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-muted">
-                  <span>
-                    {video.view_count ?? 0} views
-                  </span>
-
-                  <span>•</span>
-
-                  <span>
-                    {formatTimeAgo(
-                      video.published_at ??
-                        video.created_at
-                    )}
-                  </span>
-                </div>
-              </div>
             </Link>
+
+            <div className="min-w-0">
+              <Link
+                href={
+                  channel?.slug
+                    ? `/channels/${channel.slug}`
+                    : "#"
+                }
+                className="block"
+              >
+                <span className="text-sm font-semibold text-foreground hover:underline">
+                  {channelName}
+                </span>
+              </Link>
+
+              <div className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-muted">
+                <span>
+                  {video.view_count ?? 0} views
+                </span>
+
+                <span>•</span>
+
+                <span>
+                  {formatTimeAgo(
+                    video.published_at ??
+                      video.created_at
+                  )}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* =================================================
-            MAIN CONTENT
+            MAIN TWO-COLUMN LAYOUT
         ================================================== */}
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
 
           {/* =================================================
               LEFT COLUMN
-          ================================================== */}
+          ================================================= */}
 
           <main className="min-w-0">
 
-            {/* =================================================
+            {/* ===============================================
                 VIDEO PLAYER
-            ================================================== */}
+            =============================================== */}
 
             <div className="relative overflow-hidden rounded-xl bg-black">
 
@@ -631,7 +668,9 @@ export default function VideoDetail({
 
                   {duration && (
                     <div className="pointer-events-none absolute bottom-12 right-3 rounded bg-black/80 px-2 py-1 text-xs font-medium text-white">
-                      {formatDuration(duration)}
+                      {formatDuration(
+                        duration
+                      )}
                     </div>
                   )}
                 </div>
@@ -649,12 +688,6 @@ export default function VideoDetail({
                   )}
 
                   <div className="absolute inset-0 bg-black/55" />
-
-                  {duration && (
-                    <div className="absolute bottom-3 right-3 rounded bg-black/80 px-2 py-1 text-xs font-medium text-white">
-                      {formatDuration(duration)}
-                    </div>
-                  )}
 
                   <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
                     <div className="max-w-sm">
@@ -720,39 +753,60 @@ export default function VideoDetail({
 
             </div>
 
-            {/* =================================================
+            {/* ===============================================
                 VIDEO ACTIONS
-            ================================================== */}
+            =============================================== */}
 
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <VideoLikeButton
-                videoId={video.id}
-                isAuthenticated={
-                  video.is_authenticated
-                }
-              />
+            <div className="mt-3 flex items-center gap-3 border-b border-border pb-4">
 
-              <SaveVideoButton
-                videoId={video.id}
-                isSaved={video.is_saved}
-                isAuthenticated={
-                  video.is_authenticated
-                }
-              />
+              {/* Left actions */}
+              <div className="flex min-w-0 items-center gap-3">
+                <VideoLikeButton
+                  videoId={video.id}
+                  isAuthenticated={
+                    video.is_authenticated
+                  }
+                />
 
-              <ReportVideoButton
-                videoId={video.id}
-                isAuthenticated={
-                  video.is_authenticated
-                }
-              />
+                <SaveVideoButton
+                  videoId={video.id}
+                  isSaved={video.is_saved}
+                  isAuthenticated={
+                    video.is_authenticated
+                  }
+                />
+
+                <ReportVideoButton
+                  videoId={video.id}
+                  isAuthenticated={
+                    video.is_authenticated
+                  }
+                />
+              </div>
+
+              {/* Posted By */}
+              {username && (
+                <div className="ml-auto flex shrink-0 items-center gap-1.5 text-sm">
+                  <span className="text-muted">
+                    Posted by
+                  </span>
+
+                  <Link
+                    href={`/sellers/${username}`}
+                    className="font-semibold text-foreground transition hover:underline"
+                  >
+                    @{username}
+                  </Link>
+                </div>
+              )}
+
             </div>
-
-            {/* =================================================
+            {/* ===============================================
                 DESCRIPTION
-            ================================================== */}
+            =============================================== */}
 
             <Card className="mt-5 rounded-xl border-border bg-white p-5 shadow-none">
+
               <h2 className="text-base font-semibold text-foreground">
                 Description
               </h2>
@@ -767,30 +821,41 @@ export default function VideoDetail({
                   for this video.
                 </p>
               )}
+
             </Card>
+
+            {/* ===============================================
+                  RATINGS & REVIEWS
+              =============================================== */}
+
+              <section className="mt-6">
+                <VideoRatings
+                  videoId={video.id}
+                  isAuthenticated={
+                    video.is_authenticated
+                  }
+                />
+              </section>
+
           </main>
 
           {/* =================================================
-              RIGHT SIDEBAR
+              RIGHT COLUMN
           ================================================== */}
 
           <aside className="self-start">
 
-            {/* =================================================
+            {/* ===============================================
                 VIDEO DETAILS
-            ================================================== */}
+            =============================================== */}
 
             <Card className="rounded-xl border-border bg-muted-bg p-4 shadow-none">
 
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-foreground">
-                  Video Details
-                </h2>
-              </div>
+              <h2 className="text-base font-semibold text-foreground">
+                Video Details
+              </h2>
 
-              {/* Compact 2-column details */}
-
-              <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-3">
+              <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-4">
 
                 {video.level && (
                   <CompactDetail
@@ -821,7 +886,9 @@ export default function VideoDetail({
                       <Languages className="h-3.5 w-3.5" />
                     }
                     label="Subtitles"
-                    value={subtitleLanguage}
+                    value={
+                      subtitleLanguage
+                    }
                   />
                 )}
 
@@ -899,160 +966,116 @@ export default function VideoDetail({
 
               </div>
 
-              {/* Access / Subscription */}
+              {/* =============================================
+                  SUBSCRIPTION
+              ============================================= */}
 
-<div className="mt-2 border-t border-border/70 pt-2">
+              <div className="mt-4 border-t border-border/70 pt-4">
 
-  {isFree ? (
-    <div className="flex items-center justify-between gap-3">
-      <div>
-        <p className="text-xs text-muted">
-          Video access
-        </p>
+                {isFree ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted">
+                        Video access
+                      </p>
 
-        <p className="mt-0.5 text-base font-semibold text-foreground">
-          Free
-        </p>
-      </div>
+                      <p className="mt-0.5 text-base font-semibold text-foreground">
+                        Free
+                      </p>
+                    </div>
 
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-foreground">
-        <Check className="h-3.5 w-3.5" />
-        Available
-      </span>
-    </div>
-  ) : (
-    <div className="flex items-center justify-between gap-3">
+                    <span className="inline-flex items-center gap-1 text-xs font-medium">
+                      <Check className="h-3.5 w-3.5" />
+                      Available
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-3">
 
-      <div>
-        <p className="text-xs text-muted">
-          Channel subscription
-        </p>
+                    <div>
+                      <p className="text-xs text-muted">
+                        Channel subscription
+                      </p>
 
-        {subscriptionPrice && (
-          <p className="mt-0.5 text-base font-semibold text-foreground">
-            {subscriptionPrice}
+                      {subscriptionPrice && (
+                        <p className="mt-0.5 text-base font-semibold text-foreground">
+                          {subscriptionPrice}
 
-            <span className="ml-1 text-xs font-normal text-muted">
-              / month
-            </span>
-          </p>
-        )}
-      </div>
+                          <span className="ml-1 text-xs font-normal text-muted">
+                            / month
+                          </span>
+                        </p>
+                      )}
+                    </div>
 
-      {video.has_active_subscription ? (
-        <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-foreground">
-          <Check className="h-3.5 w-3.5" />
-          Subscribed
-        </span>
-      ) : (
-        channel?.slug && (
-          <Link href={`/channels/${channel.slug}`}>
-            <Button
-              size="sm"
-              className="rounded-lg px-3"
-            >
-              Subscribe
-            </Button>
-          </Link>
-        )
-      )}
+                    {video.has_active_subscription ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium">
+                        <Check className="h-3.5 w-3.5" />
+                        Subscribed
+                      </span>
+                    ) : (
+                      channel?.slug && (
+                        <Link
+                          href={`/channels/${channel.slug}`}
+                        >
+                          <Button
+                            size="sm"
+                            className="rounded-lg px-3"
+                          >
+                            Subscribe
+                          </Button>
+                        </Link>
+                      )
+                    )}
 
-    </div>
-  )}
+                  </div>
+                )}
 
-</div>
-
+              </div>
 
             </Card>
 
-          
+            {/* ===============================================
+                RELATED VIDEOS
+            =============================================== */}
 
-{/* =================================================
-    CHANNEL
-================================================= */}
+            {relatedVideos.length > 0 && (
+              <div className="mt-6">
 
-<Card className="mt-7 rounded-xl border-border bg-white p-4 shadow-none">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-base font-semibold text-foreground">
+                    Related Videos
+                  </h2>
 
-  {/* Posted under */}
-  <p className="text-xs font-medium text-muted">
-    Posted under
-  </p>
+                  <Link
+                    href={categoryVideosHref}
+                    className="text-xs font-medium text-muted transition hover:text-foreground"
+                  >
+                    View all
+                  </Link>
+                </div>
 
-  {/* Channel */}
-  <div className="flex items-center gap-3">
+                <div className="space-y-3">
+                  {relatedVideos.map(
+                    (relatedVideo) => (
+                      <RelatedVideoCard
+                        key={
+                          relatedVideo.id
+                        }
+                        video={
+                          relatedVideo
+                        }
+                      />
+                    )
+                  )}
+                </div>
 
-    <Link
-      href={
-        channel?.slug
-          ? `/channels/${channel.slug}`
-          : "#"
-      }
-      className="group flex min-w-0 items-center gap-3"
-    >
-      <Avatar className="h-11 w-11 shrink-0">
-        <AvatarImage
-          src={channel?.logo_url ?? ""}
-          alt={
-            channel?.channel_name ??
-            userName
-          }
-        />
+              </div>
+            )}
 
-        <AvatarFallback className="bg-primary text-white">
-          {getInitials(
-            channel?.channel_name ||
-              userName
-          )}
-        </AvatarFallback>
-      </Avatar>
-
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-foreground group-hover:underline">
-          {channel?.channel_name || "Channel"}
-        </p>
-
-        {username && (
-          <p className="truncate text-xs text-muted">
-            @{username}
-          </p>
-        )}
-      </div>
-    </Link>
-
-  </div>
-
-  {/* View Channel button */}
-  {channel?.slug && (
-    <Link
-      href={`/channels/${channel.slug}`}
-      className="block"
-    >
-      <Button
-        variant="outline"
-        className="w-full rounded-lg border-border"
-      >
-        View Channel
-      </Button>
-    </Link>
-  )}
-
-</Card>
           </aside>
 
         </div>
-
-
-        {/* =================================================
-            RATINGS & REVIEWS
-        ================================================== */}
-
-        <section className="mt-10 w-full">
-          <VideoRatings
-            videoId={video.id}
-            isAuthenticated={video.is_authenticated}
-          />
-        </section>
-
 
         {/* =================================================
             COMMENTS
@@ -1067,44 +1090,159 @@ export default function VideoDetail({
           />
         </section>
 
-        {/* =================================================
-            RELATED VIDEOS
-        ================================================== */}
-
-        <section className="mt-10">
-
-          <div className="border-b border-border pb-3">
-            <h2 className="text-xl font-semibold text-foreground">
-              Related Videos
-            </h2>
-          </div>
-
-          <div className="py-6">
-
-            <div className="rounded-xl border border-dashed border-border p-8 text-center">
-
-              <p className="font-medium text-foreground">
-                Related videos will appear here
-              </p>
-
-              <p className="mt-1 text-sm text-muted">
-                We will show videos from the
-                same language and category.
-              </p>
-
-            </div>
-
-          </div>
-
-        </section>
-
       </div>
     </div>
   );
 }
 
 /* =========================================================
-   COMPACT DETAIL
+   RELATED VIDEO CARD
+========================================================= */
+
+function RelatedVideoCard({
+  video,
+}: {
+  video: any;
+}) {
+  const channel = Array.isArray(
+    video.channels
+  )
+    ? video.channels[0]
+    : video.channels;
+
+  const profile = Array.isArray(
+    channel?.profiles
+  )
+    ? channel.profiles[0]
+    : channel?.profiles;
+
+  const channelName =
+    channel?.channel_name ||
+    "Channel";
+
+  const channelLogo =
+    channel?.logo_url ||
+    profile?.avatar_url ||
+    "";
+
+  const publishedAt =
+    video.published_at ??
+    video.created_at;
+
+  const metadata: string[] = [];
+
+  metadata.push(
+    `${video.view_count ?? 0} views`
+  );
+
+  if (publishedAt) {
+    metadata.push(
+      formatTimeAgo(publishedAt)
+    );
+  }
+
+  return (
+    <Link
+      href={`/videos/${video.slug}`}
+      className="group block"
+    >
+      <div className="flex gap-3">
+
+        {/* =============================================
+            THUMBNAIL
+        ============================================== */}
+
+        <div className="relative h-[90px] w-[150px] shrink-0 overflow-hidden rounded-lg bg-muted-bg">
+
+          {video.thumbnail_url ? (
+            <img
+              src={video.thumbnail_url}
+              alt={video.title}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-muted-bg">
+              <span className="text-[10px] text-muted">
+                No thumbnail
+              </span>
+            </div>
+          )}
+
+          {video.duration &&
+            Number(video.duration) > 0 && (
+              <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                {formatDuration(
+                  Number(video.duration)
+                )}
+              </span>
+            )}
+
+        </div>
+
+        {/* =============================================
+            INFORMATION
+        ============================================== */}
+
+        <div className="min-w-0 flex-1">
+
+          <h3 className="line-clamp-2 text-sm font-semibold leading-5 text-foreground transition group-hover:text-secondary">
+            {video.title}
+          </h3>
+
+          <div className="mt-1.5 flex items-center gap-1.5">
+
+            <Avatar className="h-5 w-5 shrink-0">
+              <AvatarImage
+                src={channelLogo}
+                alt={channelName}
+              />
+
+              <AvatarFallback className="text-[8px]">
+                {getInitials(
+                  channelName
+                )}
+              </AvatarFallback>
+            </Avatar>
+
+            <span className="truncate text-xs text-muted">
+              {channelName}
+            </span>
+
+          </div>
+
+          {metadata.length > 0 && (
+            <div className="mt-0.5 flex min-w-0 items-center gap-1 text-[11px] text-muted">
+              {metadata.map(
+                (
+                  item: string,
+                  index: number
+                ) => (
+                  <span
+                    key={`${item}-${index}`}
+                    className="truncate"
+                  >
+                    {index > 0 && (
+                      <span className="mr-1">
+                        •
+                      </span>
+                    )}
+
+                    {item}
+                  </span>
+                )
+              )}
+            </div>
+          )}
+
+        </div>
+
+      </div>
+    </Link>
+  );
+}
+
+/* =========================================================
+   COMPACT VIDEO DETAIL
 ========================================================= */
 
 function CompactDetail({
@@ -1122,6 +1260,7 @@ function CompactDetail({
 
   return (
     <div className="min-w-0">
+
       <div className="flex items-center gap-1.5 text-muted">
         {icon}
 
@@ -1140,6 +1279,7 @@ function CompactDetail({
       >
         {value}
       </p>
+
     </div>
   );
 }
