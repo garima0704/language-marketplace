@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
-
+import ChannelCard from "@/components/channels/ChannelCard";
 
 export default async function SellerProfilePage({
   params,
@@ -13,6 +11,10 @@ export default async function SellerProfilePage({
   const { username } = await params;
 
   const supabase = await createClient();
+
+  // =========================================================
+  // GET SELLER + CHANNELS
+  // =========================================================
 
   const { data: seller, error } = await supabase
     .from("profiles")
@@ -29,6 +31,7 @@ export default async function SellerProfilePage({
         slug,
         description,
         logo_url,
+        banner_url,
         subscription_price,
         currency
       )
@@ -37,16 +40,17 @@ export default async function SellerProfilePage({
     .eq("is_creator", true)
     .single();
 
-
   if (error || !seller) {
     notFound();
   }
 
-
   return (
     <div className="p-8">
 
-      {/* Seller Header */}
+      {/* =======================================================
+          SELLER HEADER
+      ======================================================== */}
+
       <div className="rounded-xl border bg-white p-8 shadow-sm">
 
         <div className="flex items-center gap-5">
@@ -59,10 +63,9 @@ export default async function SellerProfilePage({
             />
           ) : (
             <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gray-200 text-3xl font-semibold">
-              {seller.display_name.charAt(0)}
+              {seller.display_name?.charAt(0).toUpperCase()}
             </div>
           )}
-
 
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
@@ -82,7 +85,6 @@ export default async function SellerProfilePage({
 
         </div>
 
-
         {seller.bio && (
           <p className="mt-6 max-w-3xl text-gray-600">
             {seller.bio}
@@ -91,62 +93,37 @@ export default async function SellerProfilePage({
 
       </div>
 
+      {/* =======================================================
+          CHANNELS
+      ======================================================== */}
 
-
-      {/* Channels */}
       <div className="mt-10">
 
         <h2 className="text-2xl font-bold text-gray-900">
           Channels
         </h2>
 
-
-        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
 
           {seller.channels?.map((channel) => (
 
-            <div
+            <ChannelCard
               key={channel.id}
-              className="rounded-xl border bg-white p-6 shadow-sm"
-            >
-
-              <div className="flex items-center gap-4">
-
-                {channel.logo_url ? (
-                  <img
-                    src={channel.logo_url}
-                    alt={channel.channel_name}
-                    className="h-14 w-14 rounded-lg object-cover"
-                  />
-                ) : (
-                  <div className="h-14 w-14 rounded-lg bg-gray-200" />
-                )}
-
-
-                <h3 className="font-semibold text-gray-900">
-                  {channel.channel_name}
-                </h3>
-
-              </div>
-
-
-              <p className="mt-4 line-clamp-3 text-sm text-gray-600">
-                {channel.description || "No description available."}
-              </p>
-
-
-              <p className="mt-3 text-sm font-medium">
-                {channel.subscription_price} {channel.currency}/month
-              </p>
-
-                <Link href={`/channels/${channel.slug}`}>
-                  <Button className="mt-5">
-                    View Channel
-                  </Button>
-                </Link>
-              
-
-            </div>
+              channel={{
+                id: channel.id,
+                channel_name: channel.channel_name,
+                slug: channel.slug,
+                description: channel.description,
+                logo_url: channel.logo_url,
+                banner_url: channel.banner_url,
+              }}
+              seller={{
+                username: seller.username,
+                display_name: seller.display_name,
+                avatar_url: seller.avatar_url,
+              }}
+              variant="seller"
+            />
 
           ))}
 

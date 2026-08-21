@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import ChannelCard from "@/components/channels/ChannelCard";
 
 export default async function SubscriptionsPage() {
   const supabase = await createClient();
@@ -156,156 +157,25 @@ export default async function SubscriptionsPage() {
             ? channel.profiles[0]
             : channel.profiles;
 
-          const renewalDate =
-            new Intl.DateTimeFormat("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            }).format(
-              new Date(
-                subscription.current_period_end
-              )
-            );
-
           return (
-            <div
+            <ChannelCard
               key={subscription.id}
-              className="group overflow-hidden rounded-xl border border-border bg-background transition hover:shadow-md"
-            >
-
-              {/* =================================================
-                  BANNER
-              ================================================== */}
-
-              <div className="h-40 bg-muted-bg">
-                {channel.banner_url ? (
-                  <img
-                    src={channel.banner_url}
-                    alt={channel.channel_name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center bg-muted-bg text-sm text-muted">
-                    No banner available
-                  </div>
-                )}
-              </div>
-
-              {/* =================================================
-                  CONTENT
-              ================================================== */}
-
-              <div className="p-6">
-
-                {/* ===============================================
-                    CHANNEL
-                ================================================ */}
-
-                <div className="flex items-center gap-4">
-                  <Link
-                    href={`/channels/${channel.slug}`}
-                    className="shrink-0"
-                  >
-                    {channel.logo_url ? (
-                      <img
-                        src={channel.logo_url}
-                        alt={channel.channel_name}
-                        className="h-14 w-14 rounded-full object-cover transition hover:opacity-90"
-                      />
-                    ) : seller?.avatar_url ? (
-                      <img
-                        src={seller.avatar_url}
-                        alt={seller.username}
-                        className="h-14 w-14 rounded-full object-cover transition hover:opacity-90"
-                      />
-                    ) : (
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted-bg font-semibold text-foreground">
-                        {channel.channel_name
-                          .charAt(0)
-                          .toUpperCase()}
-                      </div>
-                    )}
-                  </Link>
-
-                  <div className="min-w-0">
-                    <Link
-                      href={`/channels/${channel.slug}`}
-                      className="block"
-                    >
-                      <h2 className="truncate text-xl font-semibold text-foreground transition hover:text-secondary">
-                        {channel.channel_name}
-                      </h2>
-                    </Link>
-
-                    {seller?.username && (
-                      <Link
-                        href={`/sellers/${seller.username}`}
-                        className="text-sm text-muted transition hover:text-foreground hover:underline"
-                      >
-                        @{seller.username}
-                      </Link>
-                    )}
-                  </div>
-                </div>
-                {/* =================================================
-                    DESCRIPTION
-                ================================================== */}
-
-                {channel.description ? (
-                  <p className="mt-4 line-clamp-3 text-sm italic leading-6 text-secondary">
-                    {channel.description}
-                  </p>
-                ) : (
-                  <p className="mt-4 text-sm text-muted">
-                    No description available.
-                  </p>
-                )}
-
-                {/* =================================================
-                    SUBSCRIPTION STATUS
-                ================================================== */}
-
-                <div className="mt-5 flex items-center justify-between">
-
-                  <span className="rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground">
-                    Active
-                  </span>
-
-                  <span className="text-sm text-muted">
-                    Renews on {renewalDate}
-                  </span>
-
-                </div>
-
-                {/* =================================================
-                    ACTIONS
-                ================================================== */}
-
-                <div className="mt-6 flex flex-wrap gap-3">
-
-                  <Link
-                    href={`/channels/${channel.slug}`}
-                  >
-                    <Button className="rounded-lg">
-                      Continue Learning
-                    </Button>
-                  </Link>
-
-                  <Link
-                    href={`/subscriptions/${subscription.id}`}
-                  >
-                    <Button
-                      variant="outline"
-                      className="rounded-lg"
-                    >
-                      Manage Subscription
-                    </Button>
-                  </Link>
-
-                </div>
-
-              </div>
-            </div>
+              channel={{
+                id: channel.id,
+                channel_name: channel.channel_name,
+                slug: channel.slug,
+                description: channel.description,
+                logo_url: channel.logo_url,
+                banner_url: channel.banner_url,
+              }}
+              seller={seller}
+              variant="subscription"
+              subscription={{
+                id: subscription.id,
+                current_period_end:
+                  subscription.current_period_end,
+              }}
+            />
           );
         })}
 
