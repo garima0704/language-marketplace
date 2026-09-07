@@ -39,7 +39,7 @@ interface Video {
   view_count: number;
   created_at: string;
   published_at: string | null;
-  status: string;
+  status?: string;
 
   channels: Channel | Channel[] | null;
   categories: Category | Category[] | null;
