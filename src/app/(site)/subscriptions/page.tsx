@@ -104,6 +104,8 @@ export default async function SubscriptionsPage() {
       description,
       logo_url,
       banner_url,
+      subscription_price,
+      currency,
       profiles!channels_user_id_fkey (
         display_name,
         username,
@@ -167,6 +169,8 @@ export default async function SubscriptionsPage() {
                 description: channel.description,
                 logo_url: channel.logo_url,
                 banner_url: channel.banner_url,
+                subscription_price: channel.subscription_price,
+                currency: channel.currency,
               }}
               seller={seller}
               variant="subscription"
