@@ -71,6 +71,7 @@ export default async function VideosPage() {
         channels (
           id,
           channel_name,
+          slug,
           logo_url,
           user_id,
 
