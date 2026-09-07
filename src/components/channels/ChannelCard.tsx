@@ -16,6 +16,7 @@ type Channel = {
   logo_url: string | null;
   banner_url: string | null;
   subscription_price: number | string | null;
+  currency: string | null;
 
   // Seller-specific stats
   subscriber_count?: number;
