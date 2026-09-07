@@ -116,6 +116,8 @@ export default async function SellerProfilePage({
                 description: channel.description,
                 logo_url: channel.logo_url,
                 banner_url: channel.banner_url,
+                subscription_price: channel.subscription_price,
+                currency: channel.currency,
               }}
               seller={{
                 username: seller.username,
@@ -126,7 +128,7 @@ export default async function SellerProfilePage({
             />
 
           ))}
-
+          
         </div>
 
       </div>
