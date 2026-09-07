@@ -242,7 +242,7 @@ export default async function SellerTransactionsPage() {
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted">
+            <p className="text-lg font-bold text-muted">
               Transactions
             </p>
 
@@ -251,7 +251,7 @@ export default async function SellerTransactionsPage() {
             </div>
           </div>
 
-          <p className="mt-5 text-2xl font-bold tracking-tight text-foreground">
+          <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
             {totalTransactions.toLocaleString()}
           </p>
 
@@ -265,7 +265,7 @@ export default async function SellerTransactionsPage() {
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted">
+            <p className="text-lg font-bold text-muted">
               Gross Revenue
             </p>
 
@@ -288,7 +288,7 @@ export default async function SellerTransactionsPage() {
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted">
+            <p className="text-lg font-bold text-muted">
               Platform Fees
             </p>
 
@@ -311,7 +311,7 @@ export default async function SellerTransactionsPage() {
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted">
+            <p className="text-lg font-bold text-muted">
               Your Earnings
             </p>
 

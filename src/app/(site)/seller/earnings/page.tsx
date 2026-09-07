@@ -269,7 +269,7 @@ export default async function SellerEarningsPage() {
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted">
+            <p className="text-lg font-bold text-muted">
               Total Earnings
             </p>
 
@@ -294,7 +294,7 @@ export default async function SellerEarningsPage() {
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted">
+            <p className="text-lg font-bold text-muted">
               This Month
             </p>
 
@@ -319,7 +319,7 @@ export default async function SellerEarningsPage() {
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted">
+            <p className="text-lg font-bold text-muted">
               Available Balance
             </p>
 
@@ -344,7 +344,7 @@ export default async function SellerEarningsPage() {
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted">
+            <p className="text-lg font-bold text-muted">
               Paid Out
             </p>
 

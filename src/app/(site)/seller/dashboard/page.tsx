@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { getSellerChannels } from "@/lib/channels/getSellerChannels";
 
 import DashboardStats from "@/components/seller/DashboardStats";
-import SellerChannelCard from "@/components/seller/SellerChannelCard";
+import ChannelCard from "@/components/channels/ChannelCard";
 
 export default async function SellerDashboardPage() {
   const supabase = await createClient();
@@ -34,15 +35,7 @@ export default async function SellerDashboardPage() {
   // CHANNELS
   // --------------------------------------------------
 
-  const { data: channels } = await supabase
-    .from("channels")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", {
-      ascending: false,
-    });
-
-  const sellerChannels = channels ?? [];
+  const sellerChannels = await getSellerChannels(user.id);
 
   const channelIds = sellerChannels.map(
     (channel) => channel.id
@@ -111,58 +104,49 @@ export default async function SellerDashboardPage() {
     subscriberCount = subscriptionsCount ?? 0;
 
     // -----------------------------------------------
-    // Monthly earnings
+    // Total earnings
     // -----------------------------------------------
-
-    const now = new Date();
-
-    const monthStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      1
-    );
 
     const {
       data: payments,
       error: paymentsError,
     } = await supabase
       .from("payments")
-      .select("creator_amount, payment_status, paid_at")
+      .select("creator_amount")
       .in("channel_id", channelIds)
-      .eq("payment_status", "paid")
-      .gte("paid_at", monthStart.toISOString());
+      .eq("payment_status", "paid");
 
     if (paymentsError) {
       console.error(
-        "Dashboard monthly earnings error:",
+        "Dashboard overall earnings error:",
         paymentsError
       );
     }
 
-      earnings = (payments ?? []).reduce(
+    earnings = (payments ?? []).reduce(
       (total, payment) =>
         total + Number(payment.creator_amount || 0),
       0
     );
-  }
 
   // --------------------------------------------------
   // PAGE
   // --------------------------------------------------
 
   return (
-    <div className="px-6 py-6 space-y-6">
-
+    <div className="space-y-6 px-6 py-6">
+      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">
           Welcome back, {profile?.display_name}
         </h1>
 
-        <p className="text-muted-foreground mt-2">
+        <p className="mt-2 text-muted-foreground">
           Manage your channels and grow your audience.
         </p>
       </div>
 
+      {/* Dashboard Stats */}
       <DashboardStats
         channelCount={sellerChannels.length}
         videoCount={videoCount}
@@ -170,31 +154,30 @@ export default async function SellerDashboardPage() {
         earnings={earnings}
       />
 
+      {/* Channels */}
       <section className="space-y-4">
-
         <h2 className="text-2xl font-bold">
           Your Channels
         </h2>
 
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-
-          {sellerChannels.length ? (
-            sellerChannels.map((channel) => (
-              <SellerChannelCard
+        {sellerChannels.length > 0 ? (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {sellerChannels.map((channel) => (
+              <ChannelCard
                 key={channel.id}
                 channel={channel}
+                variant="seller"
+                showActions={false}
               />
-            ))
-          ) : (
-            <p className="text-muted-foreground">
-              No channels created yet.
-            </p>
-          )}
-
-        </div>
-
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground">
+            No channels created yet.
+          </p>
+        )}
       </section>
-
     </div>
   );
+}
 }

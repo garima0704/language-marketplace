@@ -40,13 +40,59 @@ export default async function NewVideoPage() {
     .order("display_order");
 
   // Language / Country / State
-  const { data: languageRegions } = await supabase
+const PAGE_SIZE = 1000;
+
+let languageRegions: {
+  id: number;
+  language_code: string;
+  country: string;
+  state: string | null;
+  sort_order: number | null;
+}[] = [];
+
+let from = 0;
+
+while (true) {
+  const {
+    data: page,
+    error: languageRegionsError,
+  } = await supabase
     .from("language_regions")
     .select(
       "id, language_code, country, state, sort_order"
     )
     .order("language_code")
-    .order("sort_order");
+    .order("sort_order")
+    .range(from, from + PAGE_SIZE - 1);
+
+  if (languageRegionsError) {
+    console.error(
+      "Failed to fetch language regions:",
+      languageRegionsError
+    );
+    break;
+  }
+
+  languageRegions.push(...(page ?? []));
+
+  if (!page || page.length < PAGE_SIZE) {
+    break;
+  }
+
+  from += PAGE_SIZE;
+}
+
+console.log(
+  "Total language regions:",
+  languageRegions.length
+);
+
+console.log(
+  "Chinese language regions:",
+  languageRegions.filter(
+    (region) => region.language_code === "zh"
+  )
+);
 
   // Categories
   const { data: categories } = await supabase

@@ -104,16 +104,45 @@ export async function login(
     };
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
+  // =========================================================
+  // LOGIN
+  // =========================================================
+
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  if (error) {
+  if (error || !data.user) {
     return {
       success: false,
       error: "Invalid email or password.",
     };
+  }
+
+  // =========================================================
+  // GET USER PROFILE
+  // =========================================================
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("is_creator")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error("Failed to load user profile:", profileError);
+
+    // Default to buyer/home if profile cannot be loaded
+    redirect("/");
+  }
+
+  // =========================================================
+  // REDIRECT BASED ON USER TYPE
+  // =========================================================
+
+  if (profile?.is_creator === true) {
+    redirect("/seller/dashboard");
   }
 
   redirect("/");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Category = {
   id: string;
@@ -19,17 +19,110 @@ type Props = {
   categories: Category[];
   translations: CategoryTranslation[];
   localeCode?: string;
+  initialCategoryId?: string;
+  onCategoryChange?: (categoryId: string) => void;
 };
 
 export default function CategorySelector({
   categories,
   translations,
   localeCode = "en",
+  initialCategoryId = "",
+  onCategoryChange,
 }: Props) {
-  const [level1, setLevel1] = useState("");
-  const [level2, setLevel2] = useState("");
-  const [level3, setLevel3] = useState("");
-  const [level4, setLevel4] = useState("");
+  const initialCategory = categories.find(
+  (category) => category.id === initialCategoryId
+);
+
+function getInitialLevels(category: Category | undefined) {
+  if (!category) {
+    return {
+      level1: "",
+      level2: "",
+      level3: "",
+      level4: "",
+    };
+  }
+
+  // Level 1 category
+  if (category.level === 1) {
+    return {
+      level1: category.id,
+      level2: "",
+      level3: "",
+      level4: "",
+    };
+  }
+
+  // Level 2 category
+  if (category.level === 2) {
+    return {
+      level1: category.parent_id ?? "",
+      level2: category.id,
+      level3: "",
+      level4: "",
+    };
+  }
+
+  // Level 3 category
+  if (category.level === 3) {
+    const parentLevel2 = categories.find(
+      (item) => item.id === category.parent_id
+    );
+
+    return {
+      level1: parentLevel2?.parent_id ?? "",
+      level2: parentLevel2?.id ?? "",
+      level3: category.id,
+      level4: "",
+    };
+  }
+
+  // Level 4 category
+  if (category.level === 4) {
+    const parentLevel3 = categories.find(
+      (item) => item.id === category.parent_id
+    );
+
+    const parentLevel2 = categories.find(
+      (item) => item.id === parentLevel3?.parent_id
+    );
+
+    return {
+      level1: parentLevel2?.parent_id ?? "",
+      level2: parentLevel2?.id ?? "",
+      level3: parentLevel3?.id ?? "",
+      level4: category.id,
+    };
+  }
+
+  return {
+    level1: "",
+    level2: "",
+    level3: "",
+    level4: "",
+  };
+}
+
+const initialLevels = getInitialLevels(initialCategory);
+
+const [level1, setLevel1] = useState(initialLevels.level1);
+const [level2, setLevel2] = useState(initialLevels.level2);
+const [level3, setLevel3] = useState(initialLevels.level3);
+const [level4, setLevel4] = useState(initialLevels.level4);
+
+useEffect(() => {
+  const category = categories.find(
+    (category) => category.id === initialCategoryId
+  );
+
+  const levels = getInitialLevels(category);
+
+  setLevel1(levels.level1);
+  setLevel2(levels.level2);
+  setLevel3(levels.level3);
+  setLevel4(levels.level4);
+}, [categories, initialCategoryId]);
 
   const translationMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -113,18 +206,47 @@ export default function CategorySelector({
     setLevel2("");
     setLevel3("");
     setLevel4("");
+
+    onCategoryChange?.("");
   }
 
   function handleLevel2Change(value: string) {
-    setLevel2(value);
-    setLevel3("");
-    setLevel4("");
+  setLevel2(value);
+  setLevel3("");
+  setLevel4("");
+
+  if (categories.filter(
+    (category) =>
+      category.level === 3 &&
+      category.parent_id === value
+  ).length === 0) {
+    onCategoryChange?.(value);
+  } else {
+    onCategoryChange?.("");
   }
+}
 
   function handleLevel3Change(value: string) {
-    setLevel3(value);
-    setLevel4("");
+  setLevel3(value);
+  setLevel4("");
+
+  const hasLevel4 = categories.some(
+    (category) =>
+      category.level === 4 &&
+      category.parent_id === value
+  );
+
+  if (!hasLevel4) {
+    onCategoryChange?.(value);
+  } else {
+    onCategoryChange?.("");
   }
+}
+
+  function handleLevel4Change(value: string) {
+  setLevel4(value);
+  onCategoryChange?.(value);
+}
 
   const selectClassName =
     "h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10";
@@ -231,7 +353,7 @@ export default function CategorySelector({
             name="category_id"
             value={level4}
             onChange={(e) =>
-              setLevel4(e.target.value)
+              handleLevel4Change(e.target.value)
             }
             className={selectClassName}
             required
@@ -252,6 +374,15 @@ export default function CategorySelector({
         </div>
       )}
 
+      {/* If Level 2 is the final category */}
+      {level2 && categoriesLevel3.length === 0 && (
+        <input
+          type="hidden"
+          name="category_id"
+          value={level2}
+        />
+      )}
+
       {/* If Level 3 is the final category */}
       {level3 && categoriesLevel4.length === 0 && (
         <input
@@ -260,7 +391,6 @@ export default function CategorySelector({
           value={level3}
         />
       )}
-
       <p className="text-xs text-muted-foreground">
         Select a category and continue through the
         available subcategories.

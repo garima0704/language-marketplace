@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,6 +82,7 @@ export default function NewVideoForm({
   categoryTranslations,
 }: Props) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
 
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -205,7 +206,6 @@ export default function NewVideoForm({
   setIsSaving(true);
 
   try {
-    console.log("SUBMIT STARTED");
 
     // --------------------------------
     // 1. Check video
@@ -216,20 +216,12 @@ export default function NewVideoForm({
       return;
     }
 
-    console.log("VIDEO FILE:", videoFile);
-
     // --------------------------------
     // 2. Get form data
     // --------------------------------
 
     const form = event.currentTarget;
     const formData = new FormData(form);
-
-    console.log("FORM DATA:");
-
-    for (const [key, value] of formData.entries()) {
-      console.log(key, value);
-    }
 
     // --------------------------------
     // 3. Read values
@@ -247,6 +239,11 @@ export default function NewVideoForm({
     const languageCodeValue = String(
       formData.get("language_code") ?? ""
     );
+
+    if (!languageCodeValue) {
+      alert("Please select a language.");
+      return;
+    }
 
     const languageRegionIdValue = String(
       formData.get("language_region_id") ?? ""
@@ -346,8 +343,6 @@ export default function NewVideoForm({
       return;
     }
 
-    console.log("USER:", user.id);
-
     // --------------------------------
     // 7. Generate unique file path
     // --------------------------------
@@ -367,15 +362,9 @@ export default function NewVideoForm({
 
     const storagePath = `${user.id}/${uniqueFileName}`;
 
-    console.log("VIDEO ID:", videoId);
-
-    console.log("STORAGE PATH:", storagePath);
-
     // --------------------------------
     // 8. Upload video
     // --------------------------------
-
-    console.log("UPLOADING VIDEO...");
 
     const { error: uploadError } =
       await supabase.storage
@@ -393,9 +382,6 @@ export default function NewVideoForm({
       );
     }
 
-    console.log("VIDEO UPLOADED SUCCESSFULLY");
-
-
     // --------------------------------
     // 9. Generate slug
     // --------------------------------
@@ -409,13 +395,9 @@ export default function NewVideoForm({
 
     const slug = `${baseSlug}-${crypto.randomUUID().slice(0, 8)}`;
 
-    console.log("SLUG:", slug);
-
     // --------------------------------
     // 10. Insert video database row
     // --------------------------------
-
-    console.log("INSERTING VIDEO ROW...");
 
     const { data: video, error: insertError } =
       await supabase
@@ -435,6 +417,7 @@ export default function NewVideoForm({
           video_id: storagePath,
           
           language_code: languageCodeValue,
+
           language_region_id:
             Number(languageRegionIdValue),
 
@@ -477,10 +460,6 @@ export default function NewVideoForm({
     insertError
   );
 
-  console.log(
-    "Deleting uploaded video because database insert failed..."
-  );
-
   await supabase.storage
     .from("videos")
     .remove([storagePath]);
@@ -489,12 +468,6 @@ export default function NewVideoForm({
     `Video database insert failed: ${insertError.message}`
   );
 }
-
-console.log(
-  "VIDEO DATABASE ROW CREATED:",
-  video
-);
-
 
 // --------------------------------
 // 11. Upload thumbnail
@@ -509,13 +482,6 @@ const thumbnailFileName =
 
 const thumbnailPath =
   `${videoId}/${thumbnailFileName}`;
-
-console.log(
-  "THUMBNAIL STORAGE PATH:",
-  thumbnailPath
-);
-
-console.log("UPLOADING THUMBNAIL...");
 
 const { error: thumbnailUploadError } =
   await supabase.storage
@@ -553,10 +519,6 @@ if (thumbnailUploadError) {
   );
 }
 
-console.log(
-  "THUMBNAIL UPLOADED SUCCESSFULLY"
-);
-
 
 // --------------------------------
 // 12. Get thumbnail URL
@@ -571,11 +533,6 @@ const {
 
 const thumbnailUrl =
   thumbnailPublicUrl.publicUrl;
-
-console.log(
-  "THUMBNAIL URL:",
-  thumbnailUrl
-);
 
 
 // --------------------------------
@@ -617,15 +574,6 @@ if (thumbnailUpdateError) {
   );
 }
 
-console.log(
-  "THUMBNAIL URL SAVED SUCCESSFULLY"
-);
-
-console.log(
-  "VIDEO CREATED SUCCESSFULLY:",
-  video
-);
-
 alert("Video published successfully!");
 
   router.push("/seller/videos");
@@ -650,20 +598,379 @@ async function handleSaveDraft() {
   setIsSaving(true);
 
   try {
-    console.log("SAVE DRAFT STARTED");
-
+    // --------------------------------
+    // 1. Check video
+    // --------------------------------
     if (!videoFile) {
       alert("Please select a video file.");
       return;
     }
 
-    console.log("VIDEO FILE:", videoFile);
+    // --------------------------------
+    // 2. Get form data
+    // --------------------------------
+    if (!formRef.current) {
+      throw new Error("Could not find video form.");
+    }
 
-    alert("Save Draft button is working!");
+    const formData = new FormData(formRef.current);
+
+    const titleValue = String(
+      formData.get("title") ?? ""
+    ).trim();
+
+    const descriptionValue = String(
+      formData.get("description") ?? ""
+    ).trim();
+
+    const channelIdValue = String(
+      formData.get("channel_id") ?? ""
+    );
+
+    const languageCodeValue = String(
+      formData.get("language_code") ?? ""
+    ).trim();
+
+    const languageRegionIdValue = String(
+      formData.get("language_region_id") ?? ""
+    ).trim();
+
+    console.log("DRAFT language_code:", languageCodeValue);
+    console.log(
+      "DRAFT language_region_id:",
+      languageRegionIdValue
+    );
+
+    if (!languageCodeValue) {
+      alert("Please select a language.");
+      return;
+    }
+
+    if (!languageRegionIdValue) {
+      alert("Please select a language region.");
+      return;
+    }
+
+    const isNativeSpeakerValue =
+      formData.get("is_native_speaker") === "true";
+
+    const levelValue = String(
+      formData.get("level") ?? ""
+    );
+
+    if (!channelIdValue) {
+      alert("Please select a channel.");
+      return;
+    }
+
+    if (!levelValue) {
+      alert("Please select a level.");
+      return;
+    }
+
+    const captionsOriginalValue =
+      formData.get("captions_original") === "true";
+
+    const subtitleLanguageCodeValue =
+      String(
+        formData.get("subtitle_language_code") ?? ""
+      ) || null;
+
+    const explainsIdiomsValue =
+      formData.get("explains_idioms") === "true";
+
+    const explainsTechnicalLingoValue =
+      formData.get("explains_technical_lingo") === "true";
+
+    const profanityValue =
+      formData.get("profanity") === "true";
+
+    const aiVoiceValue =
+      formData.get("ai_voice") === "true";
+
+    const categoryIdValue = String(
+      formData.get("category_id") ?? ""
+    );
+
+    if (!categoryIdValue) {
+      alert("Please select a category.");
+      return;
+    }
+
+    const accessTypeValue = String(
+      formData.get("access_type") ?? "subscriber"
+    );
+
+    // --------------------------------
+    // 3. Create Supabase client
+    // --------------------------------
+    const supabase = createClient();
+
+    // --------------------------------
+    // 4. Get logged-in user
+    // --------------------------------
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.error("USER ERROR:", userError);
+      throw userError;
+    }
+
+    if (!user) {
+      alert("You must be logged in to save a draft.");
+      return;
+    }
+
+    // --------------------------------
+    // 5. Generate unique video path
+    // --------------------------------
+    const fileExtension =
+      videoFile.name.split(".").pop() || "mp4";
+
+    const safeFileName = videoFile.name
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-zA-Z0-9-_]/g, "-")
+      .replace(/-+/g, "-")
+      .toLowerCase();
+
+    const videoId = crypto.randomUUID();
+
+    const uniqueFileName =
+      `${crypto.randomUUID()}-${safeFileName}.${fileExtension}`;
+
+    const storagePath =
+      `${user.id}/${uniqueFileName}`;
+
+    // --------------------------------
+    // 6. Upload video
+    // --------------------------------
+    const { error: uploadError } =
+      await supabase.storage
+        .from("videos")
+        .upload(storagePath, videoFile, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType:
+            videoFile.type || "video/mp4",
+        });
+
+    if (uploadError) {
+      console.error(
+        "VIDEO UPLOAD ERROR:",
+        uploadError
+      );
+
+      throw new Error(
+        `Video upload failed: ${uploadError.message}`
+      );
+    }
+
+    // --------------------------------
+    // 7. Generate slug
+    // --------------------------------
+    const baseSlug =
+      titleValue ||
+      videoFile.name
+        .replace(/\.[^/.]+$/, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-");
+
+    const slug =
+      `${baseSlug || "draft"}-${crypto.randomUUID().slice(0, 8)}`;
+
+    // --------------------------------
+    // 8. Insert draft into database
+    // --------------------------------
+    const { error: insertError } =
+      await supabase
+        .from("videos")
+        .insert({
+          id: videoId,
+
+          channel_id:
+            channelIdValue || null,
+
+          category_id: categoryIdValue,
+
+          title:
+            titleValue || "Untitled Video",
+
+          slug,
+
+          description:
+            descriptionValue || null,
+
+          video_provider: "supabase",
+
+          video_id: storagePath,
+
+          language_code: languageCodeValue,
+
+          language_region_id: Number(languageRegionIdValue),
+
+          is_native_speaker:
+            isNativeSpeakerValue,
+
+          level:
+            levelValue || null,
+
+          captions_original:
+            captionsOriginalValue,
+
+          subtitle_language_code:
+            subtitleLanguageCodeValue,
+
+          explains_idioms:
+            explainsIdiomsValue,
+
+          explains_technical_lingo:
+            explainsTechnicalLingoValue,
+
+          profanity:
+            profanityValue,
+
+          ai_voice:
+            aiVoiceValue,
+
+          access_type:
+            accessTypeValue,
+
+          status: "draft",
+
+          published_at: null,
+        });
+
+    if (insertError) {
+      console.error(
+        "VIDEO DATABASE INSERT ERROR:",
+        insertError
+      );
+
+      await supabase.storage
+        .from("videos")
+        .remove([storagePath]);
+
+      throw new Error(
+        `Could not save draft: ${insertError.message}`
+      );
+    }
+
+    // --------------------------------
+    // 9. Upload thumbnail
+    // --------------------------------
+    if (thumbnailFile) {
+      const thumbnailFileName =
+        `${crypto.randomUUID()}-thumbnail.jpg`;
+
+      const thumbnailPath =
+        `${videoId}/${thumbnailFileName}`;
+
+      const {
+        error: thumbnailUploadError,
+      } = await supabase.storage
+        .from("video-thumbnails")
+        .upload(
+          thumbnailPath,
+          thumbnailFile,
+          {
+            cacheControl: "3600",
+            upsert: false,
+            contentType:
+              thumbnailFile.type || "image/jpeg",
+          }
+        );
+
+      if (thumbnailUploadError) {
+        console.error(
+          "THUMBNAIL UPLOAD ERROR:",
+          thumbnailUploadError
+        );
+
+        await supabase
+          .from("videos")
+          .delete()
+          .eq("id", videoId);
+
+        await supabase.storage
+          .from("videos")
+          .remove([storagePath]);
+
+        throw new Error(
+          `Thumbnail upload failed: ${thumbnailUploadError.message}`
+        );
+      }
+
+      // --------------------------------
+      // 10. Save thumbnail URL
+      // --------------------------------
+      const {
+        data: thumbnailPublicUrl,
+      } = supabase.storage
+        .from("video-thumbnails")
+        .getPublicUrl(thumbnailPath);
+
+      const thumbnailUrl =
+        thumbnailPublicUrl.publicUrl;
+
+      const {
+        error: thumbnailUpdateError,
+      } = await supabase
+        .from("videos")
+        .update({
+          thumbnail_url: thumbnailUrl,
+        })
+        .eq("id", videoId);
+
+      if (thumbnailUpdateError) {
+        console.error(
+          "THUMBNAIL URL UPDATE ERROR:",
+          thumbnailUpdateError
+        );
+
+        await supabase.storage
+          .from("video-thumbnails")
+          .remove([thumbnailPath]);
+
+        await supabase.storage
+          .from("videos")
+          .remove([storagePath]);
+
+        await supabase
+          .from("videos")
+          .delete()
+          .eq("id", videoId);
+
+        throw new Error(
+          `Could not save thumbnail: ${thumbnailUpdateError.message}`
+        );
+      }
+    }
+
+    // --------------------------------
+    // 11. Success
+    // --------------------------------
+    alert("Video saved as draft!");
+
+    router.push("/seller/videos");
+    router.refresh();
 
   } catch (error) {
-    console.error("SAVE DRAFT ERROR:", error);
-    alert("Something went wrong.");
+    console.error(
+      "SAVE DRAFT ERROR:",
+      error
+    );
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong while saving the draft."
+    );
+
   } finally {
     setIsSaving(false);
   }
@@ -671,6 +978,7 @@ async function handleSaveDraft() {
 
   return (
     <form
+      ref={formRef}
       onSubmit={handleSubmit}
       className="space-y-6"
     >
@@ -779,7 +1087,6 @@ async function handleSaveDraft() {
       const previewUrl = URL.createObjectURL(thumbnail);
       setThumbnailPreview(previewUrl);
 
-      console.log("THUMBNAIL GENERATED:", thumbnail);
     } catch (error) {
       console.error("THUMBNAIL GENERATION ERROR:", error);
       alert("Could not generate video thumbnail.");
@@ -1195,6 +1502,7 @@ async function handleSaveDraft() {
                 categories={categories}
                 translations={categoryTranslations}
                 localeCode="en"
+                onCategoryChange={setCategoryId}
               />
             </CardContent>
           </Card>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Language = {
   code: string;
@@ -18,15 +18,46 @@ type LanguageRegion = {
 type Props = {
   languages: Language[];
   languageRegions: LanguageRegion[];
+  initialLanguageCode?: string;
+  initialRegionId?: number | null;
 };
 
 export default function LanguageRegionSelector({
   languages,
   languageRegions,
+  initialLanguageCode = "",
+  initialRegionId = null,
 }: Props) {
-  const [languageCode, setLanguageCode] = useState("");
-  const [country, setCountry] = useState("");
-  const [regionId, setRegionId] = useState("");
+
+const [languageCode, setLanguageCode] = useState(
+  initialLanguageCode
+);
+
+const [country, setCountry] = useState("");
+
+const [regionId, setRegionId] = useState(
+  initialRegionId ? String(initialRegionId) : ""
+);
+
+useEffect(() => {
+  const existingRegion = languageRegions.find(
+    (region) => region.id === initialRegionId
+  );
+
+  setLanguageCode(initialLanguageCode ?? "");
+
+  if (existingRegion) {
+    setCountry(existingRegion.country.trim());
+    setRegionId(String(existingRegion.id));
+  } else {
+    setCountry("");
+    setRegionId("");
+  }
+}, [
+  initialLanguageCode,
+  initialRegionId,
+  languageRegions,
+]);
 
   // Countries belonging to selected language
   const countries = useMemo(() => {

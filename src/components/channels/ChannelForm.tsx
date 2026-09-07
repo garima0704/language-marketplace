@@ -61,8 +61,6 @@ export default function ChannelForm({
     channel?.channel_name ?? ""
   );
 
-  const [slug, setSlug] = useState(channel?.slug ?? "");
-
   const [description, setDescription] = useState(
     channel?.description ?? ""
   );
@@ -70,8 +68,6 @@ export default function ChannelForm({
   const [price, setPrice] = useState(
     channel?.subscription_price.toString() ?? "0"
   );
-
-  const [slugEdited, setSlugEdited] = useState(mode === "edit");
 
   // --------------------------------------------------
   // Branding
@@ -103,11 +99,33 @@ export default function ChannelForm({
       .replace(/^-+|-+$/g, "");
   }, [channelName]);
 
-  useEffect(() => {
-    if (!slugEdited) {
-      setSlug(generatedSlug);
+  // --------------------------------------------------
+  // Generate unique slug
+  // --------------------------------------------------
+
+  async function generateUniqueSlug(baseSlug: string) {
+    let slug = baseSlug;
+    let counter = 1;
+
+    while (true) {
+      const { data, error } = await supabase
+        .from("channels")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data) {
+        return slug;
+      }
+
+      counter += 1;
+      slug = `${baseSlug}-${counter}`;
     }
-  }, [generatedSlug, slugEdited]);
+  }
 
   // --------------------------------------------------
   // Image preview cleanup
@@ -282,24 +300,11 @@ export default function ChannelForm({
     setError("");
 
     const trimmedName = channelName.trim();
-    const trimmedSlug = slug.trim();
     const trimmedDescription = description.trim();
     const subscriptionPrice = Number(price);
 
     if (!trimmedName) {
       setError("Channel name is required.");
-      return;
-    }
-
-    if (!trimmedSlug) {
-      setError("Channel URL is required.");
-      return;
-    }
-
-    if (!/^[a-z0-9-]+$/.test(trimmedSlug)) {
-      setError(
-        "Channel URL can only contain lowercase letters, numbers and hyphens."
-      );
       return;
     }
 
@@ -311,91 +316,77 @@ export default function ChannelForm({
     setLoading(true);
 
     try {
-      // --------------------------------------------------
-      // Check slug
-      // --------------------------------------------------
+     // --------------------------------------------------
+    // CREATE
+    // --------------------------------------------------
 
-      const { data: existing, error: slugError } = await supabase
+    if (mode === "create") {
+      if (!generatedSlug) {
+        setError("Please enter a valid channel name.");
+        return;
+      }
+
+      const uniqueSlug = await generateUniqueSlug(generatedSlug);
+
+      const { data, error: createError } = await supabase
         .from("channels")
+        .insert({
+          user_id: userId,
+          channel_name: trimmedName,
+          slug: uniqueSlug,
+          description: trimmedDescription,
+          subscription_price: subscriptionPrice,
+        })
         .select("id")
-        .eq("slug", trimmedSlug)
-        .neq("id", channel?.id ?? "")
-        .maybeSingle();
+        .single();
 
-      if (slugError) {
-        setError(slugError.message);
+      if (createError) {
+        setError(createError.message);
         return;
       }
 
-      if (existing) {
-        setError("This channel URL is already taken.");
-        return;
+      const channelId = data.id;
+
+      let logoUrl: string | null = null;
+      let bannerUrl: string | null = null;
+
+      // Upload logo
+      if (logoFile) {
+        logoUrl = await uploadChannelAsset(
+          channelId,
+          "logo",
+          logoFile
+        );
       }
 
-      // --------------------------------------------------
-      // CREATE
-      // --------------------------------------------------
+      // Upload banner
+      if (bannerFile) {
+        bannerUrl = await uploadChannelAsset(
+          channelId,
+          "banner",
+          bannerFile
+        );
+      }
 
-      if (mode === "create") {
-        const { data, error: createError } = await supabase
+      // Save asset URLs
+      if (logoUrl || bannerUrl) {
+        const { error: assetUpdateError } = await supabase
           .from("channels")
-          .insert({
-            user_id: userId,
-            channel_name: trimmedName,
-            slug: trimmedSlug,
-            description: trimmedDescription,
-            subscription_price: subscriptionPrice,
+          .update({
+            ...(logoUrl ? { logo_url: logoUrl } : {}),
+            ...(bannerUrl ? { banner_url: bannerUrl } : {}),
           })
-          .select("id")
-          .single();
+          .eq("id", channelId);
 
-        if (createError) {
-          setError(createError.message);
+        if (assetUpdateError) {
+          setError(assetUpdateError.message);
           return;
         }
-
-        const channelId = data.id;
-
-        let logoUrl: string | null = null;
-        let bannerUrl: string | null = null;
-
-        // Upload logo
-        if (logoFile) {
-          logoUrl = await uploadChannelAsset(
-            channelId,
-            "logo",
-            logoFile
-          );
-        }
-
-        // Upload banner
-        if (bannerFile) {
-          bannerUrl = await uploadChannelAsset(
-            channelId,
-            "banner",
-            bannerFile
-          );
-        }
-
-        // Save asset URLs
-        if (logoUrl || bannerUrl) {
-          const { error: assetUpdateError } = await supabase
-            .from("channels")
-            .update({
-              ...(logoUrl ? { logo_url: logoUrl } : {}),
-              ...(bannerUrl ? { banner_url: bannerUrl } : {}),
-            })
-            .eq("id", channelId);
-
-          if (assetUpdateError) {
-            setError(assetUpdateError.message);
-            return;
-          }
-        }
-
-        router.push(`/seller/channels/${channelId}`);
-        return;
       }
+
+      router.push(`/seller/channels/${channelId}`);
+      return;
+    }
 
       // --------------------------------------------------
       // EDIT
@@ -440,7 +431,6 @@ export default function ChannelForm({
         .from("channels")
         .update({
           channel_name: trimmedName,
-          slug: trimmedSlug,
           description: trimmedDescription,
           subscription_price: subscriptionPrice,
           logo_url: logoUrl,
@@ -500,38 +490,6 @@ export default function ChannelForm({
 
             <p className="text-xs text-muted">
               This is the name learners will see.
-            </p>
-          </div>
-
-          {/* Channel URL */}
-          <div className="space-y-2">
-            <Label htmlFor="slug">
-              Channel URL
-            </Label>
-
-            <div className="flex overflow-hidden rounded-lg border border-border">
-              <div className="flex items-center bg-muted-bg px-4 text-sm text-muted">
-                niceconvo.com/c/
-              </div>
-
-              <Input
-                id="slug"
-                className="rounded-none border-0"
-                value={slug}
-                onChange={(e) => {
-                  setSlugEdited(true);
-
-                  setSlug(
-                    e.target.value
-                      .toLowerCase()
-                      .replace(/[^a-z0-9-]/g, "")
-                  );
-                }}
-              />
-            </div>
-
-            <p className="text-xs text-muted">
-              Your public channel URL.
             </p>
           </div>
 
@@ -684,12 +642,12 @@ export default function ChannelForm({
               </Label>
 
               <p className="mt-1 text-xs text-muted">
-                Recommended: 1600 × 400 px. JPG, PNG or WEBP. Max 5 MB.
+                Recommended: 1500 × 500 px. JPG, PNG or WEBP. Max 5 MB.
               </p>
             </div>
 
             <div className="overflow-hidden rounded-xl border border-border bg-muted-bg">
-              <div className="aspect-[4/1] w-full">
+              <div className="aspect-[3/1] w-full">
                 {bannerPreview ? (
                   <img
                     src={bannerPreview}

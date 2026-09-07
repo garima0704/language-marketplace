@@ -219,7 +219,7 @@ export default async function SellerPayoutsPage() {
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted">
+            <p className="text-lg font-bold text-muted">
               Total Paid Out
             </p>
 
@@ -228,7 +228,7 @@ export default async function SellerPayoutsPage() {
             </div>
           </div>
 
-          <p className="mt-5 text-2xl font-bold tracking-tight text-foreground">
+          <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
             {formatCurrency(
               totalPaidOut,
               currency
@@ -244,7 +244,7 @@ export default async function SellerPayoutsPage() {
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted">
+            <p className="text-lg font-bold text-muted">
               Pending
             </p>
 
@@ -269,7 +269,7 @@ export default async function SellerPayoutsPage() {
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted">
+            <p className="text-lg font-bold text-muted">
               Failed
             </p>
 
@@ -294,7 +294,7 @@ export default async function SellerPayoutsPage() {
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted">
+            <p className="text-lg font-bold text-muted">
               Payouts
             </p>
 

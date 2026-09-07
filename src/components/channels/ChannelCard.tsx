@@ -15,6 +15,11 @@ type Channel = {
   description: string | null;
   logo_url: string | null;
   banner_url: string | null;
+  subscription_price: number | string | null;
+
+  // Seller-specific stats
+  subscriber_count?: number;
+  video_count?: number;
 };
 
 type SubscriptionInfo = {
@@ -27,6 +32,7 @@ interface ChannelCardProps {
   seller?: SellerInfo | null;
   variant: "subscription" | "seller";
   subscription?: SubscriptionInfo;
+  showActions?: boolean;
 }
 
 export default function ChannelCard({
@@ -34,6 +40,7 @@ export default function ChannelCard({
   seller,
   variant,
   subscription,
+  showActions = true,
 }: ChannelCardProps) {
   const renewalDate =
     subscription?.current_period_end
@@ -46,11 +53,9 @@ export default function ChannelCard({
 
   return (
     <div className="group overflow-hidden rounded-xl border border-border bg-background transition hover:shadow-md">
-      {/* =========================================================
-          BANNER
-      ========================================================== */}
 
-      <div className="h-40 bg-muted-bg">
+      {/* Banner */}
+      <div className="relative aspect-[3/1] bg-muted-bg">
         {channel.banner_url ? (
           <img
             src={channel.banner_url}
@@ -62,68 +67,58 @@ export default function ChannelCard({
             No banner available
           </div>
         )}
-      </div>
 
-      {/* =========================================================
-          CONTENT
-      ========================================================== */}
-
-      <div className="p-6">
-        {/* =======================================================
-            CHANNEL INFO
-        ======================================================== */}
-
-        <div className="flex items-center gap-4">
-          {/* Channel Logo */}
-          <Link
-            href={`/channels/${channel.slug}`}
-            className="shrink-0"
-          >
+        {/* Channel Logo */}
+        <Link
+          href={`/channels/${channel.slug}`}
+          className="absolute bottom-0 left-5 z-10 translate-y-1/2"
+        >
+          <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-background shadow-sm">
             {channel.logo_url ? (
               <img
                 src={channel.logo_url}
                 alt={channel.channel_name}
-                className="h-14 w-14 rounded-full object-cover transition hover:opacity-90"
+                className="h-full w-full object-cover"
               />
             ) : seller?.avatar_url ? (
               <img
                 src={seller.avatar_url}
                 alt={seller.username || channel.channel_name}
-                className="h-14 w-14 rounded-full object-cover transition hover:opacity-90"
+                className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted-bg font-semibold text-foreground">
+              <div className="flex h-full w-full items-center justify-center bg-muted-bg text-xl font-semibold text-foreground">
                 {channel.channel_name.charAt(0).toUpperCase()}
               </div>
             )}
-          </Link>
-
-          {/* Channel Name + Username */}
-          <div className="min-w-0">
-            <Link
-              href={`/channels/${channel.slug}`}
-              className="block"
-            >
-              <h2 className="truncate text-xl font-semibold text-foreground transition hover:text-secondary">
-                {channel.channel_name}
-              </h2>
-            </Link>
-
-            {seller?.username && (
-              <Link
-                href={`/sellers/${seller.username}`}
-                className="text-sm text-muted transition hover:text-foreground hover:underline"
-              >
-                @{seller.username}
-              </Link>
-            )}
           </div>
-        </div>
+        </Link>
+      </div>
 
-        {/* =========================================================
-            DESCRIPTION / ABOUT
-        ========================================================== */}
+      {/* Content */}
+      <div className="px-5 pb-5 pt-16">
 
+        {/* Channel Name */}
+        <Link
+          href={`/channels/${channel.slug}`}
+          className="block"
+        >
+          <h2 className="truncate text-xl font-semibold text-foreground transition hover:text-secondary">
+            {channel.channel_name}
+          </h2>
+        </Link>
+
+        {/* Username */}
+        {seller?.username && (
+          <Link
+            href={`/sellers/${seller.username}`}
+            className="mt-1 block text-sm text-muted transition hover:text-foreground hover:underline"
+          >
+            @{seller.username}
+          </Link>
+        )}
+
+        {/* Description */}
         {channel.description ? (
           <p className="mt-4 line-clamp-3 text-sm italic leading-6 text-secondary">
             {channel.description}
@@ -134,11 +129,27 @@ export default function ChannelCard({
           </p>
         )}
 
-        {/* =========================================================
-            SUBSCRIPTION STATUS
-            Only shown on subscriptions page
-        ========================================================== */}
+        {/* Seller Details */}
+        {variant === "seller" && (
+          <>
+            <div className="mt-5 flex items-center justify-between">
+              <span className="text-sm font-semibold text-foreground">
+                ${Number(channel.subscription_price ?? 0).toFixed(2)}
+                <span className="font-normal text-muted">
+                  /month
+                </span>
+              </span>
+            </div>
 
+            <div className="mt-2 text-sm text-muted">
+              {channel.subscriber_count ?? 0} subscribers
+              <span className="mx-2">·</span>
+              {channel.video_count ?? 0} videos
+            </div>
+          </>
+        )}
+
+        {/* Subscription Status */}
         {variant === "subscription" && subscription && (
           <div className="mt-5 flex items-center justify-between">
             <span className="rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground">
@@ -153,36 +164,52 @@ export default function ChannelCard({
           </div>
         )}
 
-        {/* =========================================================
-            ACTIONS
-        ========================================================== */}
+        {/* Actions */}
+        {showActions &&
+          (variant === "subscription" && subscription ? (
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link href={`/channels/${channel.slug}`}>
+                <Button className="rounded-lg">
+                  Continue Learning
+                </Button>
+              </Link>
 
-        {variant === "subscription" && subscription ? (
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href={`/channels/${channel.slug}`}>
-              <Button className="rounded-lg">
-                Continue Learning
-              </Button>
-            </Link>
+              <Link href={`/subscriptions/${subscription.id}`}>
+                <Button
+                  variant="outline"
+                  className="rounded-lg"
+                >
+                  Manage Subscription
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              {/* Manage / View */}
+              <div className="mt-6 flex gap-3">
+                <Link
+                  href={`/seller/channels/${channel.id}`}
+                  className="flex-1"
+                >
+                  <Button className="w-full rounded-lg">
+                    Manage
+                  </Button>
+                </Link>
 
-            <Link href={`/subscriptions/${subscription.id}`}>
-              <Button
-                variant="outline"
-                className="rounded-lg"
-              >
-                Manage Subscription
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="mt-6">
-            <Link href={`/channels/${channel.slug}`}>
-              <Button className="rounded-lg">
-                View Channel
-              </Button>
-            </Link>
-          </div>
-        )}
+                <Link
+                  href={`/channels/${channel.slug}`}
+                  className="flex-1"
+                >
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-lg"
+                  >
+                    View
+                  </Button>
+                </Link>
+              </div>
+            </>
+          ))}
       </div>
     </div>
   );

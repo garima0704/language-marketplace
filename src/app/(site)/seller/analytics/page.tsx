@@ -756,13 +756,18 @@ const topVideos = [...videoList]
       -------------------------------------------------- */}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+        {/* Total Revenue */}
+
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted">
+            <p className="text-lg font-bold text-muted">
               Total Revenue
             </p>
 
-            <Wallet className="h-4 w-4 text-muted" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
+              <Wallet className="h-4 w-4 text-foreground" />
+            </div>
           </div>
 
           <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
@@ -777,13 +782,17 @@ const topVideos = [...videoList]
           </p>
         </div>
 
+        {/* Subscribers */}
+
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted">
+            <p className="text-lg font-bold text-muted">
               Subscribers
             </p>
 
-            <Users className="h-4 w-4 text-muted" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
+              <Users className="h-4 w-4 text-foreground" />
+            </div>
           </div>
 
           <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
@@ -797,13 +806,17 @@ const topVideos = [...videoList]
           </p>
         </div>
 
+        {/* Total Views */}
+
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted">
+            <p className="text-lg font-bold text-muted">
               Total Views
             </p>
 
-            <Eye className="h-4 w-4 text-muted" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
+              <Eye className="h-4 w-4 text-foreground" />
+            </div>
           </div>
 
           <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
@@ -815,13 +828,17 @@ const topVideos = [...videoList]
           </p>
         </div>
 
+        {/* Pending Payout */}
+
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted">
+            <p className="text-lg font-bold text-muted">
               Pending Payout
             </p>
 
-            <Wallet className="h-4 w-4 text-muted" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
+              <Wallet className="h-4 w-4 text-foreground" />
+            </div>
           </div>
 
           <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
@@ -835,6 +852,7 @@ const topVideos = [...videoList]
             Currently pending
           </p>
         </div>
+
       </div>
 
       {/* --------------------------------------------------

@@ -286,7 +286,7 @@ export default async function SubscribersPage() {
 
           <div className="flex items-center justify-between">
 
-            <p className="text-sm text-muted">
+            <p className="text-lg font-bold text-muted">
               Total Subscribers
             </p>
 
@@ -312,7 +312,7 @@ export default async function SubscribersPage() {
 
           <div className="flex items-center justify-between">
 
-            <p className="text-sm text-muted">
+            <p className="text-lg font-bold text-muted">
               Active Subscribers
             </p>
 
@@ -338,7 +338,7 @@ export default async function SubscribersPage() {
 
           <div className="flex items-center justify-between">
 
-            <p className="text-sm text-muted">
+            <p className="text-lg font-bold text-muted">
               Monthly Subscription Value
             </p>
 

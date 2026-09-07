@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { formatTimeAgo } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface VideoCardProps {
   id: string;
@@ -15,6 +16,10 @@ interface VideoCardProps {
   level: string | null;
   accessType: "free" | "subscriber";
   categoryLabel?: string;
+
+  // Seller-specific
+  status?: string;
+  showStatus?: boolean;
   showManage?: boolean;
 }
 
@@ -31,6 +36,8 @@ export default function VideoCard({
   level,
   accessType,
   categoryLabel,
+  status,
+  showStatus = false,
   showManage = false,
 }: VideoCardProps) {
   return (
@@ -80,7 +87,6 @@ export default function VideoCard({
           href={`/channels/${channelSlug}`}
           className="group/channel flex items-center gap-3"
         >
-          {/* Channel Logo */}
           <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-muted-bg">
             {channelLogo ? (
               <Image
@@ -97,25 +103,42 @@ export default function VideoCard({
             )}
           </div>
 
-          {/* Channel Name */}
           <p className="min-w-0 truncate text-sm font-medium text-foreground transition group-hover/channel:text-secondary">
             {channelName}
           </p>
         </Link>
 
-        {/* Metadata */}
+        {/* Views + Time */}
         <div className="text-xs text-muted">
-          {views.toLocaleString()} views • {formatTimeAgo(createdAt)}
+          {views.toLocaleString()} views •{" "}
+          {formatTimeAgo(createdAt)}
         </div>
 
         {/* Tags */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          {level && (
-            <span className="rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground">
-              {level}
+          {/* Published / Draft - Seller only */}
+          {showStatus && (
+            <span
+              className={
+                status === "published"
+                  ? "rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
+                  : "rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground"
+              }
+            >
+              {status === "published"
+                ? "Published"
+                : "Draft"}
             </span>
           )}
 
+          {/* Level */}
+          {level && (
+            <span className="rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground">
+              {level.charAt(0).toUpperCase() + level.slice(1)}
+            </span>
+          )}
+
+          {/* Access Type */}
           <span
             className={
               accessType === "free"
@@ -129,14 +152,13 @@ export default function VideoCard({
           </span>
         </div>
 
-        {/* Seller action */}
+        {/* Manage - Seller only */}
         {showManage && (
           <div className="flex justify-end pt-2">
-            <Link
-              href={`/seller/videos/${id}`}
-              className="rounded-md border border-border px-4 py-2 text-sm transition hover:bg-muted-bg"
-            >
-              Manage
+            <Link href={`/seller/videos/${id}`}>
+              <Button variant="outline" size="sm">
+                Manage
+              </Button>
             </Link>
           </div>
         )}

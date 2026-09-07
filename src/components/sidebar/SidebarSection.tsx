@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 import {
   Home,
@@ -68,6 +69,17 @@ export default function SidebarSection({
 }: SidebarSectionProps) {
   const pathname = usePathname();
 
+  const [openItems, setOpenItems] = useState<
+    Record<string, boolean>
+  >({});
+
+  const toggleItem = (href: string) => {
+    setOpenItems((prev) => ({
+      ...prev,
+      [href]: !prev[href],
+    }));
+  };
+
   return (
     <>
       {sections.map((section) => (
@@ -93,7 +105,7 @@ export default function SidebarSection({
             const Icon = icons[item.icon];
 
             // ------------------------------------------
-            // Parent active state
+            // Active state
             // ------------------------------------------
 
             const hasActiveChild =
@@ -112,65 +124,105 @@ export default function SidebarSection({
             const isActive =
               hasActiveChild || isParentActive;
 
+            // ------------------------------------------
+            // Submenu open state
+            // ------------------------------------------
+
+            const hasChildren =
+              !!item.children &&
+              item.children.length > 0;
+
+            const isOpen =
+              openItems[item.href] ?? isActive;
+
             return (
               <div key={item.href}>
                 {/* --------------------------------------
                     Main menu item
                 -------------------------------------- */}
 
-                <Link
-                  href={item.href}
-                  className={`
-                    mx-3
-                    my-1
-                    flex
-                    items-center
-                    gap-3
-                    rounded-lg
-                    px-4
-                    py-3
-                    text-sm
-                    transition-all
-                    duration-200
-                    ${
-                      isActive
-                        ? "bg-primary text-white font-semibold shadow-sm"
-                        : "text-foreground hover:bg-muted-bg hover:text-primary"
+                {hasChildren ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      toggleItem(item.href)
                     }
-                  `}
-                >
-                  <Icon size={19} />
+                    className={`
+                      mx-3
+                      my-1
+                      flex
+                      w-[calc(100%-1.5rem)]
+                      items-center
+                      gap-3
+                      rounded-lg
+                      px-4
+                      py-3
+                      text-sm
+                      transition-all
+                      duration-200
+                      ${
+                        isActive
+                          ? "bg-primary text-white font-semibold shadow-sm"
+                          : "text-foreground hover:bg-muted-bg hover:text-primary"
+                      }
+                    `}
+                  >
+                    <Icon size={19} />
 
-                  <span className="flex-1">
-                    {item.label}
-                  </span>
+                    <span className="flex-1 text-left">
+                      {item.label}
+                    </span>
 
-                  {/* Show arrow only when children exist */}
-                  {item.children &&
-                    item.children.length > 0 && (
-                      <ChevronDown
-                        size={16}
-                        className={`
-                          transition-transform
-                          ${
-                            isActive
-                              ? "rotate-0"
-                              : "-rotate-90"
-                          }
-                        `}
-                      />
-                    )}
-                </Link>
+                    <ChevronDown
+                      size={16}
+                      className={`
+                        transition-transform
+                        ${
+                          isOpen
+                            ? "rotate-0"
+                            : "-rotate-90"
+                        }
+                      `}
+                    />
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className={`
+                      mx-3
+                      my-1
+                      flex
+                      items-center
+                      gap-3
+                      rounded-lg
+                      px-4
+                      py-3
+                      text-sm
+                      transition-all
+                      duration-200
+                      ${
+                        isActive
+                          ? "bg-primary text-white font-semibold shadow-sm"
+                          : "text-foreground hover:bg-muted-bg hover:text-primary"
+                      }
+                    `}
+                  >
+                    <Icon size={19} />
+
+                    <span className="flex-1">
+                      {item.label}
+                    </span>
+                  </Link>
+                )}
 
                 {/* --------------------------------------
                     Submenu
                 -------------------------------------- */}
 
-                {item.children &&
-                  item.children.length > 0 &&
-                  isActive && (
+                {hasChildren &&
+                  isOpen && (
                     <div className="ml-9 mr-3 mt-1 space-y-1 border-l border-border pl-3">
-                      {item.children.map(
+                      {item.children!.map(
                         (child) => {
                           const childActive =
                             pathname === child.href;
