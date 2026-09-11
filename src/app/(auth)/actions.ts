@@ -22,51 +22,53 @@ export async function signUp(
   const username = formData.get("username")?.toString().trim() ?? "";
   const email = formData.get("email")?.toString().trim() ?? "";
   const password = formData.get("password")?.toString() ?? "";
-  const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
+  const confirmPassword =
+    formData.get("confirmPassword")?.toString() ?? "";
 
   if (!username || !email || !password || !confirmPassword) {
-  return {
-    success: false,
-    error: "All fields are required.",
-  };
-}
+    return {
+      success: false,
+      error: "All fields are required.",
+    };
+  }
 
-if (username.length < 3) {
-  return {
-    success: false,
-    error: "Username must be at least 3 characters.",
-  };
-}
+  if (username.length < 3) {
+    return {
+      success: false,
+      error: "Username must be at least 3 characters.",
+    };
+  }
 
-if (password.length < 8) {
-  return {
-    success: false,
-    error: "Password must be at least 8 characters.",
-  };
-}
+  if (password.length < 8) {
+    return {
+      success: false,
+      error: "Password must be at least 8 characters.",
+    };
+  }
 
-if (password !== confirmPassword) {
-  return {
-    success: false,
-    error: "Passwords do not match.",
-  };
-}
+  if (password !== confirmPassword) {
+    return {
+      success: false,
+      error: "Passwords do not match.",
+    };
+  }
 
   const origin =
     process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
   const { data: existingUser } = await supabase
-  .from("profiles")
-  .select("id")
-  .eq("username", username)
-  .maybeSingle();
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .maybeSingle();
 
-if (existingUser) {
-  return {
-    success: false,
-    error: "Username is already taken.",
-  };
-}
+  if (existingUser) {
+    return {
+      success: false,
+      error: "Username is already taken.",
+    };
+  }
+
   const { error } = await supabase.auth.signUp({
     email,
     password,
@@ -104,9 +106,9 @@ export async function login(
     };
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // LOGIN
-  // =========================================================
+  // ---------------------------------------------------------
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -114,39 +116,46 @@ export async function login(
   });
 
   if (error || !data.user) {
+    console.error("LOGIN ERROR:", error);
+
     return {
       success: false,
       error: "Invalid email or password.",
     };
   }
 
-  // =========================================================
+  console.log("LOGIN SUCCESS:", data.user.id);
+
+  // ---------------------------------------------------------
   // GET USER PROFILE
-  // =========================================================
+  // ---------------------------------------------------------
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("is_creator")
+    .select("is_creator, role")
     .eq("id", data.user.id)
     .maybeSingle();
 
   if (profileError) {
     console.error("Failed to load user profile:", profileError);
 
-    // Default to buyer/home if profile cannot be loaded
     redirect("/");
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // REDIRECT BASED ON USER TYPE
-  // =========================================================
+  // ---------------------------------------------------------
 
-  if (profile?.is_creator === true) {
-    redirect("/seller/dashboard");
+   if (profile?.role === "admin") {
+      redirect("/admin");
+    }
+
+    if (profile?.is_creator === true) {
+      redirect("/seller/dashboard");
+    }
+
+    redirect("/");
   }
-
-  redirect("/");
-}
 
 export async function signOut() {
   const supabase = await createClient();

@@ -64,6 +64,132 @@ export function formatTimeAgo(
   } ago`;
 }
 
+export function formatDate(
+  date?: Date | string | null
+) {
+  if (!date) return "";
+
+  const value =
+    date instanceof Date
+      ? date
+      : new Date(date);
+
+  if (Number.isNaN(value.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }
+  ).format(value);
+}
+
+export function formatShortDate(
+  date?: Date | string | null
+) {
+  if (!date) return "";
+
+  const value =
+    date instanceof Date
+      ? date
+      : new Date(date);
+
+  if (Number.isNaN(value.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+    }
+  ).format(value);
+}
+
+export function formatMonth(
+  date?: Date | string | null
+) {
+  if (!date) return "";
+
+  const value =
+    date instanceof Date
+      ? date
+      : new Date(date);
+
+  if (Number.isNaN(value.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-US",
+    {
+      month: "short",
+      year: "numeric",
+    }
+  ).format(value);
+}
+
+/**
+ * Calendar date key without UTC conversion.
+ * Important for analytics grouping.
+ */
+export function formatDateKey(
+  date: Date
+) {
+  const year =
+    date.getFullYear();
+
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+export function formatDateRange(
+  start?: Date | string | null,
+  end?: Date | string | null
+) {
+  if (!start || !end) return "";
+
+  const startDate =
+    start instanceof Date
+      ? start
+      : new Date(start);
+
+  const endDate =
+    end instanceof Date
+      ? end
+      : new Date(end);
+
+  if (
+    Number.isNaN(startDate.getTime()) ||
+    Number.isNaN(endDate.getTime())
+  ) {
+    return "";
+  }
+
+  const formatter =
+    new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+  return `${formatter.format(
+    startDate
+  )} — ${formatter.format(endDate)}`;
+}
+
 /* =========================================================
    TEXT
 ========================================================= */
@@ -111,8 +237,48 @@ export function getProfileName(
   );
 }
 
+export function calculateAge(
+  dateOfBirth?: string | null
+) {
+  if (!dateOfBirth) return null;
+
+  const birthDate = new Date(dateOfBirth);
+  const today = new Date();
+
+  let age =
+    today.getFullYear() -
+    birthDate.getFullYear();
+
+  const monthDifference =
+    today.getMonth() -
+    birthDate.getMonth();
+
+  if (
+    monthDifference < 0 ||
+    (monthDifference === 0 &&
+      today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+
+  return age;
+}
+
+export function formatGender(
+  gender?: string | null
+) {
+  if (!gender) return null;
+
+  const labels: Record<string, string> = {
+    female: "Female",
+    male: "Male",
+  };
+
+  return labels[gender] ?? null;
+}
+
 /* =========================================================
-   CURRENCY
+   NUMBERS / CURRENCY
 ========================================================= */
 
 export function formatPrice(
@@ -145,6 +311,85 @@ export function formatPrice(
       2
     )} ${currencyCode}`;
   }
+}
+
+export function formatNumber(
+  value?: number | null
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(value)
+  ) {
+    return "0";
+  }
+
+  return new Intl.NumberFormat(
+    "en-US"
+  ).format(value);
+}
+
+export function formatCompactNumber(
+  value?: number | null
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(value)
+  ) {
+    return "0";
+  }
+
+  return new Intl.NumberFormat(
+    "en-US",
+    {
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }
+  ).format(value);
+}
+
+export function formatCurrency(
+  value?: number | null,
+  currency = "USD"
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(value)
+  ) {
+    return "$0.00";
+  }
+
+  try {
+    return new Intl.NumberFormat(
+      "en-US",
+      {
+        style: "currency",
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }
+    ).format(value);
+  } catch {
+    return `${value.toFixed(
+      2
+    )} ${currency}`;
+  }
+}
+
+export function formatPercent(
+  value?: number | null
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(value)
+  ) {
+    return "0%";
+  }
+
+  return `${value.toFixed(1)}%`;
 }
 
 /* =========================================================

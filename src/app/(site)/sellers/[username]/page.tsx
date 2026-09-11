@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { getSellerChannels } from "@/lib/channels/getSellerChannels";
+
 import ChannelCard from "@/components/channels/ChannelCard";
 
 export default async function SellerProfilePage({
@@ -13,7 +15,7 @@ export default async function SellerProfilePage({
   const supabase = await createClient();
 
   // =========================================================
-  // GET SELLER + CHANNELS
+  // GET SELLER
   // =========================================================
 
   const { data: seller, error } = await supabase
@@ -24,17 +26,7 @@ export default async function SellerProfilePage({
       display_name,
       avatar_url,
       bio,
-      country,
-      channels (
-        id,
-        channel_name,
-        slug,
-        description,
-        logo_url,
-        banner_url,
-        subscription_price,
-        currency
-      )
+      country
     `)
     .eq("username", username)
     .eq("is_creator", true)
@@ -43,6 +35,16 @@ export default async function SellerProfilePage({
   if (error || !seller) {
     notFound();
   }
+
+  // =========================================================
+  // GET SELLER CHANNELS + STATS
+  // =========================================================
+
+  const channelStats = await getSellerChannels(seller.id);
+
+  // =========================================================
+  // PAGE
+  // =========================================================
 
   return (
     <div className="p-8">
@@ -105,20 +107,10 @@ export default async function SellerProfilePage({
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
 
-          {seller.channels?.map((channel) => (
-
+          {channelStats.map((channel) => (
             <ChannelCard
               key={channel.id}
-              channel={{
-                id: channel.id,
-                channel_name: channel.channel_name,
-                slug: channel.slug,
-                description: channel.description,
-                logo_url: channel.logo_url,
-                banner_url: channel.banner_url,
-                subscription_price: channel.subscription_price,
-                currency: channel.currency,
-              }}
+              channel={channel}
               seller={{
                 username: seller.username,
                 display_name: seller.display_name,
@@ -126,9 +118,8 @@ export default async function SellerProfilePage({
               }}
               variant="seller"
             />
-
           ))}
-          
+
         </div>
 
       </div>
