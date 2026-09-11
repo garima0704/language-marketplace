@@ -17,7 +17,7 @@ type Language = {
   locales: {
     code: string;
     name: string;
-  } | null;
+  }[];
 };
 
 type AvailableLanguage = {
@@ -296,7 +296,7 @@ export default function SellerOnboarding({
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="font-medium">
-                        {language.locales?.name ??
+                        {language.locales?.[0]?.name ??
                           language.language_code}
                       </p>
 
