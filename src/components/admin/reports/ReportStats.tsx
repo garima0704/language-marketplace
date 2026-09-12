@@ -2,6 +2,7 @@ import {
   Flag,
   CheckCircle,
   Eye,
+  XCircle,
   Trash2,
 } from "lucide-react";
 
@@ -32,6 +33,11 @@ const cards = [
     icon: CheckCircle,
   },
   {
+    label: "Dismissed",
+    key: "dismissed",
+    icon: XCircle,
+  },
+  {
     label: "Removed",
     key: "removed",
     icon: Trash2,
@@ -42,7 +48,7 @@ export default function ReportStats({
   stats,
 }: ReportStatsProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {cards.map((card) => {
         const Icon = card.icon;
 

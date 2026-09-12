@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { Eye } from "lucide-react";
 
 import type { AdminReport } from "@/lib/reports/admin";
 
 interface ReportsTableProps {
   reports: AdminReport[];
+  currentPage: number;
+  totalPages: number;
+  totalReports: number;
+  pageSize: number;
 }
 
 function getStatusClasses(
@@ -36,6 +41,10 @@ function formatDate(date: string) {
 
 export default function ReportsTable({
   reports,
+  currentPage,
+  totalPages,
+  totalReports,
+  pageSize,
 }: ReportsTableProps) {
   if (!reports.length) {
     return (
@@ -54,6 +63,12 @@ export default function ReportsTable({
       </div>
     );
   }
+
+  const start = (currentPage - 1) * pageSize + 1;
+  const end = Math.min(
+    currentPage * pageSize,
+    totalReports
+  );
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-background">
@@ -155,8 +170,9 @@ export default function ReportsTable({
                 <td className="px-6 py-4 text-right">
                   <Link
                     href={`/admin/reports/${report.id}`}
-                    className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-sm font-medium text-secondary transition hover:bg-muted-bg hover:text-foreground"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-white transition hover:bg-primary/90"
                   >
+                    <Eye className="h-4 w-4" />
                     View
                   </Link>
                 </td>
@@ -165,6 +181,73 @@ export default function ReportsTable({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-border px-6 py-4">
+          {/* Result count */}
+          <p className="text-sm text-muted">
+            Showing{" "}
+            <span className="font-medium text-foreground">
+              {start}–{end}
+            </span>{" "}
+            of{" "}
+            <span className="font-medium text-foreground">
+              {totalReports}
+            </span>{" "}
+            reports
+          </p>
+
+          {/* Pagination controls */}
+          <div className="flex items-center gap-2">
+            {/* Previous */}
+            {currentPage > 1 ? (
+              <Link
+                href={`/admin/reports?page=${currentPage - 1}`}
+                className="inline-flex h-10 items-center rounded-lg border border-border px-4 text-sm font-medium text-secondary transition hover:bg-muted-bg hover:text-foreground"
+              >
+                Previous
+              </Link>
+            ) : (
+              <span className="inline-flex h-10 cursor-not-allowed items-center rounded-lg border border-border px-4 text-sm font-medium text-muted">
+                Previous
+              </span>
+            )}
+
+            {/* Page numbers */}
+            {Array.from(
+              { length: totalPages },
+              (_, index) => index + 1
+            ).map((page) => (
+              <Link
+                key={page}
+                href={`/admin/reports?page=${page}`}
+                className={`inline-flex h-10 min-w-10 items-center justify-center rounded-lg text-sm font-medium transition ${
+                  page === currentPage
+                    ? "bg-primary text-white"
+                    : "border border-border text-secondary hover:bg-muted-bg hover:text-foreground"
+                }`}
+              >
+                {page}
+              </Link>
+            ))}
+
+            {/* Next */}
+            {currentPage < totalPages ? (
+              <Link
+                href={`/admin/reports?page=${currentPage + 1}`}
+                className="inline-flex h-10 items-center rounded-lg border border-border px-4 text-sm font-medium text-secondary transition hover:bg-muted-bg hover:text-foreground"
+              >
+                Next
+              </Link>
+            ) : (
+              <span className="inline-flex h-10 cursor-not-allowed items-center rounded-lg border border-border px-4 text-sm font-medium text-muted">
+                Next
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
