@@ -58,15 +58,17 @@ export default async function PayoutsPage() {
   );
 
   return (
-    <main className="min-h-screen bg-light-bg">
+    <main className="w-full">
       <div className="mx-auto max-w-7xl px-6 py-8">
         <PayoutsHeader
           payouts={normalizedPayouts}
         />
 
-        <PayoutList
-          payouts={normalizedPayouts}
-        />
+        <div className="mt-6">
+          <PayoutList
+            payouts={normalizedPayouts}
+          />
+        </div>
       </div>
     </main>
   );

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Eye } from "lucide-react";
 
 import type { Payout } from "@/components/admin/payouts/PayoutsHeader";
 
@@ -63,11 +64,6 @@ export default function PayoutRow({ payout }: Props) {
         {payout.provider}
       </td>
 
-      {/* Provider payout ID */}
-      <td className="px-6 py-4 text-secondary">
-        {payout.provider_payout_id || "—"}
-      </td>
-
       {/* Status */}
       <td className="px-6 py-4">
         <span className="rounded-md bg-muted-bg px-2.5 py-1 text-xs font-medium capitalize text-secondary">
@@ -80,17 +76,13 @@ export default function PayoutRow({ payout }: Props) {
         {formatDate(payout.created_at)}
       </td>
 
-      {/* Processed */}
-      <td className="px-6 py-4 text-muted">
-        {formatDate(payout.processed_at)}
-      </td>
-
       {/* Action */}
       <td className="px-6 py-4">
         <Link
           href={`/admin/payouts/${payout.id}`}
-          className="text-sm font-medium text-secondary hover:text-foreground"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-white transition hover:bg-primary/90"
         >
+          <Eye className="h-4 w-4" />
           View
         </Link>
       </td>
