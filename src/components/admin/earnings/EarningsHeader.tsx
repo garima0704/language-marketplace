@@ -17,7 +17,8 @@ export type Payment = {
   creator_amount: number;
   currency: string;
   payment_provider: string;
-  payment_status: "paid" | "failed" | "refunded";
+  provider_payment_id: string;
+  payment_status: "paid" | "failed";
   paid_at: string;
   created_at: string;
   invoice_number: string | null;
@@ -92,8 +93,7 @@ export default function EarningsHeader({
     "platform_fee"
   );
 
-  const currency =
-    payments[0]?.currency || "USD";
+  const currency = payments[0]?.currency || "USD";
 
   const stats = [
     {
@@ -138,8 +138,7 @@ export default function EarningsHeader({
         </h1>
 
         <p className="mt-2 text-secondary">
-          Track revenue, creator earnings, and
-          platform fees across NiceConvo.
+          Track revenue, creator earnings, and platform fees across NiceConvo.
         </p>
       </div>
 

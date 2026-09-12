@@ -28,6 +28,7 @@ export default async function EarningsPage() {
       creator_amount,
       currency,
       payment_provider,
+      provider_payment_id,
       payment_status,
       paid_at,
       created_at,
@@ -120,16 +121,18 @@ export default async function EarningsPage() {
   );
 
   return (
-    <main className="min-h-screen bg-light-bg">
+    <main className="w-full">
       <div className="mx-auto max-w-7xl px-6 py-8">
         <EarningsHeader
           payments={normalizedPayments}
           totalPaidOut={totalPaidOut}
         />
 
-        <EarningsList
-          payments={normalizedPayments}
-        />
+        <div className="mt-6">
+          <EarningsList
+            payments={normalizedPayments}
+          />
+        </div>
       </div>
     </main>
   );

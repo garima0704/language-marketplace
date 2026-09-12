@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Eye } from "lucide-react";
 
 import type { Payment } from "@/components/admin/earnings/EarningsHeader";
 
@@ -60,14 +61,14 @@ export default function EarningsRow({
 
       {/* Channel */}
       <td className="px-6 py-4">
-        <div>
-          <p className="font-medium text-foreground">
+        <div className="min-w-0">
+          <p className="truncate font-medium text-foreground">
             {channel?.channel_name ||
               "Unknown channel"}
           </p>
 
           {channel?.slug && (
-            <p className="mt-0.5 text-xs text-muted">
+            <p className="mt-0.5 truncate text-xs text-muted">
               /{channel.slug}
             </p>
           )}
@@ -100,7 +101,7 @@ export default function EarningsRow({
 
       {/* Status */}
       <td className="px-6 py-4">
-        <span className="rounded-md bg-muted-bg px-2.5 py-1 text-xs font-medium capitalize text-secondary">
+        <span className="inline-flex rounded-md bg-muted-bg px-2.5 py-1 text-xs font-medium capitalize text-secondary">
           {payment.payment_status}
         </span>
       </td>
@@ -114,8 +115,9 @@ export default function EarningsRow({
       <td className="px-6 py-4">
         <Link
           href={`/admin/earnings/${payment.id}`}
-          className="text-sm font-medium text-secondary hover:text-foreground"
+          className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-background transition hover:opacity-90"
         >
+          <Eye className="h-4 w-4" />
           View
         </Link>
       </td>

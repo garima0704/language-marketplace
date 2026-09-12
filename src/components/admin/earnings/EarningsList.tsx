@@ -44,8 +44,8 @@ export default function EarningsList({
       const channelName =
         channel?.channel_name || "";
 
-      const invoiceNumber =
-        payment.invoice_number || "";
+      const provider =
+        payment.payment_provider || "";
 
       return (
         creatorName
@@ -57,7 +57,7 @@ export default function EarningsList({
         channelName
           .toLowerCase()
           .includes(value) ||
-        invoiceNumber
+        provider
           .toLowerCase()
           .includes(value) ||
         payment.id
@@ -69,7 +69,8 @@ export default function EarningsList({
 
   return (
     <>
-      <div className="mt-8 rounded-xl border border-border bg-background p-4">
+      {/* Filters */}
+      <div className="rounded-xl border border-border bg-background p-4">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full md:max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
@@ -92,14 +93,14 @@ export default function EarningsList({
             }
             className="h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-foreground"
           >
-            <option value="all">All payments</option>
+            <option value="all">All earnings</option>
             <option value="paid">Paid</option>
             <option value="failed">Failed</option>
-            <option value="refunded">Refunded</option>
           </select>
         </div>
       </div>
 
+      {/* Earnings table */}
       <div className="mt-6 overflow-hidden rounded-xl border border-border bg-background">
         <div className="border-b border-border px-6 py-5">
           <h2 className="text-lg font-semibold text-foreground">
@@ -107,7 +108,7 @@ export default function EarningsList({
           </h2>
 
           <p className="mt-1 text-sm text-muted">
-            Payment revenue generated on NiceConvo.
+            Revenue, platform fees, and creator earnings generated on NiceConvo.
           </p>
         </div>
 
@@ -174,9 +175,10 @@ export default function EarningsList({
         </div>
       </div>
 
+      {/* Result count */}
       <div className="mt-3 text-xs text-muted">
         Showing {filteredPayments.length} of{" "}
-        {payments.length} payments.
+        {payments.length} earnings.
       </div>
     </>
   );
