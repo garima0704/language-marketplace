@@ -17,7 +17,8 @@ export type Payment = {
   creator_amount: number;
   currency: string;
   payment_provider: string;
-  payment_status: "paid" | "failed" | "refunded";
+  provider_payment_id: string;
+  payment_status: "paid" | "failed";
   paid_at: string;
   created_at: string;
   invoice_number: string | null;
@@ -57,10 +58,6 @@ export default function PaymentsHeader({ payments }: Props) {
 
   const failedPayments = payments.filter(
     (payment) => payment.payment_status === "failed"
-  );
-
-  const refundedPayments = payments.filter(
-    (payment) => payment.payment_status === "refunded"
   );
 
   const totalRevenue = paidPayments.reduce(

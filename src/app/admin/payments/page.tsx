@@ -24,6 +24,7 @@ export default async function PaymentsPage() {
       creator_amount,
       currency,
       payment_provider,
+      provider_payment_id,
       payment_status,
       paid_at,
       created_at,
@@ -69,15 +70,17 @@ export default async function PaymentsPage() {
   );
 
   return (
-    <main className="min-h-screen bg-light-bg">
+    <main className="w-full">
       <div className="mx-auto max-w-7xl px-6 py-8">
         <PaymentsHeader
           payments={normalizedPayments}
         />
 
-        <PaymentList
-          payments={normalizedPayments}
-        />
+        <div className="mt-6">
+          <PaymentList
+            payments={normalizedPayments}
+          />
+        </div>
       </div>
     </main>
   );

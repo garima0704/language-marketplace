@@ -32,19 +32,19 @@ export default function PaymentList({ payments }: Props) {
       const buyerName = buyer?.display_name || "";
       const username = buyer?.username || "";
       const channelName = channel?.channel_name || "";
-      const invoiceNumber = payment.invoice_number || "";
       const provider = payment.payment_provider || "";
 
       return (
         buyerName.toLowerCase().includes(value) ||
         username.toLowerCase().includes(value) ||
         channelName.toLowerCase().includes(value) ||
-        invoiceNumber.toLowerCase().includes(value) ||
         provider.toLowerCase().includes(value) ||
         payment.id.toLowerCase().includes(value)
       );
     });
   }, [payments, search, status]);
+
+  const hasMultiplePages = filteredPayments.length > 10;
 
   return (
     <>
@@ -75,7 +75,6 @@ export default function PaymentList({ payments }: Props) {
             <option value="all">All payments</option>
             <option value="paid">Paid</option>
             <option value="failed">Failed</option>
-            <option value="refunded">Refunded</option>
           </select>
         </div>
       </div>
@@ -113,10 +112,6 @@ export default function PaymentList({ payments }: Props) {
                 </th>
 
                 <th className="px-6 py-3 font-medium text-secondary">
-                  Invoice
-                </th>
-
-                <th className="px-6 py-3 font-medium text-secondary">
                   Status
                 </th>
 
@@ -141,7 +136,7 @@ export default function PaymentList({ payments }: Props) {
               ) : (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={7}
                     className="px-6 py-10 text-center text-sm text-muted"
                   >
                     {payments.length === 0
@@ -153,12 +148,24 @@ export default function PaymentList({ payments }: Props) {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination area */}
+        {hasMultiplePages && (
+          <div className="border-t border-border px-6 py-4">
+            <div className="text-xs text-muted">
+              Showing {filteredPayments.length} of{" "}
+              {payments.length} payments.
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="mt-3 text-xs text-muted">
-        Showing {filteredPayments.length} of{" "}
-        {payments.length} payments.
-      </div>
+      {!hasMultiplePages && (
+        <div className="mt-3 text-xs text-muted">
+          Showing {filteredPayments.length} of{" "}
+          {payments.length} payments.
+        </div>
+      )}
     </>
   );
 }
