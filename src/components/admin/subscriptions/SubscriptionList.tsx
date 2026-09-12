@@ -41,7 +41,8 @@ export default function SubscriptionList({
         buyer?.username ||
         "";
 
-      const username = buyer?.username || "";
+      const username =
+        buyer?.username || "";
 
       const channelName =
         channel?.channel_name || "";
@@ -58,9 +59,8 @@ export default function SubscriptionList({
   return (
     <>
       {/* Filters */}
-      <div className="mt-8 rounded-xl border border-border bg-background p-4">
+      <div className="rounded-xl border border-border bg-background p-4">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
           {/* Search */}
           <div className="relative w-full md:max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
@@ -105,8 +105,7 @@ export default function SubscriptionList({
 
       {/* Table */}
       <div className="mt-6 overflow-hidden rounded-xl border border-border bg-background">
-
-        {/* Table title */}
+        {/* Table header */}
         <div className="border-b border-border px-6 py-5">
           <h2 className="text-lg font-semibold text-foreground">
             All Subscriptions
@@ -119,7 +118,6 @@ export default function SubscriptionList({
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-
             <thead>
               <tr className="border-b border-border text-left">
                 <th className="px-6 py-3 font-medium text-secondary">
@@ -154,12 +152,14 @@ export default function SubscriptionList({
 
             <tbody>
               {filteredSubscriptions.length > 0 ? (
-                filteredSubscriptions.map((subscription) => (
-                  <SubscriptionRow
-                    key={subscription.id}
-                    subscription={subscription}
-                  />
-                ))
+                filteredSubscriptions.map(
+                  (subscription) => (
+                    <SubscriptionRow
+                      key={subscription.id}
+                      subscription={subscription}
+                    />
+                  )
+                )
               ) : (
                 <tr>
                   <td
@@ -173,11 +173,11 @@ export default function SubscriptionList({
                 </tr>
               )}
             </tbody>
-
           </table>
         </div>
       </div>
 
+      {/* Result count */}
       <div className="mt-3 text-xs text-muted">
         Showing {filteredSubscriptions.length} of{" "}
         {subscriptions.length} subscriptions.

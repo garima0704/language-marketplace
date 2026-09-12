@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Eye } from "lucide-react";
 
 import type { Subscription } from "@/components/admin/subscriptions/SubscriptionsHeader";
 
@@ -43,7 +44,6 @@ export default function SubscriptionRow({
 
   return (
     <tr className="border-b border-border last:border-0">
-
       {/* Subscriber */}
       <td className="px-6 py-4">
         <div className="min-w-0">
@@ -61,13 +61,14 @@ export default function SubscriptionRow({
 
       {/* Channel */}
       <td className="px-6 py-4">
-        <div>
-          <p className="font-medium text-foreground">
-            {channel?.channel_name || "Unknown channel"}
+        <div className="min-w-0">
+          <p className="truncate font-medium text-foreground">
+            {channel?.channel_name ||
+              "Unknown channel"}
           </p>
 
           {channel?.slug && (
-            <p className="mt-0.5 text-xs text-muted">
+            <p className="mt-0.5 truncate text-xs text-muted">
               /{channel.slug}
             </p>
           )}
@@ -77,14 +78,14 @@ export default function SubscriptionRow({
       {/* Price */}
       <td className="px-6 py-4 text-secondary">
         {formatPrice(
-          subscription.subscription_price,
+          Number(subscription.subscription_price),
           subscription.currency
         )}
       </td>
 
       {/* Status */}
       <td className="px-6 py-4">
-        <span className="rounded-md bg-muted-bg px-2.5 py-1 text-xs font-medium capitalize text-secondary">
+        <span className="inline-flex rounded-md bg-muted-bg px-2.5 py-1 text-xs font-medium capitalize text-secondary">
           {subscription.status}
         </span>
       </td>
@@ -92,7 +93,9 @@ export default function SubscriptionRow({
       {/* Next Billing */}
       <td className="px-6 py-4 text-muted">
         {subscription.status === "active"
-          ? formatDate(subscription.next_billing_at)
+          ? formatDate(
+              subscription.next_billing_at
+            )
           : "—"}
       </td>
 
@@ -105,12 +108,12 @@ export default function SubscriptionRow({
       <td className="px-6 py-4">
         <Link
           href={`/admin/subscriptions/${subscription.id}`}
-          className="text-sm font-medium text-secondary hover:text-foreground"
+          className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-background transition hover:opacity-90"
         >
+          <Eye className="h-4 w-4" />
           View
         </Link>
       </td>
-
     </tr>
   );
 }

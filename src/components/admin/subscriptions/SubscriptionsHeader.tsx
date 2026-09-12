@@ -34,7 +34,7 @@ export type Subscription = {
     channel_name: string;
     slug: string;
   } | null;
-  };
+};
 
 type Props = {
   subscriptions: Subscription[];
@@ -43,38 +43,50 @@ type Props = {
 export default function SubscriptionsHeader({
   subscriptions,
 }: Props) {
+  const totalSubscriptions = subscriptions.length;
+
+  const activeSubscriptions = subscriptions.filter(
+    (subscription) =>
+      subscription.status === "active"
+  ).length;
+
+  const cancelledSubscriptions =
+    subscriptions.filter(
+      (subscription) =>
+        subscription.status === "cancelled"
+    ).length;
+
+  const expiredSubscriptions =
+    subscriptions.filter(
+      (subscription) =>
+        subscription.status === "expired"
+    ).length;
+
   const stats = [
     {
       title: "Total Subscriptions",
-      value: subscriptions.length,
+      value: totalSubscriptions,
       icon: CreditCard,
     },
     {
       title: "Active",
-      value: subscriptions.filter(
-        (subscription) => subscription.status === "active"
-      ).length,
+      value: activeSubscriptions,
       icon: CheckCircle2,
     },
     {
       title: "Cancelled",
-      value: subscriptions.filter(
-        (subscription) => subscription.status === "cancelled"
-      ).length,
+      value: cancelledSubscriptions,
       icon: XCircle,
     },
     {
       title: "Expired",
-      value: subscriptions.filter(
-        (subscription) => subscription.status === "expired"
-      ).length,
+      value: expiredSubscriptions,
       icon: Clock3,
     },
   ];
 
   return (
     <>
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">
           Subscriptions
@@ -85,7 +97,6 @@ export default function SubscriptionsHeader({
         </p>
       </div>
 
-      {/* Stats */}
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
