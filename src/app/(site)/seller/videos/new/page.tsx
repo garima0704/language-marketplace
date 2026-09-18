@@ -3,8 +3,6 @@ import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 
-import { getCategoryLabels } from "@/lib/categories";
-
 import NewVideoForm from "@/components/seller/NewVideoForm";
 
 export default async function NewVideoPage() {
@@ -123,13 +121,14 @@ export default async function NewVideoPage() {
   const categoryIds =
     categories?.map((category) => category.id) ?? [];
 
-  const categoryLabels =
+  const { data: categoryTranslations } =
     categoryIds.length > 0
-      ? await getCategoryLabels(
-          categoryIds,
-          locale
-        )
-      : {};
+      ? await supabase
+          .from("category_translations")
+          .select("category_id, locale_code, name")
+          .in("category_id", categoryIds)
+          .eq("locale_code", locale)
+      : { data: [] };
 
   // --------------------------------------------
   // Page
@@ -152,7 +151,8 @@ export default async function NewVideoPage() {
         languages={languages ?? []}
         languageRegions={languageRegions}
         categories={categories ?? []}
-        categoryLabels={categoryLabels}
+        categoryTranslations={categoryTranslations ?? []}
+        locale={locale}
       />
     </div>
   );
