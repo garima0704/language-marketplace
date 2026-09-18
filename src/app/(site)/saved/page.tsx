@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 import VideoCard from "@/components/VideoCard";
@@ -18,6 +19,15 @@ export default async function SavedVideosPage() {
   if (!user) {
     redirect("/login");
   }
+
+  /* ========================================================
+     GET SELECTED LOCALE
+  ======================================================== */
+
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
 
   /* ========================================================
      GET SAVED VIDEOS
@@ -44,12 +54,7 @@ export default async function SavedVideosPage() {
           id,
           slug,
           parent_id,
-          level,
-
-          category_translations (
-            name,
-            locale_code
-          )
+          level
         ),
 
         channels (
@@ -99,7 +104,8 @@ export default async function SavedVideosPage() {
       : video.categories;
 
     const categoryLabel = await getCategoryLabel(
-      category?.id
+      category?.id,
+      locale
     );
 
     /* ======================================================
@@ -189,7 +195,6 @@ export default async function SavedVideosPage() {
             ))}
           </div>
         )}
-
       </div>
     </div>
   );

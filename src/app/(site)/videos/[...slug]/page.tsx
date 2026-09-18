@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
+
+import { getCategoryLabels } from "@/lib/categories";
+import { getTranslations } from "@/lib/translations";
 
 import CategoryVideos from "@/components/videos/CategoryVideos";
 import VideoDetail from "@/components/videos/VideoDetail";
@@ -14,6 +18,11 @@ type Props = {
 export default async function VideosSlugPage({
   params,
 }: Props) {
+  // ==================================================
+  // Next.js 16
+  // params is a Promise
+  // ==================================================
+
   const { slug } = await params;
 
   if (!slug?.length) {
@@ -22,54 +31,80 @@ export default async function VideosSlugPage({
 
   const supabase = await createClient();
 
-  function formatText(value?: string | null) {
-    if (!value) return "";
+  const cookieStore = await cookies();
 
-    return value
-      .replace(/[-_]/g, " ")
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
+
+  // ==================================================
+  // 1. Check whether the first segment is a browse
+  // language
+  //
+  // Examples:
+  //
+  // /videos/en
+  // /videos/es
+  // /videos/ar
+  // /videos/zh
+  // /videos/fr
+  // /videos/de
+  // /videos/it
+  // /videos/pt
+  //
+  // If it is a language, CategoryVideos handles
+  // the complete remaining category path.
+  // ==================================================
+
+  const firstSegment = slug[0];
+
+  const {
+    data: language,
+    error: languageError,
+  } = await supabase
+    .from("locales")
+    .select("code, name")
+    .eq("code", firstSegment)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (languageError) {
+    console.error(
+      "Failed to resolve browse language:",
+      languageError
+    );
   }
 
   // ==================================================
-  // 1. Try to resolve the complete path as a category
+  // 2. Language / Category page
+  //
+  // /videos/en
+  // /videos/en/business
+  // /videos/en/business/finance
+  //
+  // CategoryVideos is responsible for:
+  // - category hierarchy
+  // - category pills
+  // - language pills
+  // - language-specific videos
+  // - translated category labels
   // ==================================================
 
-  let parentId: string | null = null;
-  let categoryFound = true;
-
-  for (const segment of slug) {
-    let query = supabase
-      .from("categories")
-      .select("id, slug, parent_id, level")
-      .eq("slug", segment)
-      .eq("is_active", true);
-
-    if (parentId === null) {
-      query = query.is("parent_id", null);
-    } else {
-      query = query.eq("parent_id", parentId);
-    }
-
-    const { data, error } = await query.maybeSingle();
-
-    if (error || !data) {
-      categoryFound = false;
-      break;
-    }
-
-    parentId = data.id;
+  if (language) {
+    return (
+      <CategoryVideos slug={slug} />
+    );
   }
 
   // ==================================================
-  // 2. Category URL
-  // ==================================================
-
-  if (categoryFound) {
-    return <CategoryVideos slug={slug} />;
-  }
-
-  // ==================================================
-  // 3. Video URL
+  // 3. Video detail page
+  //
+  // If the first segment is NOT a language and
+  // there is only one URL segment, treat it as
+  // a video slug.
+  //
+  // Example:
+  //
+  // /videos/my-video-slug
   // ==================================================
 
   if (slug.length === 1) {
@@ -82,6 +117,16 @@ export default async function VideosSlugPage({
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
+    // --------------------------------------------------
+    // Current UI translations
+    // --------------------------------------------------
+
+    const translations =
+      await getTranslations(
+        ["video.from"],
+        locale
+      );
 
     // --------------------------------------------------
     // Fetch current video
@@ -126,51 +171,127 @@ export default async function VideosSlugPage({
       name: string;
     }[] = [];
 
-    let currentCategoryId =
+    const currentCategoryId =
       videoData.category_id as string | null;
 
-    while (currentCategoryId) {
-      const { data: category } = await supabase
-        .from("categories")
-        .select(`
-          id,
-          slug,
-          parent_id,
-          category_translations (
-            name,
-            locale_code
-          )
-        `)
-        .eq("id", currentCategoryId)
-        .eq("is_active", true)
-        .maybeSingle();
+    if (currentCategoryId) {
+      // ------------------------------------------------
+      // Load category hierarchy
+      // ------------------------------------------------
 
-      if (!category) {
-        break;
+      const categoryMap = new Map<
+        string,
+        {
+          id: string;
+          slug: string;
+          parent_id: string | null;
+          level: number;
+        }
+      >();
+
+      let categoryIds = [
+        currentCategoryId,
+      ];
+
+      while (categoryIds.length > 0) {
+        const {
+          data: categories,
+          error: categoriesError,
+        } = await supabase
+          .from("categories")
+          .select(
+            "id, slug, parent_id, level"
+          )
+          .eq("is_active", true)
+          .in("id", categoryIds);
+
+        if (categoriesError) {
+          console.error(
+            "Category lookup error:",
+            categoriesError
+          );
+
+          break;
+        }
+
+        if (!categories?.length) {
+          break;
+        }
+
+        const parentIds: string[] = [];
+
+        for (const category of categories) {
+          categoryMap.set(
+            category.id,
+            category
+          );
+
+          if (
+            category.parent_id &&
+            !categoryMap.has(
+              category.parent_id
+            )
+          ) {
+            parentIds.push(
+              category.parent_id
+            );
+          }
+        }
+
+        categoryIds = [
+          ...new Set(parentIds),
+        ];
       }
 
-      const translations = Array.isArray(
-        category.category_translations
-      )
-        ? category.category_translations
-        : [];
+      // ------------------------------------------------
+      // Get translated category labels
+      // ------------------------------------------------
 
-      const translation =
-        translations.find(
-          (item: any) =>
-            item.locale_code === "en"
-        ) ?? translations[0];
+      const labels =
+        await getCategoryLabels(
+          Array.from(
+            categoryMap.keys()
+          ),
+          locale
+        );
 
-      categoryPath.unshift({
-        id: category.id,
-        slug: category.slug,
-        name:
-          translation?.name ??
-          formatText(category.slug),
-      });
+      // ------------------------------------------------
+      // Build category path
+      // ------------------------------------------------
 
-      currentCategoryId =
-        category.parent_id;
+      const pathCategories: {
+        id: string;
+        slug: string;
+        name: string;
+      }[] = [];
+
+      let current =
+        categoryMap.get(
+          currentCategoryId
+        );
+
+      while (current) {
+        pathCategories.unshift({
+          id: current.id,
+          slug: current.slug,
+          name:
+            labels[current.id] ??
+            current.slug,
+        });
+
+        if (!current.parent_id) {
+          break;
+        }
+
+        current =
+          categoryMap.get(
+            current.parent_id
+          );
+      }
+
+      categoryPath.push(
+        ...pathCategories
+      );
     }
 
     // ==================================================
@@ -188,18 +309,28 @@ export default async function VideosSlugPage({
     // --------------------------------------------------
 
     if (videoData.language_code) {
-      const { data: language } =
-        await supabase
-          .from("locales")
-          .select("code, name")
-          .eq(
-            "code",
-            videoData.language_code
-          )
-          .maybeSingle();
+      const {
+        data: videoLanguage,
+        error: videoLanguageError,
+      } = await supabase
+        .from("locales")
+        .select("code, name")
+        .eq(
+          "code",
+          videoData.language_code
+        )
+        .maybeSingle();
 
-      if (language?.name) {
-        languageName = language.name;
+      if (videoLanguageError) {
+        console.error(
+          "Video language lookup error:",
+          videoLanguageError
+        );
+      }
+
+      if (videoLanguage?.name) {
+        languageName =
+          videoLanguage.name;
       }
     }
 
@@ -208,20 +339,29 @@ export default async function VideosSlugPage({
     // --------------------------------------------------
 
     if (videoData.language_region_id) {
-      const { data: languageRegion } =
-        await supabase
-          .from("language_regions")
-          .select(`
-            id,
-            language_code,
-            country,
-            state
-          `)
-          .eq(
-            "id",
-            videoData.language_region_id
-          )
-          .maybeSingle();
+      const {
+        data: languageRegion,
+        error: languageRegionError,
+      } = await supabase
+        .from("language_regions")
+        .select(`
+          id,
+          language_code,
+          country,
+          state
+        `)
+        .eq(
+          "id",
+          videoData.language_region_id
+        )
+        .maybeSingle();
+
+      if (languageRegionError) {
+        console.error(
+          "Language region lookup error:",
+          languageRegionError
+        );
+      }
 
       if (languageRegion) {
         const locationParts = [
@@ -231,7 +371,10 @@ export default async function VideosSlugPage({
 
         if (locationParts.length > 0) {
           languageDescription =
-            `${languageName} from ${locationParts.join(", ")}`;
+            `${languageName} ${
+              translations["video.from"] ??
+              "from"
+            } ${locationParts.join(", ")}`;
         } else {
           languageDescription =
             languageName;
@@ -246,16 +389,27 @@ export default async function VideosSlugPage({
     let subtitleLanguageName =
       videoData.subtitle_language_code;
 
-    if (videoData.subtitle_language_code) {
-      const { data: subtitleLanguage } =
-        await supabase
-          .from("locales")
-          .select("code, name")
-          .eq(
-            "code",
-            videoData.subtitle_language_code
-          )
-          .maybeSingle();
+    if (
+      videoData.subtitle_language_code
+    ) {
+      const {
+        data: subtitleLanguage,
+        error: subtitleLanguageError,
+      } = await supabase
+        .from("locales")
+        .select("code, name")
+        .eq(
+          "code",
+          videoData.subtitle_language_code
+        )
+        .maybeSingle();
+
+      if (subtitleLanguageError) {
+        console.error(
+          "Subtitle language lookup error:",
+          subtitleLanguageError
+        );
+      }
 
       if (subtitleLanguage?.name) {
         subtitleLanguageName =
@@ -267,7 +421,8 @@ export default async function VideosSlugPage({
     // AUTHENTICATION
     // ==================================================
 
-    const isAuthenticated = !!user;
+    const isAuthenticated =
+      !!user;
 
     // ==================================================
     // SAVED VIDEO
@@ -282,8 +437,14 @@ export default async function VideosSlugPage({
       } = await supabase
         .from("saved_videos")
         .select("id")
-        .eq("user_id", user.id)
-        .eq("video_id", videoData.id)
+        .eq(
+          "user_id",
+          user.id
+        )
+        .eq(
+          "video_id",
+          videoData.id
+        )
         .maybeSingle();
 
       if (savedVideoError) {
@@ -300,9 +461,13 @@ export default async function VideosSlugPage({
     // SUBSCRIPTION
     // ==================================================
 
-    let hasActiveSubscription = false;
+    let hasActiveSubscription =
+      false;
 
-    if (user && videoData.channel_id) {
+    if (
+      user &&
+      videoData.channel_id
+    ) {
       const {
         data: subscription,
         error: subscriptionError,
@@ -313,7 +478,10 @@ export default async function VideosSlugPage({
           status,
           current_period_end
         `)
-        .eq("buyer_id", user.id)
+        .eq(
+          "buyer_id",
+          user.id
+        )
         .eq(
           "channel_id",
           videoData.channel_id
@@ -339,7 +507,8 @@ export default async function VideosSlugPage({
     const canWatch =
       isAuthenticated &&
       (
-        videoData.access_type === "free" ||
+        videoData.access_type ===
+          "free" ||
         hasActiveSubscription
       );
 
@@ -347,11 +516,14 @@ export default async function VideosSlugPage({
     // VIDEO URL
     // ==================================================
 
-    let videoUrl: string | null = null;
+    let videoUrl:
+      | string
+      | null = null;
 
     if (
       canWatch &&
-      videoData.video_provider === "supabase" &&
+      videoData.video_provider ===
+        "supabase" &&
       videoData.video_id
     ) {
       const {
@@ -371,12 +543,14 @@ export default async function VideosSlugPage({
         );
       } else {
         videoUrl =
-          signedUrlData?.signedUrl ?? null;
+          signedUrlData?.signedUrl ??
+          null;
       }
     }
 
     // ==================================================
     // RELATED VIDEOS
+    //
     // Same category + same language
     // Exclude current video
     // ==================================================
@@ -403,11 +577,13 @@ export default async function VideosSlugPage({
           language_code,
           access_type,
           channel_id,
+
           channels (
             id,
             channel_name,
             slug,
             logo_url,
+
             profiles (
               username,
               display_name,
@@ -423,12 +599,21 @@ export default async function VideosSlugPage({
           "language_code",
           videoData.language_code
         )
-        .eq("status", "published")
-        .neq("id", videoData.id)
-        .order("published_at", {
-          ascending: false,
-          nullsFirst: false,
-        })
+        .eq(
+          "status",
+          "published"
+        )
+        .neq(
+          "id",
+          videoData.id
+        )
+        .order(
+          "published_at",
+          {
+            ascending: false,
+            nullsFirst: false,
+          }
+        )
         .limit(5);
 
       if (relatedVideosError) {
@@ -484,7 +669,9 @@ export default async function VideosSlugPage({
     return (
       <VideoDetail
         video={video}
-        relatedVideos={relatedVideos}
+        relatedVideos={
+          relatedVideos
+        }
       />
     );
   }

@@ -1,6 +1,20 @@
 import { requireAdmin } from "@/lib/auth/admin";
 import CategoryForm from "@/components/admin/categories/CategoryForm";
 
+type Category = {
+  id: string;
+  parent_id: string | null;
+  level: number;
+  display_order: number;
+  slug: string;
+};
+
+type TranslationRow = {
+  translation_key: string;
+  locale_code: string;
+  value: string;
+};
+
 export default async function NewCategoryPage() {
   const { supabase } = await requireAdmin();
 
@@ -11,7 +25,9 @@ export default async function NewCategoryPage() {
   const { data: categories, error: categoriesError } =
     await supabase
       .from("categories")
-      .select("id, parent_id, level, display_order")
+      .select(
+        "id, parent_id, level, display_order, slug"
+      )
       .order("level", { ascending: true })
       .order("display_order", { ascending: true });
 
@@ -22,15 +38,74 @@ export default async function NewCategoryPage() {
     );
   }
 
+  const categoryList = (categories ?? []) as Category[];
+
+  // --------------------------------------------------
+  // Create category map
+  // --------------------------------------------------
+
+  const categoryMap = new Map<string, Category>();
+
+  for (const category of categoryList) {
+    categoryMap.set(category.id, category);
+  }
+
+  // --------------------------------------------------
+  // Build hierarchical translation keys
+  //
+  // Example:
+  // category.technical
+  // category.technical.business
+  // category.technical.business.customer-service
+  // --------------------------------------------------
+
+  const categoryKeyMap = new Map<string, string>();
+
+  function getCategoryPath(
+    category: Category
+  ): string {
+    const parts: string[] = [];
+    let current: Category | undefined = category;
+
+    while (current) {
+      parts.unshift(current.slug);
+
+      if (!current.parent_id) {
+        break;
+      }
+
+      current = categoryMap.get(current.parent_id);
+
+      if (!current) {
+        break;
+      }
+    }
+
+    return parts.join(".");
+  }
+
+  for (const category of categoryList) {
+    categoryKeyMap.set(
+      category.id,
+      `category.${getCategoryPath(category)}`
+    );
+  }
+
   // --------------------------------------------------
   // Fetch English translations
   // --------------------------------------------------
 
-  const { data: translations, error: translationsError } =
-    await supabase
-      .from("category_translations")
-      .select("category_id, locale_code, name")
-      .eq("locale_code", "en");
+  const {
+    data: translations,
+    error: translationsError,
+  } = await supabase
+    .from("translations")
+    .select(
+      "translation_key, locale_code, value"
+    )
+    .eq("section", "category")
+    .eq("locale_code", "en")
+    .eq("is_active", true);
 
   if (translationsError) {
     console.error(
@@ -40,15 +115,27 @@ export default async function NewCategoryPage() {
   }
 
   // --------------------------------------------------
-  // Create translation map
+  // Create English translation map
   // --------------------------------------------------
 
-  const translationMap = new Map(
-    (translations ?? []).map((translation) => [
-      translation.category_id,
-      translation.name.trim(),
-    ])
-  );
+  const translationMap = new Map<string, string>();
+
+  for (const translation of (translations ??
+    []) as TranslationRow[]) {
+    const categoryId = categoryKeyMap.entries().find(
+      ([, translationKey]) =>
+        translationKey === translation.translation_key
+    )?.[0];
+
+    if (!categoryId) {
+      continue;
+    }
+
+    translationMap.set(
+      categoryId,
+      translation.value.trim()
+    );
+  }
 
   // --------------------------------------------------
   // Create children map
@@ -61,10 +148,10 @@ export default async function NewCategoryPage() {
 
   const childrenMap = new Map<
     string | null,
-    typeof categories
+    Category[]
   >();
 
-  for (const category of categories ?? []) {
+  for (const category of categoryList) {
     const parentId = category.parent_id;
 
     if (!childrenMap.has(parentId)) {
@@ -89,7 +176,8 @@ export default async function NewCategoryPage() {
     parentId: string | null,
     depth: number
   ) {
-    const children = childrenMap.get(parentId) ?? [];
+    const children =
+      childrenMap.get(parentId) ?? [];
 
     for (const category of children) {
       // Level 4 categories cannot have children,
@@ -107,7 +195,10 @@ export default async function NewCategoryPage() {
 
       // Continue through the hierarchy
       // to find children of this category.
-      addCategories(category.id, depth + 1);
+      addCategories(
+        category.id,
+        depth + 1
+      );
     }
   }
 
@@ -123,6 +214,7 @@ export default async function NewCategoryPage() {
       <div className="mx-auto max-w-3xl p-6">
 
         {/* Header */}
+
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-foreground">
             Add Category
@@ -135,6 +227,7 @@ export default async function NewCategoryPage() {
         </div>
 
         {/* Form */}
+
         <CategoryForm
           mode="create"
           parentOptions={parentOptions}

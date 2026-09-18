@@ -1,76 +1,70 @@
 export const creatorMenu = [
   {
-    title: "Seller",
+    title: "sidebar.seller",
     items: [
       {
         href: "/seller/dashboard",
-        label: "Dashboard",
+        label: "sidebar.dashboard",
         icon: "LayoutDashboard",
       },
       {
         href: "/seller/channels",
-        label: "My Channels",
+        label: "sidebar.my_channels",
         icon: "Tv",
       },
       {
         href: "/seller/videos",
-        label: "My Videos",
+        label: "sidebar.my_videos",
         icon: "Video",
       },
       {
         href: "/seller/subscribers",
-        label: "Subscribers",
+        label: "sidebar.subscribers",
         icon: "Users",
       },
-
-      // --------------------------------------------
-      // Earnings
-      // --------------------------------------------
-
       {
         href: "/seller/earnings",
-        label: "Earnings",
+        label: "sidebar.earnings",
         icon: "DollarSign",
         children: [
           {
             href: "/seller/earnings",
-            label: "Overview",
+            label: "sidebar.overview",
           },
           {
             href: "/seller/earnings/transactions",
-            label: "Transactions",
+            label: "sidebar.transactions",
           },
           {
             href: "/seller/earnings/payouts",
-            label: "Payouts",
+            label: "sidebar.payouts",
           },
         ],
       },
-
       {
         href: "/seller/analytics",
-        label: "Analytics",
+        label: "sidebar.analytics",
         icon: "BarChart3",
       },
     ],
   },
 
   {
-    title: "Library",
+    title: "sidebar.library",
     items: [
       {
         href: "/subscriptions",
-        label: "My Subscriptions",
+        label: "sidebar.my_subscriptions",
         icon: "CreditCard",
       },
       {
         href: "/saved",
-        label: "Saved Videos",
+        label: "sidebar.saved_videos",
         icon: "Bookmark",
       },
       {
         href: "/history",
-        label: "Watch History",
+        label: "sidebar.watch_history",
         icon: "History",
       },
     ],

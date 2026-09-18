@@ -18,6 +18,13 @@ type ActionResult = {
   id?: string;
 };
 
+type CategoryNode = {
+  id: string;
+  parent_id: string | null;
+  level: number;
+  slug?: string;
+};
+
 function slugify(value: string) {
   return value
     .trim()
@@ -78,6 +85,91 @@ function getRelativeDepth(
   );
 }
 
+/**
+ * Build the hierarchical translation key for a category.
+ *
+ * Examples:
+ *
+ * category.business
+ * category.technical
+ * category.technical.business
+ * category.technical.business.customer-service
+ */
+function getCategoryTranslationKey(
+  categoryId: string,
+  categories: CategoryNode[]
+): string | null {
+  const categoryMap = new Map(
+    categories.map((category) => [
+      category.id,
+      category,
+    ])
+  );
+
+  const parts: string[] = [];
+
+  let current =
+    categoryMap.get(categoryId);
+
+  const visited = new Set<string>();
+
+  while (current) {
+    if (visited.has(current.id)) {
+      return null;
+    }
+
+    visited.add(current.id);
+
+    if (!current.slug) {
+      return null;
+    }
+
+    parts.unshift(current.slug);
+
+    if (!current.parent_id) {
+      break;
+    }
+
+    current =
+      categoryMap.get(current.parent_id);
+  }
+
+  if (parts.length === 0) {
+    return null;
+  }
+
+  return `category.${parts.join(".")}`;
+}
+
+/**
+ * Fetch all categories required to build hierarchical
+ * translation keys.
+ */
+async function getAllCategories(
+  supabase: Awaited<ReturnType<typeof createClient>>
+) {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, parent_id, level, slug");
+
+  if (error) {
+    console.error(
+      "FETCH CATEGORIES ERROR:",
+      error
+    );
+
+    return {
+      categories: [] as CategoryNode[],
+      error,
+    };
+  }
+
+  return {
+    categories: (data ?? []) as CategoryNode[],
+    error: null,
+  };
+}
+
 export async function createCategory(
   input: CategoryInput
 ): Promise<ActionResult> {
@@ -99,7 +191,8 @@ export async function createCategory(
   if (!slug) {
     return {
       success: false,
-      error: "A valid slug could not be generated from the category name.",
+      error:
+        "A valid slug could not be generated from the category name.",
     };
   }
 
@@ -110,16 +203,18 @@ export async function createCategory(
   let level = 1;
 
   if (input.parentId) {
-    const { data: parent, error: parentError } = await supabase
-      .from("categories")
-      .select("id, level")
-      .eq("id", input.parentId)
-      .single();
+    const { data: parent, error: parentError } =
+      await supabase
+        .from("categories")
+        .select("id, level")
+        .eq("id", input.parentId)
+        .single();
 
     if (parentError || !parent) {
       return {
         success: false,
-        error: "The selected parent category could not be found.",
+        error:
+          "The selected parent category could not be found.",
       };
     }
 
@@ -129,7 +224,8 @@ export async function createCategory(
   if (level > 4) {
     return {
       success: false,
-      error: "Categories can only be nested up to 4 levels.",
+      error:
+        "Categories can only be nested up to 4 levels.",
     };
   }
 
@@ -137,7 +233,10 @@ export async function createCategory(
   // Create category
   // --------------------------------------------------
 
-  const { data: category, error: categoryError } = await supabase
+  const {
+    data: category,
+    error: categoryError,
+  } = await supabase
     .from("categories")
     .insert({
       parent_id: input.parentId,
@@ -150,7 +249,10 @@ export async function createCategory(
     .single();
 
   if (categoryError || !category) {
-    console.error("CREATE CATEGORY ERROR:", categoryError);
+    console.error(
+      "CREATE CATEGORY ERROR:",
+      categoryError
+    );
 
     if (categoryError?.code === "23505") {
       return {
@@ -167,25 +269,13 @@ export async function createCategory(
   }
 
   // --------------------------------------------------
-  // Create English translation
+  // Build translation key
   // --------------------------------------------------
 
-  const { error: translationError } = await supabase
-    .from("category_translations")
-    .insert({
-      category_id: category.id,
-      locale_code: "en",
-      name,
-    });
+  const { categories, error: categoriesError } =
+    await getAllCategories(supabase);
 
-  if (translationError) {
-    console.error(
-      "CREATE CATEGORY TRANSLATION ERROR:",
-      translationError
-    );
-
-    // Roll back the category if the English translation
-    // could not be created.
+  if (categoriesError) {
     await supabase
       .from("categories")
       .delete()
@@ -193,11 +283,66 @@ export async function createCategory(
 
     return {
       success: false,
-      error: "Unable to create the English category translation.",
+      error:
+        "Unable to build the category translation key.",
+    };
+  }
+
+  const translationKey =
+    getCategoryTranslationKey(
+      category.id,
+      categories
+    );
+
+  if (!translationKey) {
+    await supabase
+      .from("categories")
+      .delete()
+      .eq("id", category.id);
+
+    return {
+      success: false,
+      error:
+        "Unable to create the category translation key.",
+    };
+  }
+
+  // --------------------------------------------------
+  // Create English translation
+  // --------------------------------------------------
+
+  const { error: translationError } =
+    await supabase
+      .from("translations")
+      .insert({
+        translation_key: translationKey,
+        locale_code: "en",
+        value: name,
+        section: "category",
+        name,
+        is_active: input.isActive,
+      });
+
+  if (translationError) {
+    console.error(
+      "CREATE CATEGORY TRANSLATION ERROR:",
+      translationError
+    );
+
+    await supabase
+      .from("categories")
+      .delete()
+      .eq("id", category.id);
+
+    return {
+      success: false,
+      error:
+        "Unable to create the English category translation.",
     };
   }
 
   revalidatePath("/admin/categories");
+  revalidatePath("/admin/translations");
 
   return {
     success: true,
@@ -236,10 +381,14 @@ export async function updateCategory(
   // Fetch all categories
   // --------------------------------------------------
 
-  const { data: categories, error: categoriesError } =
-    await supabase
-      .from("categories")
-      .select("id, parent_id, level");
+  const {
+    data: categories,
+    error: categoriesError,
+  } = await supabase
+    .from("categories")
+    .select(
+      "id, parent_id, level, slug"
+    );
 
   if (categoriesError) {
     console.error(
@@ -249,15 +398,18 @@ export async function updateCategory(
 
     return {
       success: false,
-      error: "Unable to validate the category hierarchy.",
+      error:
+        "Unable to validate the category hierarchy.",
     };
   }
 
-  const categoryList = categories ?? [];
+  const categoryList =
+    categories ?? [];
 
-  const currentCategory = categoryList.find(
-    (category) => category.id === id
-  );
+  const currentCategory =
+    categoryList.find(
+      (category) => category.id === id
+    );
 
   if (!currentCategory) {
     return {
@@ -273,7 +425,8 @@ export async function updateCategory(
   if (input.parentId === id) {
     return {
       success: false,
-      error: "A category cannot be its own parent.",
+      error:
+        "A category cannot be its own parent.",
     };
   }
 
@@ -281,10 +434,11 @@ export async function updateCategory(
   // Find descendants
   // --------------------------------------------------
 
-  const descendants = getDescendants(
-    id,
-    categoryList
-  );
+  const descendants =
+    getDescendants(
+      id,
+      categoryList
+    );
 
   // --------------------------------------------------
   // Prevent circular hierarchy
@@ -308,9 +462,11 @@ export async function updateCategory(
   let newLevel = 1;
 
   if (input.parentId) {
-    const parent = categoryList.find(
-      (category) => category.id === input.parentId
-    );
+    const parent =
+      categoryList.find(
+        (category) =>
+          category.id === input.parentId
+      );
 
     if (!parent) {
       return {
@@ -327,12 +483,16 @@ export async function updateCategory(
   // Calculate maximum descendant depth
   // --------------------------------------------------
 
-  const relativeDepth = getRelativeDepth(
-    id,
-    categoryList
-  );
+  const relativeDepth =
+    getRelativeDepth(
+      id,
+      categoryList
+    );
 
-  if (newLevel + relativeDepth > 4) {
+  if (
+    newLevel + relativeDepth >
+    4
+  ) {
     return {
       success: false,
       error:
@@ -344,7 +504,8 @@ export async function updateCategory(
   // Build the new hierarchy in memory
   // --------------------------------------------------
 
-  const updatedParents = new Map<string, string | null>();
+  const updatedParents =
+    new Map<string, string | null>();
 
   for (const category of categoryList) {
     updatedParents.set(
@@ -353,13 +514,17 @@ export async function updateCategory(
     );
   }
 
-  updatedParents.set(id, input.parentId);
+  updatedParents.set(
+    id,
+    input.parentId
+  );
 
   // --------------------------------------------------
   // Calculate levels using the new hierarchy
   // --------------------------------------------------
 
-  const newLevels = new Map<string, number>();
+  const newLevels =
+    new Map<string, number>();
 
   const calculateLevel = (
     categoryId: string
@@ -372,22 +537,36 @@ export async function updateCategory(
     }
 
     if (categoryId === id) {
-      newLevels.set(categoryId, newLevel);
+      newLevels.set(
+        categoryId,
+        newLevel
+      );
+
       return newLevel;
     }
 
     const parentId =
-      updatedParents.get(categoryId);
-
-    if (parentId === null || parentId === undefined) {
-      const originalCategory = categoryList.find(
-        (category) => category.id === categoryId
+      updatedParents.get(
+        categoryId
       );
+
+    if (
+      parentId === null ||
+      parentId === undefined
+    ) {
+      const originalCategory =
+        categoryList.find(
+          (category) =>
+            category.id === categoryId
+        );
 
       const level =
         originalCategory?.level ?? 1;
 
-      newLevels.set(categoryId, level);
+      newLevels.set(
+        categoryId,
+        level
+      );
 
       return level;
     }
@@ -395,9 +574,13 @@ export async function updateCategory(
     const parentLevel =
       calculateLevel(parentId);
 
-    const level = parentLevel + 1;
+    const level =
+      parentLevel + 1;
 
-    newLevels.set(categoryId, level);
+    newLevels.set(
+      categoryId,
+      level
+    );
 
     return level;
   };
@@ -412,7 +595,10 @@ export async function updateCategory(
   // Safety check
   // --------------------------------------------------
 
-  for (const [categoryId, level] of newLevels) {
+  for (const [
+    categoryId,
+    level,
+  ] of newLevels) {
     if (level > 4) {
       return {
         success: false,
@@ -427,20 +613,32 @@ export async function updateCategory(
   }
 
   // --------------------------------------------------
+  // Build old translation key
+  // --------------------------------------------------
+
+  const oldTranslationKey =
+    getCategoryTranslationKey(
+      id,
+      categoryList
+    );
+
+  // --------------------------------------------------
   // Update category
   // --------------------------------------------------
 
-  const { error: updateError } =
-    await supabase
-      .from("categories")
-      .update({
-        parent_id: input.parentId,
-        slug,
-        level: newLevel,
-        display_order: input.displayOrder,
-        is_active: input.isActive,
-      })
-      .eq("id", id);
+  const {
+    error: updateError,
+  } = await supabase
+    .from("categories")
+    .update({
+      parent_id: input.parentId,
+      slug,
+      level: newLevel,
+      display_order:
+        input.displayOrder,
+      is_active: input.isActive,
+    })
+    .eq("id", id);
 
   if (updateError) {
     console.error(
@@ -448,7 +646,10 @@ export async function updateCategory(
       updateError
     );
 
-    if (updateError.code === "23505") {
+    if (
+      updateError.code ===
+      "23505"
+    ) {
       return {
         success: false,
         error:
@@ -458,7 +659,8 @@ export async function updateCategory(
 
     return {
       success: false,
-      error: "Unable to update the category.",
+      error:
+        "Unable to update the category.",
     };
   }
 
@@ -468,19 +670,29 @@ export async function updateCategory(
 
   for (const descendantId of descendants) {
     const descendantLevel =
-      newLevels.get(descendantId);
+      newLevels.get(
+        descendantId
+      );
 
-    if (descendantLevel === undefined) {
+    if (
+      descendantLevel ===
+      undefined
+    ) {
       continue;
     }
 
-    const { error: descendantError } =
-      await supabase
-        .from("categories")
-        .update({
-          level: descendantLevel,
-        })
-        .eq("id", descendantId);
+    const {
+      error: descendantError,
+    } = await supabase
+      .from("categories")
+      .update({
+        level:
+          descendantLevel,
+      })
+      .eq(
+        "id",
+        descendantId
+      );
 
     if (descendantError) {
       console.error(
@@ -497,41 +709,233 @@ export async function updateCategory(
   }
 
   // --------------------------------------------------
-  // Update English translation
+  // Re-fetch categories after hierarchy update
   // --------------------------------------------------
 
-  const { error: translationError } =
-    await supabase
-      .from("category_translations")
-      .upsert(
-        {
-          category_id: id,
-          locale_code: "en",
-          name,
-        },
-        {
-          onConflict:
-            "category_id,locale_code",
-        }
-      );
+  const {
+    categories: updatedCategoryList,
+    error:
+      updatedCategoriesError,
+  } = await getAllCategories(
+    supabase
+  );
 
-  if (translationError) {
-    console.error(
-      "UPDATE CATEGORY TRANSLATION ERROR:",
-      translationError
-    );
-
+  if (updatedCategoriesError) {
     return {
       success: false,
       error:
-        "The category was updated, but the English name could not be saved.",
+        "The category was updated, but its translation key could not be rebuilt.",
     };
   }
 
-  revalidatePath("/admin/categories");
-  revalidatePath(`/admin/categories/${id}/edit`);
+  const newTranslationKey =
+    getCategoryTranslationKey(
+      id,
+      updatedCategoryList
+    );
+
+  if (!newTranslationKey) {
+    return {
+      success: false,
+      error:
+        "The category was updated, but its translation key could not be generated.",
+    };
+  }
+
+  // --------------------------------------------------
+  // Update translation
+  // --------------------------------------------------
+
+  if (
+    oldTranslationKey &&
+    oldTranslationKey !==
+      newTranslationKey
+  ) {
+    // Move the existing translations to
+    // the new hierarchical key.
+    const {
+      data: existingTranslations,
+      error:
+        existingTranslationsError,
+    } = await supabase
+      .from("translations")
+      .select(`
+        id,
+        locale_code,
+        value,
+        name,
+        section,
+        is_active
+      `)
+      .eq(
+        "translation_key",
+        oldTranslationKey
+      );
+
+    if (
+      existingTranslationsError
+    ) {
+      console.error(
+        "FETCH OLD CATEGORY TRANSLATIONS ERROR:",
+        existingTranslationsError
+      );
+
+      return {
+        success: false,
+        error:
+          "The category was updated, but its translations could not be moved.",
+      };
+    }
+
+    if (
+      existingTranslations &&
+      existingTranslations.length > 0
+    ) {
+      const translationRows =
+        existingTranslations.map(
+          (translation) => ({
+            translation_key:
+              newTranslationKey,
+            locale_code:
+              translation.locale_code,
+            value:
+              translation.locale_code ===
+              "en"
+                ? name
+                : translation.value,
+            name:
+              translation.locale_code ===
+              "en"
+                ? name
+                : translation.name,
+            section:
+              "category",
+            is_active:
+              input.isActive &&
+              translation.is_active,
+            updated_at:
+              new Date().toISOString(),
+          })
+        );
+
+      const {
+        error: upsertError,
+      } = await supabase
+        .from("translations")
+        .upsert(
+          translationRows,
+          {
+            onConflict:
+              "translation_key,locale_code",
+          }
+        );
+
+      if (upsertError) {
+        console.error(
+          "MOVE CATEGORY TRANSLATIONS ERROR:",
+          upsertError
+        );
+
+        return {
+          success: false,
+          error:
+            "The category was updated, but its translations could not be moved.",
+        };
+      }
+
+      await supabase
+        .from("translations")
+        .delete()
+        .eq(
+          "translation_key",
+          oldTranslationKey
+        );
+    }
+  } else {
+    // Same hierarchy/key. Update English
+    // and visibility.
+    const {
+      error: translationError,
+    } = await supabase
+      .from("translations")
+      .upsert(
+        {
+          translation_key:
+            newTranslationKey,
+          locale_code: "en",
+          value: name,
+          section: "category",
+          name,
+          is_active:
+            input.isActive,
+          updated_at:
+            new Date().toISOString(),
+        },
+        {
+          onConflict:
+            "translation_key,locale_code",
+        }
+      );
+
+    if (translationError) {
+      console.error(
+        "UPDATE CATEGORY TRANSLATION ERROR:",
+        translationError
+      );
+
+      return {
+        success: false,
+        error:
+          "The category was updated, but the English name could not be saved.",
+      };
+    }
+
+    // Keep all existing translated rows
+    // aligned with the category visibility.
+    const {
+      error:
+        visibilityError,
+    } = await supabase
+      .from("translations")
+      .update({
+        is_active:
+          input.isActive,
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq(
+        "translation_key",
+        newTranslationKey
+      );
+
+    if (visibilityError) {
+      console.error(
+        "UPDATE CATEGORY TRANSLATION VISIBILITY ERROR:",
+        visibilityError
+      );
+
+      return {
+        success: false,
+        error:
+          "The category was updated, but translation visibility could not be updated.",
+      };
+    }
+  }
+
+  revalidatePath(
+    "/admin/categories"
+  );
+
+  revalidatePath(
+    `/admin/categories/${id}/edit`
+  );
+
   revalidatePath(
     `/admin/categories/${id}/translations`
+  );
+
+  revalidatePath(
+    "/admin/translations"
   );
 
   return {

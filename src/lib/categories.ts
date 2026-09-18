@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "@/lib/translations";
 
 interface Category {
   id: string;
@@ -7,16 +8,10 @@ interface Category {
   level: number;
 }
 
-interface CategoryTranslation {
-  category_id: string;
-  name: string;
-}
-
-/**
- * Get category labels for multiple category IDs in one go.
- */
 export async function getCategoryLabels(
-  categoryIds: Array<string | null | undefined>
+  categoryIds: Array<string | null | undefined>,
+  locale = "en",
+  includeParent = true
 ): Promise<Record<string, string>> {
   const validCategoryIds = [
     ...new Set(
@@ -36,15 +31,17 @@ export async function getCategoryLabels(
      Get all categories
   ------------------------------------------------------- */
 
-  const { data: categories, error: categoriesError } =
-    await supabase
-      .from("categories")
-      .select(`
-        id,
-        slug,
-        parent_id,
-        level
-      `);
+  const {
+    data: categories,
+    error: categoriesError,
+  } = await supabase
+    .from("categories")
+    .select(`
+      id,
+      slug,
+      parent_id,
+      level
+    `);
 
   if (categoriesError || !categories?.length) {
     console.error(
@@ -56,41 +53,67 @@ export async function getCategoryLabels(
   }
 
   /* -------------------------------------------------------
-     Get English translations
-  ------------------------------------------------------- */
-
-  const { data: translations, error: translationsError } =
-    await supabase
-      .from("category_translations")
-      .select(`
-        category_id,
-        name
-      `)
-      .eq("locale_code", "en");
-
-  if (translationsError) {
-    console.error(
-      "Failed to load category translations:",
-      translationsError
-    );
-  }
-
-  /* -------------------------------------------------------
-     Build lookup maps
+     Build category map
   ------------------------------------------------------- */
 
   const categoryMap = new Map(
     categories.map((category) => [
       category.id,
-      category,
+      category as Category,
     ])
   );
 
-  const nameMap = new Map(
-    (translations ?? []).map((translation) => [
-      translation.category_id,
-      translation.name,
-    ])
+  /* -------------------------------------------------------
+     Build hierarchical translation keys
+  ------------------------------------------------------- */
+
+  const categoryKeyMap = new Map<string, string>();
+
+  function getCategoryPath(
+    category: Category
+  ): string {
+    const parts: string[] = [];
+    let current: Category | undefined = category;
+
+    while (current) {
+      parts.unshift(current.slug);
+
+      if (!current.parent_id) {
+        break;
+      }
+
+      current = categoryMap.get(
+        current.parent_id
+      );
+    }
+
+    return parts.join(".");
+  }
+
+  for (const category of categories as Category[]) {
+    const path = getCategoryPath(category);
+
+    categoryKeyMap.set(
+      category.id,
+      `category.${path}`
+    );
+  }
+
+  /* -------------------------------------------------------
+     Get translations
+  ------------------------------------------------------- */
+
+  const translationKeys = validCategoryIds
+    .map((categoryId) =>
+      categoryKeyMap.get(categoryId)
+    )
+    .filter(
+      (key): key is string => Boolean(key)
+    );
+
+  const translations = await getTranslations(
+    translationKeys,
+    locale
   );
 
   /* -------------------------------------------------------
@@ -106,7 +129,9 @@ export async function getCategoryLabels(
       continue;
     }
 
-    /* Find root category */
+    /* ---------------------------------------------------
+       Find root category
+    --------------------------------------------------- */
 
     let root = current;
 
@@ -122,18 +147,38 @@ export async function getCategoryLabels(
       root = parent;
     }
 
+    /* ---------------------------------------------------
+       Translation keys
+    --------------------------------------------------- */
+
+    const rootKey = categoryKeyMap.get(root.id);
+    const currentKey =
+      categoryKeyMap.get(current.id);
+
+    /* ---------------------------------------------------
+       Root category name
+    --------------------------------------------------- */
+
     const rootName =
-      nameMap.get(root.id) ??
+      (rootKey && translations[rootKey]) ??
       formatCategorySlug(root.slug);
 
+    /* ---------------------------------------------------
+       Current category name
+    --------------------------------------------------- */
+
     const currentName =
-      nameMap.get(current.id) ??
+      (currentKey && translations[currentKey]) ??
       formatCategorySlug(current.slug);
 
+    /* ---------------------------------------------------
+       Final label
+    --------------------------------------------------- */
+
     labels[categoryId] =
-      root.id === current.id
-        ? rootName
-        : `${rootName} - ${currentName}`;
+      includeParent && root.id !== current.id
+        ? `${rootName} - ${currentName}`
+        : currentName;
   }
 
   return labels;
@@ -143,22 +188,22 @@ export async function getCategoryLabels(
  * Get a single category label.
  */
 export async function getCategoryLabel(
-  categoryId: string | null | undefined
-) {
+  categoryId: string | null | undefined,
+  locale = "en"
+): Promise<string> {
   if (!categoryId) {
     return "";
   }
 
-  const labels = await getCategoryLabels([
-    categoryId,
-  ]);
+  const labels = await getCategoryLabels(
+    [categoryId],
+    locale
+  );
 
   return labels[categoryId] ?? "";
 }
 
-function formatCategorySlug(
-  value: string
-) {
+function formatCategorySlug(value: string) {
   return value
     .replace(/[-_]/g, " ")
     .replace(/\b\w/g, (char) =>

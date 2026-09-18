@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 import VideoCard from "@/components/VideoCard";
@@ -18,6 +19,15 @@ export default async function WatchHistoryPage() {
   if (!user) {
     redirect("/login");
   }
+
+  /* ========================================================
+     GET SELECTED LOCALE
+  ======================================================== */
+
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
 
   /* ========================================================
      GET WATCH HISTORY
@@ -45,12 +55,7 @@ export default async function WatchHistoryPage() {
           id,
           slug,
           parent_id,
-          level,
-
-          category_translations (
-            name,
-            locale_code
-          )
+          level
         ),
 
         channels (
@@ -112,7 +117,8 @@ export default async function WatchHistoryPage() {
       : video.categories;
 
     const categoryLabel = await getCategoryLabel(
-      category?.id
+      category?.id,
+      locale
     );
 
     /* ======================================================

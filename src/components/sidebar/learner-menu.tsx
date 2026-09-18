@@ -4,37 +4,39 @@ export const learnerMenu = [
     items: [
       {
         href: "/",
-        label: "Home",
+        label: "sidebar.home",
         icon: "Home",
       },
     ],
   },
+
   {
-    title: "Library",
+    title: "sidebar.library",
     items: [
       {
         href: "/subscriptions",
-        label: "My Subscriptions",
+        label: "sidebar.my_subscriptions",
         icon: "CreditCard",
       },
       {
         href: "/saved",
-        label: "Saved Videos",
+        label: "sidebar.saved_videos",
         icon: "Bookmark",
       },
       {
         href: "/history",
-        label: "Watch History",
+        label: "sidebar.watch_history",
         icon: "History",
       },
     ],
   },
+
   {
-    title: "For Sellers",
+    title: "sidebar.for_sellers",
     items: [
       {
         href: "/become-a-seller",
-        label: "Become a Seller",
+        label: "sidebar.become_a_seller",
         icon: "PlusCircle",
       },
     ],

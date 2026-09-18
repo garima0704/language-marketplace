@@ -1,6 +1,9 @@
 import { redirect, notFound } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
+
+import { getCategoryLabels } from "@/lib/categories";
 
 import EditVideoForm from "@/components/seller/EditVideoForm";
 
@@ -42,6 +45,15 @@ export default async function EditVideoPage({
   if (!profile?.is_creator) {
     redirect("/");
   }
+
+  // --------------------------------------------
+  // Current locale
+  // --------------------------------------------
+
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
 
   // --------------------------------------------
   // Get video
@@ -125,7 +137,7 @@ export default async function EditVideoPage({
   const { data: categories } = await supabase
     .from("categories")
     .select(
-      "id, parent_id, level, display_order"
+      "id, slug, parent_id, level, display_order"
     )
     .eq("is_active", true)
     .order("level")
@@ -135,12 +147,16 @@ export default async function EditVideoPage({
   // Category translations
   // --------------------------------------------
 
-  const { data: categoryTranslations } =
-    await supabase
-      .from("category_translations")
-      .select(
-        "category_id, locale_code, name"
-      );
+  const categoryIds =
+    categories?.map((category) => category.id) ?? [];
+
+  const categoryLabels =
+    categoryIds.length > 0
+      ? await getCategoryLabels(
+          categoryIds,
+          locale
+        )
+      : {};
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -150,7 +166,8 @@ export default async function EditVideoPage({
         </h1>
 
         <p className="mt-2 text-muted-foreground">
-          Update your video details and publishing settings.
+          Update your video details and publishing
+          settings.
         </p>
       </div>
 
@@ -160,9 +177,7 @@ export default async function EditVideoPage({
         languages={languages ?? []}
         languageRegions={languageRegions ?? []}
         categories={categories ?? []}
-        categoryTranslations={
-          categoryTranslations ?? []
-        }
+        categoryLabels={categoryLabels}
       />
     </div>
   );

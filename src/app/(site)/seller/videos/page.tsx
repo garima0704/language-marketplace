@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
+
+import { getCategoryLabel } from "@/lib/categories";
 
 import VideoSection from "@/components/VideoSection";
 import { Button } from "@/components/ui/button";
@@ -35,6 +38,15 @@ export default async function SellerVideosPage() {
   if (!profile?.is_creator) {
     redirect("/");
   }
+
+  // --------------------------------------------------
+  // Current locale
+  // --------------------------------------------------
+
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
 
   // --------------------------------------------------
   // Get seller channels
@@ -81,165 +93,45 @@ export default async function SellerVideosPage() {
     videos = data ?? [];
 
     // ------------------------------------------------
-    // Get category IDs
+    // Build category labels using translations
     // ------------------------------------------------
 
     const categoryIds = [
       ...new Set(
         videos
           .map((video) => video.category_id)
-          .filter(Boolean)
+          .filter(
+            (id): id is string => Boolean(id)
+          )
       ),
     ];
 
-    // ------------------------------------------------
-    // Build category labels
-    // ------------------------------------------------
-
     if (categoryIds.length > 0) {
-      const allCategoryIds = new Set<string>(
-        categoryIds
+      const categoryLabels = await Promise.all(
+        categoryIds.map(async (categoryId) => {
+          const label =
+            await getCategoryLabel(
+              categoryId,
+              locale
+            );
+
+          return [categoryId, label] as const;
+        })
       );
 
-      let currentIds = categoryIds;
-
-      // ----------------------------------------------
-      // Get parent categories
-      // ----------------------------------------------
-
-      while (currentIds.length > 0) {
-        const { data: parents } =
-          await supabase
-            .from("categories")
-            .select(
-              "id, parent_id, slug, level"
-            )
-            .in("id", currentIds);
-
-        if (!parents?.length) {
-          break;
-        }
-
-        const parentIds = parents
-          .map(
-            (category) =>
-              category.parent_id
-          )
-          .filter(
-            (id): id is string =>
-              !!id &&
-              !allCategoryIds.has(id)
-          );
-
-        if (parentIds.length === 0) {
-          break;
-        }
-
-        parentIds.forEach((id) =>
-          allCategoryIds.add(id)
-        );
-
-        currentIds = parentIds;
-      }
-
-      // ----------------------------------------------
-      // Get all categories
-      // ----------------------------------------------
-
-      const { data: allCategories } =
-        await supabase
-          .from("categories")
-          .select(
-            "id, parent_id, slug, level"
-          )
-          .in(
-            "id",
-            Array.from(allCategoryIds)
-          );
-
-      // ----------------------------------------------
-      // Get English translations
-      // ----------------------------------------------
-
-      const { data: translations } =
-        await supabase
-          .from("category_translations")
-          .select(
-            "category_id, name"
-          )
-          .eq("locale_code", "en")
-          .in(
-            "category_id",
-            Array.from(allCategoryIds)
-          );
-
-      // ----------------------------------------------
-      // Lookup maps
-      // ----------------------------------------------
-
-      const categoryById = new Map(
-        (allCategories ?? []).map(
-          (category) => [
-            category.id,
-            category,
-          ]
-        )
+      const categoryLabelMap = new Map(
+        categoryLabels
       );
-
-      const nameById = new Map(
-        (translations ?? []).map(
-          (translation) => [
-            translation.category_id,
-            translation.name,
-          ]
-        )
-      );
-
-      // ----------------------------------------------
-      // Build category label
-      // ----------------------------------------------
 
       for (const video of videos) {
         if (!video.category_id) {
           continue;
         }
 
-        const current =
-          categoryById.get(
-            video.category_id
-          );
-
-        if (!current) {
-          continue;
-        }
-
-        const deepestName =
-          nameById.get(current.id) ??
-          current.slug;
-
-        let root = current;
-
-        while (root.parent_id) {
-          const parent =
-            categoryById.get(
-              root.parent_id
-            );
-
-          if (!parent) {
-            break;
-          }
-
-          root = parent;
-        }
-
-        const rootName =
-          nameById.get(root.id) ??
-          root.slug;
-
         video.category_label =
-          root.id === current.id
-            ? rootName
-            : `${rootName} - ${deepestName}`;
+          categoryLabelMap.get(
+            video.category_id
+          ) ?? "";
       }
     }
   }

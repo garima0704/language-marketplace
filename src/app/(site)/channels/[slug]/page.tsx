@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 
 import ChannelHeader from "@/components/channels/ChannelHeader";
 import VideoCard from "@/components/VideoCard";
 import { getCategoryLabels } from "@/lib/categories";
+import { getTranslations } from "@/lib/translations";
 
 interface ChannelPageProps {
   params: Promise<{
@@ -20,24 +22,66 @@ export default async function ChannelPage({
   const supabase = await createClient();
 
   /* =======================================================
-     GET CHANNEL
-  ======================================================= */
+     CURRENT UI LANGUAGE
+  ======================================================== */
 
-  const { data: channel, error: channelError } =
-    await supabase
-      .from("channels")
-      .select(`
-        *,
-        profiles (
-          id,
-          display_name,
-          username,
-          avatar_url,
-          country
-        )
-      `)
-      .eq("slug", slug)
-      .single();
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
+
+  /* =======================================================
+     TRANSLATIONS
+  ======================================================== */
+
+  const translations = await getTranslations(
+    [
+      // Channel
+      "channel.videos",
+      "channel.no_videos",
+      "channel.created_by",
+      "channel.subscribed",
+      "channel.subscribe",
+
+      // Video card
+      "video.no_thumbnail",
+      "video.views",
+      "video.published",
+      "video.draft",
+      "video.free",
+      "video.subscribers_only",
+      "video.manage",
+
+      // Video levels
+      "level.beginner",
+      "level.intermediate",
+      "level.advanced",
+      "level.fluent",
+    ],
+    locale
+  );
+
+  /* =======================================================
+     GET CHANNEL
+  ======================================================== */
+
+  const {
+    data: channel,
+    error: channelError,
+  } = await supabase
+    .from("channels")
+    .select(`
+      *,
+      profiles (
+        id,
+        display_name,
+        username,
+        avatar_url,
+        country
+      )
+    `)
+    .eq("slug", slug)
+    .single();
 
   if (channelError || !channel) {
     notFound();
@@ -45,7 +89,7 @@ export default async function ChannelPage({
 
   /* =======================================================
      CHECK CURRENT USER SUBSCRIPTION
-  ======================================================= */
+  ======================================================== */
 
   const {
     data: { user },
@@ -67,7 +111,7 @@ export default async function ChannelPage({
 
   /* =======================================================
      GET CHANNEL VIDEOS
-  ======================================================= */
+  ======================================================== */
 
   const {
     data: videos,
@@ -91,7 +135,7 @@ export default async function ChannelPage({
 
   /* =======================================================
      CATEGORY LABELS
-  ======================================================= */
+  ======================================================== */
 
   const categoryLabels =
     await getCategoryLabels(
@@ -114,7 +158,7 @@ export default async function ChannelPage({
 
   /* =======================================================
      CHANNEL INFORMATION
-  ======================================================= */
+  ======================================================== */
 
   const channelName =
     channel.channel_name;
@@ -124,7 +168,7 @@ export default async function ChannelPage({
 
   /* =======================================================
      RENDER
-  ======================================================= */
+  ======================================================== */
 
   return (
     <div className="space-y-6 px-6 py-6">
@@ -136,6 +180,17 @@ export default async function ChannelPage({
       <ChannelHeader
         channel={channel}
         isSubscribed={isSubscribed}
+        translations={{
+          created_by:
+            translations["channel.created_by"] ??
+            "Created by:",
+          subscribed:
+            translations["channel.subscribed"] ??
+            "Subscribed",
+          subscribe:
+            translations["channel.subscribe"] ??
+            "Subscribe",
+        }}
       />
 
       {/* =================================================
@@ -146,57 +201,75 @@ export default async function ChannelPage({
 
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-foreground">
-            Videos
+            {translations["channel.videos"] ??
+              "Videos"}
           </h2>
         </div>
 
         {channelVideos.length === 0 ? (
           <div className="rounded-xl border border-border bg-background p-8 text-center">
             <p className="text-sm text-muted">
-              No videos have been uploaded yet.
+              {translations["channel.no_videos"] ??
+                "No videos have been uploaded yet."}
             </p>
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {channelVideos.map(
-              (video) => (
-                <VideoCard
-                  key={video.id}
-                  id={video.id}
-                  slug={video.slug}
-                  title={video.title}
-                  thumbnail={
-                    video.thumbnail_url ??
-                    ""
-                  }
-                  channelName={
-                    channelName
-                  }
-                  channelSlug={
-                    channel.slug
-                  }
-                  channelLogo={
-                    channelLogo ?? ""
-                  }
-                  views={
-                    video.view_count ??
-                    0
-                  }
-                  createdAt={
-                    video.created_at
-                  }
-                  level={
-                    video.level
-                  }
-                  accessType={
-                    video.access_type
-                  }
-                  categoryLabel={
-                    video.category_label
-                  }
-                />
-              )
-            )}
+            {channelVideos.map((video) => (
+              <VideoCard
+                key={video.id}
+                id={video.id}
+                slug={video.slug}
+                title={video.title}
+                thumbnail={video.thumbnail_url ?? ""}
+                channelName={channelName}
+                channelSlug={channel.slug}
+                channelLogo={channelLogo ?? ""}
+                views={video.view_count ?? 0}
+                createdAt={video.created_at}
+                level={video.level}
+                accessType={video.access_type}
+                categoryLabel={video.category_label}
+                locale={locale}
+                translations={{
+                  noThumbnail:
+                    translations["video.no_thumbnail"] ??
+                    "No thumbnail available",
+                  views:
+                    translations["video.views"] ??
+                    "views",
+                  published:
+                    translations["video.published"] ??
+                    "Published",
+                  draft:
+                    translations["video.draft"] ??
+                    "Draft",
+                  free:
+                    translations["video.free"] ??
+                    "Free",
+                  subscribersOnly:
+                    translations["video.subscribers_only"] ??
+                    "Subscribers only",
+                  manage:
+                    translations["video.manage"] ??
+                    "Manage",
+                }}
+                levelTranslations={{
+                  beginner:
+                    translations["level.beginner"] ??
+                    "Beginner",
+                  intermediate:
+                    translations["level.intermediate"] ??
+                    "Intermediate",
+                  advanced:
+                    translations["level.advanced"] ??
+                    "Advanced",
+                  fluent:
+                    translations["level.fluent"] ??
+                    "Fluent",
+                }}
+              />
+            ))}      
           </div>
         )}
 

@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 
 import { Button } from "@/components/ui/button";
+import { getTranslations } from "@/lib/translations";
 
 type SellerInfo = {
   username: string | null;
@@ -36,20 +38,44 @@ interface ChannelCardProps {
   showActions?: boolean;
 }
 
-export default function ChannelCard({
+export default async function ChannelCard({
   channel,
   seller,
   variant,
   subscription,
   showActions = true,
 }: ChannelCardProps) {
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
+
+  const translations = await getTranslations(
+    [
+      "channel.no_banner",
+      "channel.no_description",
+      "channel.month",
+      "channel.subscribers",
+      "channel.videos",
+      "channel.active",
+      "channel.renews_on",
+      "channel.continue_learning",
+      "channel.manage_subscription",
+      "channel.manage",
+      "channel.view",
+    ],
+    locale
+  );
+
   const renewalDate =
     subscription?.current_period_end
-      ? new Intl.DateTimeFormat("en-US", {
+      ? new Intl.DateTimeFormat(locale, {
           month: "short",
           day: "numeric",
           year: "numeric",
-        }).format(new Date(subscription.current_period_end))
+        }).format(
+          new Date(subscription.current_period_end)
+        )
       : null;
 
   return (
@@ -65,7 +91,8 @@ export default function ChannelCard({
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-muted-bg text-sm text-muted">
-            No banner available
+            {translations["channel.no_banner"] ??
+              "No banner available"}
           </div>
         )}
 
@@ -84,12 +111,17 @@ export default function ChannelCard({
             ) : seller?.avatar_url ? (
               <img
                 src={seller.avatar_url}
-                alt={seller.username || channel.channel_name}
+                alt={
+                  seller.username ||
+                  channel.channel_name
+                }
                 className="h-full w-full object-cover"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-muted-bg text-xl font-semibold text-foreground">
-                {channel.channel_name.charAt(0).toUpperCase()}
+                {channel.channel_name
+                  .charAt(0)
+                  .toUpperCase()}
               </div>
             )}
           </div>
@@ -126,7 +158,8 @@ export default function ChannelCard({
           </p>
         ) : (
           <p className="mt-4 text-sm text-muted">
-            No description available.
+            {translations["channel.no_description"] ??
+              "No description available."}
           </p>
         )}
 
@@ -135,82 +168,100 @@ export default function ChannelCard({
           <>
             <div className="mt-5 flex items-center justify-between">
               <span className="text-sm font-semibold text-foreground">
-                ${Number(channel.subscription_price ?? 0).toFixed(2)}
+                ${Number(
+                  channel.subscription_price ?? 0
+                ).toFixed(2)}
+
                 <span className="font-normal text-muted">
-                  /month
+                  /{translations["channel.month"] ??
+                    "month"}
                 </span>
               </span>
             </div>
 
             <div className="mt-2 text-sm text-muted">
-              {channel.subscriber_count ?? 0} subscribers
+              {channel.subscriber_count ?? 0}{" "}
+              {translations["channel.subscribers"] ??
+                "subscribers"}
+
               <span className="mx-2">·</span>
-              {channel.video_count ?? 0} videos
+
+              {channel.video_count ?? 0}{" "}
+              {translations["channel.videos"] ??
+                "videos"}
             </div>
           </>
         )}
 
         {/* Subscription Status */}
-        {variant === "subscription" && subscription && (
-          <div className="mt-5 flex items-center justify-between">
-            <span className="rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground">
-              Active
-            </span>
-
-            {renewalDate && (
-              <span className="text-sm text-muted">
-                Renews on {renewalDate}
+        {variant === "subscription" &&
+          subscription && (
+            <div className="mt-5 flex items-center justify-between">
+              <span className="rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground">
+                {translations["channel.active"] ??
+                  "Active"}
               </span>
-            )}
-          </div>
-        )}
+
+              {renewalDate && (
+                <span className="text-sm text-muted">
+                  {translations["channel.renews_on"] ??
+                    "Renews on"}{" "}
+                  {renewalDate}
+                </span>
+              )}
+            </div>
+          )}
 
         {/* Actions */}
-        {showActions &&
-          (variant === "subscription" && subscription ? (
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href={`/channels/${channel.slug}`}>
-                <Button className="rounded-lg">
-                  Continue Learning
-                </Button>
-              </Link>
+      {showActions &&
+        (variant === "subscription" && subscription ? (
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href={`/channels/${channel.slug}`}>
+              <Button className="rounded-lg">
+                {translations["channel.continue_learning"] ??
+                  "Continue Learning"}
+              </Button>
+            </Link>
 
-              <Link href={`/subscriptions/${subscription.id}`}>
-                <Button
-                  variant="outline"
-                  className="rounded-lg"
-                >
-                  Manage Subscription
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            <>
-              {/* Manage / View */}
-              <div className="mt-6 flex gap-3">
-                <Link
-                  href={`/seller/channels/${channel.id}`}
-                  className="flex-1"
-                >
-                  <Button className="w-full rounded-lg">
-                    Manage
-                  </Button>
-                </Link>
+            <Link href={`/subscriptions/${subscription.id}`}>
+              <Button
+                variant="outline"
+                className="rounded-lg"
+              >
+                {translations["channel.manage_subscription"] ??
+                  "Manage Subscription"}
+              </Button>
+            </Link>
+          </div>
+        ) : variant === "seller" ? (
+          <div className="mt-6">
+            <Link href={`/channels/${channel.slug}`} className="block">
+              <Button className="w-full rounded-lg">
+                {translations["channel.view"] ?? "View"}
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-6 flex gap-3">
+            <Link
+              href={`/seller/channels/${channel.id}`}
+              className="flex-1"
+            >
+              <Button className="w-full rounded-lg">
+                {translations["channel.manage"] ?? "Manage"}
+              </Button>
+            </Link>
 
-                <Link
-                  href={`/channels/${channel.slug}`}
-                  className="flex-1"
-                >
-                  <Button
-                    variant="outline"
-                    className="w-full rounded-lg"
-                  >
-                    View
-                  </Button>
-                </Link>
-              </div>
-            </>
-          ))}
+            <Link
+              href={`/channels/${channel.slug}`}
+              className="block"
+            >
+              <Button className="w-full rounded-lg">
+                {translations["channel.view"] ?? "View"}
+              </Button>
+            </Link>
+          </div>
+        ))}
       </div>
     </div>
   );

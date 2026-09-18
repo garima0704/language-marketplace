@@ -10,7 +10,8 @@ export function cn(...inputs: ClassValue[]) {
 ========================================================= */
 
 export function formatTimeAgo(
-  dateString?: string | null
+  dateString?: string | null,
+  locale = "en"
 ) {
   if (!dateString) return "";
 
@@ -21,47 +22,44 @@ export function formatTimeAgo(
     (now.getTime() - date.getTime()) / 1000
   );
 
+  const formatter = new Intl.RelativeTimeFormat(
+    locale,
+    {
+      numeric: "always",
+    }
+  );
+
   if (diffSeconds < 60) {
-    return "Just now";
+    return formatter.format(0, "second");
   }
 
   const minutes = Math.floor(diffSeconds / 60);
 
   if (minutes < 60) {
-    return `${minutes} ${
-      minutes === 1 ? "minute" : "minutes"
-    } ago`;
+    return formatter.format(-minutes, "minute");
   }
 
   const hours = Math.floor(minutes / 60);
 
   if (hours < 24) {
-    return `${hours} ${
-      hours === 1 ? "hour" : "hours"
-    } ago`;
+    return formatter.format(-hours, "hour");
   }
 
   const days = Math.floor(hours / 24);
 
   if (days < 30) {
-    return `${days} ${
-      days === 1 ? "day" : "days"
-    } ago`;
+    return formatter.format(-days, "day");
   }
 
   const months = Math.floor(days / 30);
 
   if (months < 12) {
-    return `${months} ${
-      months === 1 ? "month" : "months"
-    } ago`;
+    return formatter.format(-months, "month");
   }
 
   const years = Math.floor(months / 12);
 
-  return `${years} ${
-    years === 1 ? "year" : "years"
-  } ago`;
+  return formatter.format(-years, "year");
 }
 
 export function formatDate(

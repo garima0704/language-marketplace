@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth/admin";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -101,9 +100,7 @@ export default async function EditRegionPage({
     // --------------------------------------------------
 
     if (!country) {
-      throw new Error(
-        "Country is required."
-      );
+      throw new Error("Country is required.");
     }
 
     if (sortOrder < 0) {
@@ -195,137 +192,155 @@ export default async function EditRegionPage({
   }
 
   return (
-    <div className="min-h-full bg-light-bg">
-      <div className="mx-auto max-w-3xl p-6">
+    <main className="w-full">
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <div className="mx-auto max-w-3xl">
+          {/* Header */}
 
-        {/* ------------------------------------------------ */}
-        {/* Header */}
-        {/* ------------------------------------------------ */}
+          <div>
+            <Link
+              href="/admin/languages"
+              className="text-sm text-muted transition hover:text-foreground"
+            >
+              ← Back to Languages
+            </Link>
 
-        <div className="mb-6">
-          <Link
-            href="/admin/languages"
-            className="text-sm text-muted hover:text-foreground"
-          >
-            ← Back to Languages
-          </Link>
+            <div className="mt-4">
+              <h1 className="text-2xl font-semibold text-foreground">
+                Edit Region
+              </h1>
 
-          <div className="mt-4">
-            <h1 className="text-2xl font-semibold text-foreground">
-              Edit Region
-            </h1>
-
-            <p className="mt-1 text-sm text-muted">
-              Update the region for {language.name}.
-            </p>
+              <p className="mt-1 text-sm text-muted">
+                Update the region for {language.name}.
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* ------------------------------------------------ */}
-        {/* Form */}
-        {/* ------------------------------------------------ */}
+          {/* Form */}
 
-        <Card className="bg-white p-6">
-          <form
-            action={updateRegion}
-            className="space-y-6"
-          >
-            {/* Language */}
-            <div className="space-y-2">
-              <Label>
-                Language
-              </Label>
+          <div className="mt-6 overflow-hidden rounded-xl border border-border bg-background">
+            <div className="border-b border-border px-5 py-4">
+              <h2 className="text-base font-semibold text-foreground">
+                Region Details
+              </h2>
 
-              <div className="rounded-md border border-border bg-light-bg px-3 py-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-foreground">
-                    {language.name}
-                  </span>
+              <p className="mt-1 text-sm text-muted">
+                Update the country and regional information.
+              </p>
+            </div>
 
-                  <span className="rounded bg-muted-bg px-2 py-0.5 text-xs font-medium text-muted">
-                    {language.code}
-                  </span>
+            <form
+              action={updateRegion}
+              className="space-y-6 p-6"
+            >
+              {/* Language */}
+
+              <div className="space-y-2">
+                <Label>
+                  Language
+                </Label>
+
+                <div className="rounded-lg border border-border bg-background px-3 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-foreground">
+                      {language.name}
+                    </span>
+
+                    <span className="rounded bg-muted-bg px-2 py-0.5 text-xs font-medium text-secondary">
+                      {language.code}
+                    </span>
+                  </div>
                 </div>
+
+                <p className="text-xs text-muted">
+                  This region belongs to {language.name}.
+                </p>
               </div>
 
-              <p className="text-xs text-muted">
-                This region belongs to {language.name}.
-              </p>
-            </div>
+              {/* Country */}
 
-            {/* Country */}
-            <div className="space-y-2">
-              <Label htmlFor="country">
-                Country
-              </Label>
+              <div className="space-y-2">
+                <Label htmlFor="country">
+                  Country
+                </Label>
 
-              <Input
-                id="country"
-                name="country"
-                defaultValue={region.country}
-                placeholder="e.g. United States"
-                required
-              />
+                <Input
+                  id="country"
+                  name="country"
+                  defaultValue={region.country}
+                  placeholder="e.g. United States"
+                  required
+                  className="h-10 rounded-lg"
+                />
 
-              <p className="text-xs text-muted">
-                The country associated with this region.
-              </p>
-            </div>
+                <p className="text-xs text-muted">
+                  The country associated with this region.
+                </p>
+              </div>
 
-            {/* State */}
-            <div className="space-y-2">
-              <Label htmlFor="state">
-                State / Province
-              </Label>
+              {/* State */}
 
-              <Input
-                id="state"
-                name="state"
-                defaultValue={region.state ?? ""}
-                placeholder="e.g. California"
-              />
+              <div className="space-y-2">
+                <Label htmlFor="state">
+                  State / Province
+                </Label>
 
-              <p className="text-xs text-muted">
-                Optional. Leave empty if this region applies
-                to the entire country.
-              </p>
-            </div>
+                <Input
+                  id="state"
+                  name="state"
+                  defaultValue={region.state ?? ""}
+                  placeholder="e.g. California"
+                  className="h-10 rounded-lg"
+                />
 
-            {/* Display Order */}
-            <div className="space-y-2">
-              <Label htmlFor="sort_order">
-                Display Order
-              </Label>
+                <p className="text-xs text-muted">
+                  Optional. Leave empty if this region applies
+                  to the entire country.
+                </p>
+              </div>
 
-              <Input
-                id="sort_order"
-                name="sort_order"
-                type="number"
-                min="0"
-                defaultValue={region.sort_order ?? 0}
-              />
+              {/* Display Order */}
 
-              <p className="text-xs text-muted">
-                Lower numbers appear first.
-              </p>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="sort_order">
+                  Display Order
+                </Label>
 
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-3 border-t border-border pt-6">
-              <Link
-                href="/admin/languages"
-                className="inline-flex h-10 items-center justify-center rounded-md border border-border bg-white px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-light-bg"
-              >
-                Cancel
-              </Link>
+                <Input
+                  id="sort_order"
+                  name="sort_order"
+                  type="number"
+                  min="0"
+                  defaultValue={region.sort_order ?? 0}
+                  className="h-10 rounded-lg"
+                />
 
-              <Button type="submit">
-                Save Changes
-              </Button>
-            </div>
-          </form>
-        </Card>
+                <p className="text-xs text-muted">
+                  Lower numbers appear first.
+                </p>
+              </div>
+
+              {/* Actions */}
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <Link
+                  href="/admin/languages"
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground transition hover:bg-muted-bg"
+                >
+                  Cancel
+                </Link>
+
+                <Button
+                  type="submit"
+                  className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-background hover:opacity-90"
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

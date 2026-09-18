@@ -15,6 +15,12 @@ type TranslationActionResult = {
   error?: string;
 };
 
+type CategoryNode = {
+  id: string;
+  parent_id: string | null;
+  slug: string;
+};
+
 export async function saveCategoryTranslations(
   categoryId: string,
   translations: TranslationInput[]
@@ -46,8 +52,7 @@ export async function saveCategoryTranslations(
   // --------------------------------------------------
 
   const nonEnglishTranslations = translations.filter(
-    (translation) =>
-      translation.localeCode !== "en"
+    (translation) => translation.localeCode !== "en"
   );
 
   // --------------------------------------------------
@@ -102,25 +107,91 @@ export async function saveCategoryTranslations(
   }
 
   // --------------------------------------------------
+  // Fetch category hierarchy
+  // --------------------------------------------------
+
+  const { data: categories, error: categoriesError } =
+    await supabase
+      .from("categories")
+      .select("id, parent_id, slug");
+
+  if (categoriesError) {
+    console.error(
+      "FETCH CATEGORIES ERROR:",
+      categoriesError
+    );
+
+    return {
+      success: false,
+      error: "Unable to load category hierarchy.",
+    };
+  }
+
+  const categoryMap = new Map<string, CategoryNode>(
+    (categories ?? []).map((item) => [
+      item.id,
+      item as CategoryNode,
+    ])
+  );
+
+  const currentCategory = categoryMap.get(categoryId);
+
+  if (!currentCategory) {
+    return {
+      success: false,
+      error: "Category not found.",
+    };
+  }
+
+  // --------------------------------------------------
+  // Build hierarchical translation key
+  //
+  // Example:
+  // category.technical
+  // category.technical.business
+  // category.technical.business.customer-service
+  // --------------------------------------------------
+
+  const pathParts: string[] = [];
+  let current: CategoryNode | undefined = currentCategory;
+
+  while (current) {
+    pathParts.unshift(current.slug);
+
+    if (!current.parent_id) {
+      break;
+    }
+
+    current = categoryMap.get(current.parent_id);
+
+    if (!current) {
+      return {
+        success: false,
+        error: "Invalid category hierarchy.",
+      };
+    }
+  }
+
+  const translationKey = `category.${pathParts.join(".")}`;
+
+  // --------------------------------------------------
   // Delete translations that were cleared
   // --------------------------------------------------
 
-  const emptyLocales = Array.from(
-    localeMap.entries()
-  )
+  const emptyLocales = Array.from(localeMap.entries())
     .filter(([, name]) => !name)
     .map(([localeCode]) => localeCode);
 
   if (emptyLocales.length > 0) {
     const { error: deleteError } = await supabase
-      .from("category_translations")
+      .from("translations")
       .delete()
-      .eq("category_id", categoryId)
+      .eq("translation_key", translationKey)
       .in("locale_code", emptyLocales);
 
     if (deleteError) {
       console.error(
-        "DELETE CATEGORY TRANSLATIONS ERROR:",
+        "DELETE TRANSLATIONS ERROR:",
         deleteError
       );
 
@@ -140,21 +211,24 @@ export async function saveCategoryTranslations(
   )
     .filter(([, name]) => name.length > 0)
     .map(([localeCode, name]) => ({
-      category_id: categoryId,
+      translation_key: translationKey,
       locale_code: localeCode,
+      value: name,
+      section: "category",
       name,
+      is_active: true,
     }));
 
   if (rowsToUpsert.length > 0) {
     const { error: upsertError } = await supabase
-      .from("category_translations")
+      .from("translations")
       .upsert(rowsToUpsert, {
-        onConflict: "category_id,locale_code",
+        onConflict: "translation_key,locale_code",
       });
 
     if (upsertError) {
       console.error(
-        "UPSERT CATEGORY TRANSLATIONS ERROR:",
+        "UPSERT TRANSLATIONS ERROR:",
         upsertError
       );
 
@@ -173,6 +247,7 @@ export async function saveCategoryTranslations(
   revalidatePath(
     `/admin/categories/${categoryId}/translations`
   );
+  revalidatePath("/admin/translations");
 
   return {
     success: true,

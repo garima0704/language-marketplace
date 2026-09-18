@@ -5,6 +5,28 @@ import { requireAdmin } from "@/lib/auth/admin";
 import CategoryStats from "@/components/admin/categories/CategoryStats";
 import CategoryTree from "@/components/admin/categories/CategoryTree";
 
+type Category = {
+  id: string;
+  parent_id: string | null;
+  slug: string;
+  level: number;
+  display_order: number;
+  is_active: boolean;
+};
+
+type Translation = {
+  category_id: string;
+  locale_code: string;
+  name: string;
+};
+
+type TranslationRow = {
+  translation_key: string;
+  locale_code: string;
+  value: string;
+  name: string | null;
+};
+
 export default async function AdminCategoriesPage() {
   const { supabase } = await requireAdmin();
 
@@ -12,23 +34,27 @@ export default async function AdminCategoriesPage() {
   // Fetch categories
   // --------------------------------------------------
 
-  const { data: categories, error: categoriesError } = await supabase
-    .from("categories")
-    .select(
-      `
-        id,
-        parent_id,
-        slug,
-        level,
-        display_order,
-        is_active
-      `
-    )
-    .order("level", { ascending: true })
-    .order("display_order", { ascending: true });
+  const { data: categories, error: categoriesError } =
+    await supabase
+      .from("categories")
+      .select(
+        `
+          id,
+          parent_id,
+          slug,
+          level,
+          display_order,
+          is_active
+        `
+      )
+      .order("level", { ascending: true })
+      .order("display_order", { ascending: true });
 
   if (categoriesError) {
-    console.error("CATEGORIES FETCH ERROR:", categoriesError);
+    console.error(
+      "CATEGORIES FETCH ERROR:",
+      categoriesError
+    );
 
     return (
       <div className="p-6">
@@ -42,16 +68,25 @@ export default async function AdminCategoriesPage() {
   }
 
   // --------------------------------------------------
-  // Fetch all translations
-  //
-  // IMPORTANT:
-  // Do not use .in("category_id", categoryIds).
+  // Fetch category translations from the main
+  // translations table.
   // --------------------------------------------------
 
-  const { data: translations, error: translationsError } =
-    await supabase
-      .from("category_translations")
-      .select("category_id, locale_code, name");
+  const {
+    data: translationRows,
+    error: translationsError,
+  } = await supabase
+    .from("translations")
+    .select(
+      `
+        translation_key,
+        locale_code,
+        value,
+        name
+      `
+    )
+    .eq("section", "category")
+    .eq("is_active", true);
 
   if (translationsError) {
     console.error(
@@ -64,18 +99,102 @@ export default async function AdminCategoriesPage() {
   // Fetch supported locales
   // --------------------------------------------------
 
-  const { data: locales, error: localesError } = await supabase
-    .from("locales")
-    .select("code, name")
-    .order("name", { ascending: true });
+  const { data: locales, error: localesError } =
+    await supabase
+      .from("locales")
+      .select("code, name")
+      .order("name", { ascending: true });
 
   if (localesError) {
-    console.error("LOCALES FETCH ERROR:", localesError);
+    console.error(
+      "LOCALES FETCH ERROR:",
+      localesError
+    );
   }
 
-  const categoryList = categories ?? [];
-  const translationList = translations ?? [];
+  const categoryList = (categories ?? []) as Category[];
+  const translationList =
+    (translationRows ?? []) as TranslationRow[];
   const localeList = locales ?? [];
+
+  // --------------------------------------------------
+  // Build category translation keys
+  //
+  // Example:
+  //
+  // Technical
+  //   category.technical
+  //
+  // Business
+  //   category.technical.business
+  //
+  // Customer Service
+  //   category.technical.customer-service
+  // --------------------------------------------------
+
+  const categoryMap = new Map<string, Category>();
+
+  for (const category of categoryList) {
+    categoryMap.set(category.id, category);
+  }
+
+  const categoryKeyMap = new Map<string, string>();
+
+  function getCategoryPath(category: Category): string {
+    const parts: string[] = [];
+    let current: Category | undefined = category;
+
+    while (current) {
+      parts.unshift(current.slug);
+
+      if (!current.parent_id) {
+        break;
+      }
+
+      current = categoryMap.get(current.parent_id);
+    }
+
+    return parts.join(".");
+  }
+
+  for (const category of categoryList) {
+    categoryKeyMap.set(
+      category.id,
+      `category.${getCategoryPath(category)}`
+    );
+  }
+
+  // --------------------------------------------------
+  // Convert the new translations structure into the
+  // shape expected by CategoryTree.
+  // --------------------------------------------------
+
+  const keyToCategoryId = new Map<string, string>();
+
+  for (const [categoryId, translationKey] of categoryKeyMap) {
+    keyToCategoryId.set(translationKey, categoryId);
+  }
+
+  const categoryTranslations: Translation[] = [];
+
+  for (const translation of translationList) {
+    const categoryId = keyToCategoryId.get(
+      translation.translation_key
+    );
+
+    if (!categoryId) {
+      continue;
+    }
+
+    categoryTranslations.push({
+      category_id: categoryId,
+      locale_code: translation.locale_code,
+      name:
+        translation.value ||
+        translation.name ||
+        "",
+    });
+  }
 
   // --------------------------------------------------
   // Stats
@@ -84,7 +203,6 @@ export default async function AdminCategoriesPage() {
   const totalCategories = categoryList.length;
 
   // Top-level master categories.
-  // These are no longer language categories.
   const mainCategories = categoryList.filter(
     (category) => category.parent_id === null
   ).length;
@@ -95,10 +213,12 @@ export default async function AdminCategoriesPage() {
 
   const translationCounts = new Map<string, number>();
 
-  for (const translation of translationList) {
+  for (const translation of categoryTranslations) {
     translationCounts.set(
       translation.category_id,
-      (translationCounts.get(translation.category_id) ?? 0) + 1
+      (translationCounts.get(
+        translation.category_id
+      ) ?? 0) + 1
     );
   }
 
@@ -147,7 +267,7 @@ export default async function AdminCategoriesPage() {
 
         <CategoryTree
           categories={categoryList}
-          translations={translationList}
+          translations={categoryTranslations}
           totalLanguages={localeList.length}
         />
       </div>

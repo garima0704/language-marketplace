@@ -1,8 +1,12 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 
-import CategoryBar from "@/components/CategoryBar";
+import { getCategoryLabels } from "@/lib/categories";
+import { getTranslations } from "@/lib/translations";
+
+import CategoryPills from "@/components/CategoryPills";
 import VideoSection from "@/components/VideoSection";
 
 interface CategoryVideosProps {
@@ -14,26 +18,97 @@ type Category = {
   slug: string;
   parent_id: string | null;
   level: number;
+  display_order?: number;
 };
 
 export default async function CategoryVideos({
   slug,
 }: CategoryVideosProps) {
-  const currentSlug = slug[slug.length - 1];
-
   const supabase = await createClient();
 
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
+
   // ==================================================
-  // Resolve category path
+  // 1. Resolve browse language
+  // ==================================================
+
+  const languageCode = slug?.[0];
+
+  if (!languageCode) {
+    return null;
+  }
+
+  const {
+    data: language,
+    error: languageError,
+  } = await supabase
+    .from("locales")
+    .select("code, name")
+    .eq("code", languageCode)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (languageError) {
+    console.error(
+      "Failed to resolve browse language:",
+      languageError
+    );
+  }
+
+  if (!language) {
+    console.error(
+      `Browse language not found: ${languageCode}`
+    );
+
+    return null;
+  }
+
+  // ==================================================
+  // 2. Remaining URL segments are category path
+  //
+  // /videos/en
+  // /videos/en/business
+  // /videos/en/business/marketing
+  // ==================================================
+
+  const categorySlug = slug.slice(1);
+
+  // ==================================================
+  // 3. Current UI translations
+  // ==================================================
+
+  const translations = await getTranslations(
+    [
+      "videos.home",
+      "videos.title",
+      "videos.all",
+      "videos.all_videos",
+      "videos.description",
+      "general.video",
+      "general.videos",
+      `language.${language.code}`,
+    ],
+    locale
+  );
+
+  // ==================================================
+  // 4. Resolve category path
   // ==================================================
 
   let category: Category | null = null;
   let parentId: string | null = null;
 
-  for (const segment of slug) {
+  let categoryFound = true;
+
+  for (const segment of categorySlug) {
     let query = supabase
       .from("categories")
-      .select("id, slug, parent_id, level")
+      .select(
+        "id, slug, parent_id, level, display_order"
+      )
       .eq("slug", segment)
       .eq("is_active", true);
 
@@ -43,367 +118,553 @@ export default async function CategoryVideos({
       query = query.eq("parent_id", parentId);
     }
 
-    const { data, error } = await query.maybeSingle();
+    const {
+      data,
+      error,
+    } = await query.maybeSingle();
 
     if (error || !data) {
-      console.error(
-        "Failed to resolve category:",
-        segment,
-        error
-      );
-
-      return null;
+      categoryFound = false;
+      break;
     }
 
     category = data;
     parentId = data.id;
   }
 
-  if (!category) {
+  if (
+    categorySlug.length > 0 &&
+    !categoryFound
+  ) {
     return null;
   }
 
   // ==================================================
-  // Current category name
+  // 5. Current category / language name
   // ==================================================
 
-  const { data: translation } = await supabase
-    .from("category_translations")
-    .select("name")
-    .eq("category_id", category.id)
-    .eq("locale_code", "en")
-    .maybeSingle();
+  let currentCategoryName =
+    translations[`language.${language.code}`] ??
+    language.name;
+
+  if (category) {
+    const categoryLabels =
+      await getCategoryLabels(
+        [category.id],
+        locale
+      );
+
+    currentCategoryName =
+      categoryLabels[category.id] ??
+      formatText(category.slug);
+  }
 
   // ==================================================
-  // Child categories
+  // 6. Category pills
+  //
+  // /videos/en
+  //     All + top-level categories
+  //
+  // /videos/en/business
+  //     All + Business children
   // ==================================================
 
-  const { data: children } = await supabase
-    .from("categories")
-    .select(`
-      id,
-      slug,
-      display_order,
-      category_translations!inner(
-        locale_code,
-        name
+  let categoryPills: {
+    id: string;
+    slug: string;
+    name: string;
+    href?: string;
+  }[] = [];
+
+  // --------------------------------------------------
+  // Language-only page
+  //
+  // /videos/en
+  // --------------------------------------------------
+
+  if (!category) {
+    const {
+      data: rootCategories,
+      error: rootCategoriesError,
+    } = await supabase
+      .from("categories")
+      .select(
+        "id, slug, display_order"
       )
-    `)
-    .eq("parent_id", category.id)
-    .eq("is_active", true)
-    .eq("category_translations.locale_code", "en")
-    .order("display_order");
+      .is("parent_id", null)
+      .eq("is_active", true)
+      .order("display_order");
 
-  const pills = [
-    {
-      id: "all",
-      slug: currentSlug,
-      name: "All",
-    },
+    if (rootCategoriesError) {
+      console.error(
+        "Root category lookup error:",
+        rootCategoriesError
+      );
+    }
 
-    ...(children ?? []).map((child: any) => ({
-      id: child.id,
-      slug: child.slug,
-      name:
-        child.category_translations?.[0]?.name ??
-        formatText(child.slug),
-    })),
-  ];
+    const rootCategoryIds =
+      (rootCategories ?? []).map(
+        (item) => item.id
+      );
+
+    const rootLabels =
+      rootCategoryIds.length > 0
+        ? await getCategoryLabels(
+            rootCategoryIds,
+            locale,
+            false
+          )
+        : {};
+
+    categoryPills = [
+      {
+        id: "all",
+        slug: "",
+        name:
+          translations["videos.all"] ??
+          "All",
+        href: `/videos/${languageCode}`,
+      },
+      ...(rootCategories ?? []).map(
+        (item) => ({
+          id: item.id,
+          slug: item.slug,
+          name:
+            rootLabels[item.id] ??
+            formatText(item.slug),
+          href:
+            `/videos/${languageCode}/${item.slug}`,
+        })
+      ),
+    ];
+  }
+
+  // --------------------------------------------------
+  // Category page
+  //
+  // /videos/en/business
+  // /videos/en/business/marketing
+  // --------------------------------------------------
+
+  if (category) {
+    const {
+      data: children,
+      error: childrenError,
+    } = await supabase
+      .from("categories")
+      .select(
+        "id, slug, display_order"
+      )
+      .eq("parent_id", category.id)
+      .eq("is_active", true)
+      .order("display_order");
+
+    if (childrenError) {
+      console.error(
+        "Category children error:",
+        childrenError
+      );
+    }
+
+    const childCategoryIds =
+      (children ?? []).map(
+        (child) => child.id
+      );
+
+    const childLabels =
+      childCategoryIds.length > 0
+        ? await getCategoryLabels(
+            childCategoryIds,
+            locale,
+            false
+          )
+        : {};
+
+    categoryPills = [
+      {
+        id: "all",
+        slug: "",
+        name:
+          translations["videos.all"] ??
+          "All",
+        href: `/videos/${languageCode}/${category.slug}`,
+      },
+      ...(children ?? []).map(
+        (child) => ({
+          id: child.id,
+          slug: child.slug,
+          name:
+            childLabels[child.id] ??
+            formatText(child.slug),
+          href:
+            `/videos/${languageCode}/${category.slug}/${child.slug}`,
+        })
+      ),
+    ];
+  }
 
   // ==================================================
-  // Find current category + descendants
+  // 7. Find category + descendants
   // ==================================================
 
-  const categoryIds = new Set<string>([
-    category.id,
-  ]);
+  const categoryIds =
+    new Set<string>();
 
-  let currentIds = [category.id];
-
-  while (currentIds.length > 0) {
-    const { data: descendants } = await supabase
+  if (!category) {
+    const {
+      data: rootCategories,
+      error: rootError,
+    } = await supabase
       .from("categories")
       .select("id")
-      .in("parent_id", currentIds)
+      .is("parent_id", null)
       .eq("is_active", true);
 
-    if (!descendants?.length) {
-      break;
+    if (rootError) {
+      console.error(
+        "Root category IDs error:",
+        rootError
+      );
     }
 
-    const newIds: string[] = [];
+    for (const root of rootCategories ?? []) {
+      categoryIds.add(root.id);
+    }
+  } else {
+    categoryIds.add(category.id);
 
-    for (const descendant of descendants) {
-      if (!categoryIds.has(descendant.id)) {
-        categoryIds.add(descendant.id);
-        newIds.push(descendant.id);
+    let currentIds = [category.id];
+
+    while (currentIds.length > 0) {
+      const {
+        data: descendants,
+        error: descendantsError,
+      } = await supabase
+        .from("categories")
+        .select("id")
+        .in(
+          "parent_id",
+          currentIds
+        )
+        .eq("is_active", true);
+
+      if (descendantsError) {
+        console.error(
+          "Category descendants error:",
+          descendantsError
+        );
+
+        break;
       }
-    }
 
-    if (newIds.length === 0) {
-      break;
-    }
+      if (!descendants?.length) {
+        break;
+      }
 
-    currentIds = newIds;
+      const newIds: string[] = [];
+
+      for (const descendant of descendants) {
+        if (
+          !categoryIds.has(
+            descendant.id
+          )
+        ) {
+          categoryIds.add(
+            descendant.id
+          );
+
+          newIds.push(
+            descendant.id
+          );
+        }
+      }
+
+      if (newIds.length === 0) {
+        break;
+      }
+
+      currentIds = newIds;
+    }
   }
 
   // ==================================================
-  // Fetch videos
+  // 8. Fetch videos
   // ==================================================
 
-  const { data: videos, error: videosError } =
-  await supabase
-    .from("videos")
-    .select(`
-      id,
-      slug,
-      title,
-      thumbnail_url,
-      level,
-      access_type,
-      view_count,
-      created_at,
-      published_at,
-      category_id,
-      channels (
-        id,
-        channel_name,
-        slug,
-        logo_url,
-        user_id,
-        profiles (
+  let videos: any[] = [];
+
+  if (categoryIds.size > 0) {
+    const {
+      data,
+      error: videosError,
+    } = await supabase
+      .from("videos")
+      .select(
+        `
           id,
-          is_creator
-        )
-      ),
-      categories (
-        id,
-        slug,
-        parent_id,
-        level,
-        category_translations (
-          name,
-          locale_code
-        )
-      )
-    `)
-    .eq("status", "published")
-    .in("category_id", Array.from(categoryIds))
-    .order("published_at", {
-      ascending: false,
-      nullsFirst: false,
-    });
+          slug,
+          title,
+          thumbnail_url,
+          level,
+          access_type,
+          view_count,
+          created_at,
+          published_at,
+          category_id,
+          language_code,
 
-  if (videosError) {
-    console.error(
-      "Category videos error:",
-      videosError
-    );
+          channels (
+            id,
+            channel_name,
+            slug,
+            logo_url,
+            user_id,
+
+            profiles (
+              id,
+              is_creator
+            )
+          ),
+
+          categories (
+            id,
+            slug,
+            parent_id,
+            level
+          )
+        `
+      )
+      .eq(
+        "language_code",
+        languageCode
+      )
+      .eq(
+        "status",
+        "published"
+      )
+      .in(
+        "category_id",
+        Array.from(categoryIds)
+      )
+      .order(
+        "published_at",
+        {
+          ascending: false,
+          nullsFirst: false,
+        }
+      );
+
+    if (videosError) {
+      console.error(
+        "Category videos error:",
+        videosError
+      );
+    }
+
+    videos = data ?? [];
   }
 
   // ==================================================
-  // Build category labels
-  // Example:
-  // English
-  // English - Business
+  // 9. Build translated category labels
   // ==================================================
 
-  let formattedVideos = videos ?? [];
+  let formattedVideos = videos;
 
   const videoCategoryIds = [
     ...new Set(
       formattedVideos
-        .map((video) => video.category_id)
-        .filter(Boolean)
+        .map(
+          (video) =>
+            video.category_id
+        )
+        .filter(
+          (id): id is string =>
+            Boolean(id)
+        )
     ),
   ];
 
-  if (videoCategoryIds.length > 0) {
+  if (
+    videoCategoryIds.length > 0
+  ) {
     const allCategoryIds =
-      new Set<string>(videoCategoryIds);
-
-    let currentIds = videoCategoryIds;
-
-    // ----------------------------------------------
-    // Find all parents
-    // ----------------------------------------------
-
-    while (currentIds.length > 0) {
-      const { data: parents } =
-        await supabase
-          .from("categories")
-          .select(
-            "id, parent_id, slug, level"
-          )
-          .in("id", currentIds);
-
-      if (!parents?.length) {
-        break;
-      }
-
-      const parentIds = parents
-        .map((item) => item.parent_id)
-        .filter(
-          (id): id is string =>
-            !!id &&
-            !allCategoryIds.has(id)
-        );
-
-      if (parentIds.length === 0) {
-        break;
-      }
-
-      parentIds.forEach((id) =>
-        allCategoryIds.add(id)
+      new Set<string>(
+        videoCategoryIds
       );
 
-      currentIds = parentIds;
-    }
+    let currentIds =
+      videoCategoryIds;
 
-    // ----------------------------------------------
-    // Category names
-    // ----------------------------------------------
-
-    const {
-      data: categoryTranslations,
-    } = await supabase
-      .from("category_translations")
-      .select(
-        "category_id, name"
-      )
-      .eq("locale_code", "en")
-      .in(
-        "category_id",
-        Array.from(allCategoryIds)
-      );
-
-    const { data: allCategories } =
-      await supabase
+    while (
+      currentIds.length > 0
+    ) {
+      const {
+        data: parents,
+        error: parentsError,
+      } = await supabase
         .from("categories")
         .select(
           "id, parent_id, slug, level"
         )
         .in(
           "id",
-          Array.from(allCategoryIds)
+          currentIds
         );
 
-    const categoryById =
-      new Map(
-        (allCategories ?? []).map(
-          (item) => [
-            item.id,
-            item,
-          ]
-        )
+      if (parentsError) {
+        console.error(
+          "Category parents error:",
+          parentsError
+        );
+
+        break;
+      }
+
+      if (!parents?.length) {
+        break;
+      }
+
+      const parentIds =
+        parents
+          .map(
+            (item) =>
+              item.parent_id
+          )
+          .filter(
+            (
+              id
+            ): id is string =>
+              Boolean(id) &&
+              !allCategoryIds.has(id)
+          );
+
+      if (
+        parentIds.length === 0
+      ) {
+        break;
+      }
+
+      parentIds.forEach(
+        (id) =>
+          allCategoryIds.add(id)
       );
 
-    const nameById =
-      new Map(
-        (categoryTranslations ?? []).map(
-          (item) => [
-            item.category_id,
-            item.name,
-          ]
-        )
-      );
+      currentIds = [
+        ...new Set(parentIds),
+      ];
+    }
 
-    // ----------------------------------------------
-    // Add category_label
-    // ----------------------------------------------
+    const categoryLabels =
+      await getCategoryLabels(
+        Array.from(
+          allCategoryIds
+        ),
+        locale
+      );
 
     formattedVideos =
       formattedVideos.map(
-        (video) => {
-          if (!video.category_id) {
-            return {
-              ...video,
-              category_label: "",
-            };
-          }
+        (video) => ({
+          ...video,
 
-          const current =
-            categoryById.get(
-              video.category_id
-            );
-
-          if (!current) {
-            return {
-              ...video,
-              category_label: "",
-            };
-          }
-
-          const deepestName =
-            nameById.get(current.id) ??
-            current.slug;
-
-          let root = current;
-
-          while (root.parent_id) {
-            const parent =
-              categoryById.get(
-                root.parent_id
-              );
-
-            if (!parent) {
-              break;
-            }
-
-            root = parent;
-          }
-
-          const rootName =
-            nameById.get(root.id) ??
-            root.slug;
-
-          return {
-            ...video,
-            category_label:
-              root.id === current.id
-                ? rootName
-                : `${rootName} - ${deepestName}`,
-          };
-        }
+          category_label:
+            video.category_id
+              ? categoryLabels[
+                  video.category_id
+                ] ??
+                formatText(
+                  video.categories?.[0]
+                    ?.slug
+                )
+              : "",
+        })
+      );
+  } else {
+    formattedVideos =
+      formattedVideos.map(
+        (video) => ({
+          ...video,
+          category_label: "",
+        })
       );
   }
 
   // ==================================================
-  // Render
+  // 10. Breadcrumb
+  // ==================================================
+
+  const breadcrumbCategories =
+    categorySlug;
+
+  const translatedLanguageName =
+    translations[
+      `language.${language.code}`
+    ] ?? language.name;
+
+  // ==================================================
+  // 11. Render
   // ==================================================
 
   return (
     <div className="px-6 py-6">
-
-      {/* ============================================
-          Breadcrumbs + Header
-      ============================================ */}
-
       <div className="mx-auto mb-6 max-w-7xl">
-
-        <nav className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-
+        <nav
+          className="
+            mb-2
+            flex
+            flex-wrap
+            items-center
+            gap-2
+            text-sm
+            text-muted-foreground
+          "
+        >
           <Link
             href="/"
-            className="transition hover:text-gray-900"
+            className="
+              transition
+              hover:text-foreground
+            "
           >
-            Home
+            {translations["videos.home"] ??
+              "Home"}
           </Link>
 
           <span>/</span>
 
           <Link
             href="/videos"
-            className="transition hover:text-gray-900"
+            className="
+              transition
+              hover:text-foreground
+            "
           >
-            Videos
+            {translations["videos.title"] ??
+              "Videos"}
           </Link>
 
-          {slug.map(
+          <span>/</span>
+
+          <Link
+            href={`/videos/${languageCode}`}
+            className={`
+              transition
+              hover:text-foreground
+              ${
+                !category
+                  ? "font-medium text-foreground"
+                  : ""
+              }
+            `}
+          >
+            {translatedLanguageName}
+          </Link>
+
+          {breadcrumbCategories.map(
             (part, index) => {
               const href =
-                "/videos/" +
-                slug
+                `/videos/${languageCode}/` +
+                breadcrumbCategories
                   .slice(
                     0,
                     index + 1
@@ -412,89 +673,93 @@ export default async function CategoryVideos({
 
               const isCurrent =
                 index ===
-                slug.length - 1;
-
-              const label =
-                index ===
-                  slug.length - 1 &&
-                translation?.name
-                  ? translation.name
-                  : formatText(part);
+                breadcrumbCategories.length -
+                  1;
 
               return (
                 <div
                   key={href}
-                  className="flex items-center gap-2"
+                  className="
+                    flex
+                    items-center
+                    gap-2
+                  "
                 >
                   <span>/</span>
 
                   {isCurrent ? (
-                    <span className="font-medium text-foreground">
-                      {label}
+                    <span
+                      className="
+                        font-medium
+                        text-foreground
+                      "
+                    >
+                      {currentCategoryName}
                     </span>
                   ) : (
                     <Link
                       href={href}
-                      className="transition hover:text-gray-900"
+                      className="
+                        transition
+                        hover:text-foreground
+                      "
                     >
-                      {label}
+                      {formatText(
+                        part
+                      )}
                     </Link>
                   )}
                 </div>
               );
             }
           )}
-
         </nav>
 
-        <h1 className="text-4xl font-bold text-gray-900">
-          {translation?.name ??
-            formatText(currentSlug)}
+        <h1
+          className="
+            text-4xl
+            font-bold
+            text-foreground
+          "
+        >
+          {currentCategoryName}
         </h1>
-
       </div>
 
-      {/* ============================================
-          Category filter
-      ============================================ */}
-
-      <CategoryBar
-        categories={pills}
+      <CategoryPills
+        languages={[]}
+        selectedLanguage={undefined}
+        categories={categoryPills}
         selectedCategory="all"
-        basePath={`/videos/${slug.join("/")}`}
+        basePath={`/videos/${languageCode}`}
       />
 
-      {/* ============================================
-          Result count
-      ============================================ */}
-
-      <div className="mx-auto max-w-7xl px-6 py-4">
-
-        <p className="text-sm font-medium text-gray-600">
+      <div
+        className="
+          mx-auto
+          max-w-7xl
+          px-6
+          py-4
+        "
+      >
+        <p className="text-sm font-medium text-muted-foreground">
           {formattedVideos.length}{" "}
           {formattedVideos.length === 1
-            ? "Video"
-            : "Videos"}
+            ? translations["general.video"] ??
+              "Video"
+            : translations["general.videos"] ??
+              "Videos"}
         </p>
-
       </div>
-
-      {/* ============================================
-          Videos
-      ============================================ */}
 
       <VideoSection
         showViewAll={false}
         videos={formattedVideos}
+        locale={locale}
       />
-
     </div>
   );
 }
-
-// ==================================================
-// Helper
-// ==================================================
 
 function formatText(
   value?: string | null
@@ -502,7 +767,10 @@ function formatText(
   if (!value) return "";
 
   return value
-    .replace(/[-_]/g, " ")
+    .replace(
+      /[-_]/g,
+      " "
+    )
     .replace(
       /\b\w/g,
       (char) =>

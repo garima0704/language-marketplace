@@ -13,14 +13,22 @@ type Locale = {
   name: string;
 };
 
+type NavbarTranslations = {
+  searchPlaceholder: string;
+  login: string;
+  signUp: string;
+};
+
 type NavbarClientProps = {
   locales: Locale[];
   user: User | null;
+  translations: NavbarTranslations;
 };
 
 export default function NavbarClient({
   locales,
   user,
+  translations,
 }: NavbarClientProps) {
   const pathname = usePathname();
 
@@ -29,7 +37,10 @@ export default function NavbarClient({
       <div className="flex h-full items-center justify-between px-6">
 
         {/* Logo */}
-        <Link href="/" className="flex shrink-0 items-center">
+        <Link
+          href="/"
+          className="flex shrink-0 items-center"
+        >
           <Image
             src="/logo.png"
             alt="NiceConvo"
@@ -44,7 +55,7 @@ export default function NavbarClient({
           <div className="flex w-full overflow-hidden rounded-full bg-light-bg shadow-sm">
             <input
               type="text"
-              placeholder="Search language videos, sellers..."
+              placeholder={translations.searchPlaceholder}
               className="
                 flex-1
                 bg-transparent
@@ -59,6 +70,7 @@ export default function NavbarClient({
 
             <button
               type="button"
+              aria-label={translations.searchPlaceholder}
               className="
                 bg-primary
                 px-6
@@ -90,7 +102,7 @@ export default function NavbarClient({
                     : "text-secondary hover:bg-muted-bg hover:text-foreground"
                 }`}
               >
-                Login
+                {translations.login}
               </Link>
 
               <Link
@@ -101,7 +113,7 @@ export default function NavbarClient({
                     : "text-secondary hover:bg-muted-bg hover:text-foreground"
                 }`}
               >
-                Sign Up
+                {translations.signUp}
               </Link>
             </>
           )}

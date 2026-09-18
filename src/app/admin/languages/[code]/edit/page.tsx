@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth/admin";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -133,43 +132,35 @@ export default async function EditLanguagePage({
   }
 
   return (
-    <div className="min-h-full bg-light-bg">
-      <div className="mx-auto max-w-4xl p-6">
+    <main className="w-full">
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <div className="mx-auto max-w-3xl">
+          {/* Header */}
 
-        {/* ------------------------------------------------ */}
-        {/* Header */}
-        {/* ------------------------------------------------ */}
+          <div>
+            <Link
+              href="/admin/languages"
+              className="text-sm text-muted transition hover:text-foreground"
+            >
+              ← Back to Languages
+            </Link>
 
-        <div className="mb-6">
-          <Link
-            href="/admin/languages"
-            className="text-sm text-muted hover:text-foreground"
-          >
-            ← Back to Languages
-          </Link>
+            <div className="mt-4">
+              <h1 className="text-2xl font-semibold text-foreground">
+                Edit Language
+              </h1>
 
-          <div className="mt-4">
-            <h1 className="text-2xl font-semibold text-foreground">
-              Edit Language
-            </h1>
-
-            <p className="mt-1 text-sm text-muted">
-              Manage the language settings and regions.
-            </p>
+              <p className="mt-1 text-sm text-muted">
+                Manage the language settings and regions.
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* ------------------------------------------------ */}
-        {/* Language Settings */}
-        {/* ------------------------------------------------ */}
+          {/* Form */}
 
-        <Card className="bg-white p-6">
-          <form
-            action={updateLanguage}
-            className="space-y-6"
-          >
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">
+          <div className="mt-6 overflow-hidden rounded-xl border border-border bg-background">
+            <div className="border-b border-border px-5 py-4">
+              <h2 className="text-base font-semibold text-foreground">
                 Language Settings
               </h2>
 
@@ -178,125 +169,142 @@ export default async function EditLanguagePage({
               </p>
             </div>
 
-            {/* Language Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                Language Name
-              </Label>
+            <form
+              action={updateLanguage}
+              className="space-y-6 p-6"
+            >
+              {/* Language Name */}
 
-              <Input
-                id="name"
-                name="name"
-                defaultValue={language.name}
-                placeholder="e.g. Spanish"
-                required
-              />
-
-              <p className="text-xs text-muted">
-                This is the name displayed to users.
-              </p>
-            </div>
-
-            {/* Language Code */}
-            <div className="space-y-2">
-              <Label htmlFor="code">
-                Language Code
-              </Label>
-
-              <Input
-                id="code"
-                name="code"
-                value={language.code}
-                disabled
-                readOnly
-              />
-
-              <p className="text-xs text-muted">
-                The language code cannot be changed because
-                it is used by language regions and other
-                parts of the platform.
-              </p>
-            </div>
-
-            {/* Display Order */}
-            <div className="space-y-2">
-              <Label htmlFor="display_order">
-                Display Order
-              </Label>
-
-              <Input
-                id="display_order"
-                name="display_order"
-                type="number"
-                min="0"
-                defaultValue={language.display_order}
-              />
-
-              <p className="text-xs text-muted">
-                Lower numbers appear first.
-              </p>
-            </div>
-
-            {/* Active */}
-            <div className="flex items-start gap-3">
-              <input
-                id="is_active"
-                name="is_active"
-                type="checkbox"
-                defaultChecked={language.is_active}
-                className="mt-1 h-4 w-4 rounded border-border"
-              />
-
-              <div>
-                <Label htmlFor="is_active">
-                  Active
+              <div className="space-y-2">
+                <Label htmlFor="name">
+                  Language Name
                 </Label>
 
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={language.name}
+                  placeholder="e.g. Spanish"
+                  required
+                  className="h-10 rounded-lg"
+                />
+
                 <p className="text-xs text-muted">
-                  Active languages can be selected and used
-                  throughout NiceConvo.
+                  This is the name displayed to users.
                 </p>
               </div>
-            </div>
 
-            {/* Default */}
-            <div className="flex items-start gap-3">
-              <input
-                id="is_default"
-                name="is_default"
-                type="checkbox"
-                defaultChecked={language.is_default}
-                className="mt-1 h-4 w-4 rounded border-border"
-              />
+              {/* Language Code */}
 
-              <div>
-                <Label htmlFor="is_default">
-                  Default Language
+              <div className="space-y-2">
+                <Label htmlFor="code">
+                  Language Code
                 </Label>
 
+                <Input
+                  id="code"
+                  name="code"
+                  value={language.code}
+                  disabled
+                  readOnly
+                  className="h-10 rounded-lg"
+                />
+
                 <p className="text-xs text-muted">
-                  Only one language should normally be the
-                  platform default.
+                  The language code cannot be changed because
+                  it is used by language regions and other
+                  parts of the platform.
                 </p>
               </div>
-            </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-3 border-t border-border pt-6">
-              <Link
-                href="/admin/languages"
-                className="inline-flex h-10 items-center justify-center rounded-md border border-border bg-white px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-light-bg"
-              >
-                Cancel
-              </Link>
+              {/* Display Order */}
 
-              <Button type="submit">
-                Save Changes
-              </Button>
-            </div>
-          </form>
-        </Card>
+              <div className="space-y-2">
+                <Label htmlFor="display_order">
+                  Display Order
+                </Label>
+
+                <Input
+                  id="display_order"
+                  name="display_order"
+                  type="number"
+                  min="0"
+                  defaultValue={language.display_order}
+                  className="h-10 rounded-lg"
+                />
+
+                <p className="text-xs text-muted">
+                  Lower numbers appear first.
+                </p>
+              </div>
+
+              {/* Active */}
+
+              <div className="flex items-start gap-3">
+                <input
+                  id="is_active"
+                  name="is_active"
+                  type="checkbox"
+                  defaultChecked={language.is_active}
+                  className="mt-1 h-4 w-4 rounded border-border"
+                />
+
+                <div>
+                  <Label htmlFor="is_active">
+                    Active
+                  </Label>
+
+                  <p className="mt-1 text-xs text-muted">
+                    Active languages can be selected and used
+                    throughout NiceConvo.
+                  </p>
+                </div>
+              </div>
+
+              {/* Default */}
+
+              <div className="flex items-start gap-3">
+                <input
+                  id="is_default"
+                  name="is_default"
+                  type="checkbox"
+                  defaultChecked={language.is_default}
+                  className="mt-1 h-4 w-4 rounded border-border"
+                />
+
+                <div>
+                  <Label htmlFor="is_default">
+                    Default Language
+                  </Label>
+
+                  <p className="mt-1 text-xs text-muted">
+                    Only one language should normally be the
+                    platform default.
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <Link
+                  href="/admin/languages"
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground transition hover:bg-muted-bg"
+                >
+                  Cancel
+                </Link>
+
+                <Button
+                  type="submit"
+                  className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-background hover:opacity-90"
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

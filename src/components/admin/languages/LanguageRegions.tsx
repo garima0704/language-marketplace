@@ -105,7 +105,7 @@ export default function LanguageRegions({
   };
 
   return (
-    <div className="border-t border-border bg-light-bg px-5 py-5 pl-[4.5rem]">
+    <div className="border-t border-border bg-background px-5 py-5 pl-[4.5rem]">
       <div className="max-w-4xl space-y-4">
         {/* Header */}
 
@@ -122,7 +122,7 @@ export default function LanguageRegions({
 
           <Link
             href={`/admin/languages/${language.code}/regions/new`}
-            className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-white px-3 text-sm font-medium text-foreground transition hover:bg-light-bg"
+            className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-background transition hover:opacity-90"
           >
             <Plus className="h-4 w-4" />
             Add Region
@@ -132,8 +132,8 @@ export default function LanguageRegions({
         {/* Search */}
 
         {totalRegionCount > 0 && (
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <div className="relative w-full md:max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
 
             <input
               type="text"
@@ -142,7 +142,7 @@ export default function LanguageRegions({
                 setSearch(e.target.value)
               }
               placeholder="Search regions..."
-              className="h-9 w-full rounded-md border border-border bg-white pl-9 pr-3 text-sm text-foreground outline-none transition focus:border-foreground"
+              className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-foreground"
             />
           </div>
         )}
@@ -150,7 +150,7 @@ export default function LanguageRegions({
         {/* Region list */}
 
         {languageRegions.length === 0 ? (
-          <div className="rounded-md border border-dashed border-border bg-white px-4 py-8 text-center">
+          <div className="rounded-xl border border-dashed border-border bg-background px-4 py-8 text-center">
             <p className="text-sm text-muted">
               {totalRegionCount === 0
                 ? "No regions added yet."
@@ -167,7 +167,7 @@ export default function LanguageRegions({
             )}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-md border border-border bg-white">
+          <div className="overflow-hidden rounded-xl border border-border bg-background">
             <div className="divide-y divide-border">
               {countries.map(
                 ({ country, regions: countryRegions }) => {
@@ -212,8 +212,7 @@ export default function LanguageRegions({
 
                             <span className="text-xs text-muted">
                               {countryRegions.length}{" "}
-                              {countryRegions.length ===
-                              1
+                              {countryRegions.length === 1
                                 ? "region"
                                 : "regions"}
                             </span>
@@ -224,7 +223,7 @@ export default function LanguageRegions({
                       {/* States / regions */}
 
                       {isExpanded && (
-                        <div className="border-t border-border bg-light-bg">
+                        <div className="border-t border-border bg-background">
                           {countryRegions.map(
                             (region) => (
                               <div
@@ -245,7 +244,7 @@ export default function LanguageRegions({
 
                                 <Link
                                   href={`/admin/languages/${language.code}/regions/${region.id}/edit`}
-                                  className="inline-flex h-8 items-center gap-2 rounded-md px-2.5 text-sm font-medium text-secondary transition hover:bg-white hover:text-foreground"
+                                  className="inline-flex h-8 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-background transition hover:opacity-90"
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
 

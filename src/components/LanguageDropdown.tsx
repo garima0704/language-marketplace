@@ -13,14 +13,35 @@ export default function LanguageDropdown({
 }: {
   locales: Locale[];
 }) {
-  const [selected, setSelected] = useState(locales[0]);
+  const [selected, setSelected] = useState<Locale | undefined>(
+    locales[0]
+  );
   const [open, setOpen] = useState(false);
 
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const match = document.cookie.match(
+      /(?:^|;\s*)niceconvo_locale=([^;]+)/
+    );
+
+    if (match?.[1]) {
+      const savedLocale = locales.find(
+        (locale) => locale.code === decodeURIComponent(match[1])
+      );
+
+      if (savedLocale) {
+        setSelected(savedLocale);
+      }
+    }
+  }, [locales]);
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
+      if (
+        ref.current &&
+        !ref.current.contains(event.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -28,9 +49,23 @@ export default function LanguageDropdown({
     document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
     };
   }, []);
+
+  function handleLocaleChange(locale: Locale) {
+    setSelected(locale);
+    setOpen(false);
+
+    document.cookie = `niceconvo_locale=${encodeURIComponent(
+      locale.code
+    )}; path=/; max-age=31536000; SameSite=Lax`;
+
+    window.location.reload();
+  }
 
   return (
     <div ref={ref} className="relative hidden md:block">
@@ -92,10 +127,7 @@ export default function LanguageDropdown({
             <button
               type="button"
               key={locale.code}
-              onClick={() => {
-                setSelected(locale);
-                setOpen(false);
-              }}
+              onClick={() => handleLocaleChange(locale)}
               className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm transition ${
                 selected?.code === locale.code
                   ? "bg-primary text-white"

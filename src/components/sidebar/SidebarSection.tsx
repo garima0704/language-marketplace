@@ -62,10 +62,12 @@ type MenuSection = {
 
 type SidebarSectionProps = {
   readonly sections: readonly MenuSection[];
+  readonly translations: Record<string, string>;
 };
 
 export default function SidebarSection({
   sections,
+  translations,
 }: SidebarSectionProps) {
   const pathname = usePathname();
 
@@ -80,10 +82,16 @@ export default function SidebarSection({
     }));
   };
 
+  const translate = (key: string) =>
+    translations[key] ?? key;
+
   return (
     <>
       {sections.map((section) => (
-        <div key={section.title} className="mb-8">
+        <div
+          key={section.title || "section"}
+          className="mb-8"
+        >
           {/* Section title */}
           {section.title && (
             <h3
@@ -97,7 +105,7 @@ export default function SidebarSection({
                 text-muted
               "
             >
-              {section.title}
+              {translate(section.title)}
             </h3>
           )}
 
@@ -137,10 +145,7 @@ export default function SidebarSection({
 
             return (
               <div key={item.href}>
-                {/* --------------------------------------
-                    Main menu item
-                -------------------------------------- */}
-
+                {/* Main menu item */}
                 {hasChildren ? (
                   <button
                     type="button"
@@ -162,7 +167,7 @@ export default function SidebarSection({
                       duration-200
                       ${
                         isActive
-                          ? "bg-primary text-white font-semibold shadow-sm"
+                          ? "bg-primary font-semibold text-white shadow-sm"
                           : "text-foreground hover:bg-muted-bg hover:text-primary"
                       }
                     `}
@@ -170,7 +175,7 @@ export default function SidebarSection({
                     <Icon size={19} />
 
                     <span className="flex-1 text-left">
-                      {item.label}
+                      {translate(item.label)}
                     </span>
 
                     <ChevronDown
@@ -202,7 +207,7 @@ export default function SidebarSection({
                       duration-200
                       ${
                         isActive
-                          ? "bg-primary text-white font-semibold shadow-sm"
+                          ? "bg-primary font-semibold text-white shadow-sm"
                           : "text-foreground hover:bg-muted-bg hover:text-primary"
                       }
                     `}
@@ -210,48 +215,42 @@ export default function SidebarSection({
                     <Icon size={19} />
 
                     <span className="flex-1">
-                      {item.label}
+                      {translate(item.label)}
                     </span>
                   </Link>
                 )}
 
-                {/* --------------------------------------
-                    Submenu
-                -------------------------------------- */}
+                {/* Submenu */}
+                {hasChildren && isOpen && (
+                  <div className="ml-9 mr-3 mt-1 space-y-1 border-l border-border pl-3">
+                    {item.children!.map((child) => {
+                      const childActive =
+                        pathname === child.href;
 
-                {hasChildren &&
-                  isOpen && (
-                    <div className="ml-9 mr-3 mt-1 space-y-1 border-l border-border pl-3">
-                      {item.children!.map(
-                        (child) => {
-                          const childActive =
-                            pathname === child.href;
-
-                          return (
-                            <Link
-                              key={child.href}
-                              href={child.href}
-                              className={`
-                                block
-                                rounded-md
-                                px-3
-                                py-2
-                                text-sm
-                                transition
-                                ${
-                                  childActive
-                                    ? "bg-muted-bg font-medium text-primary"
-                                    : "text-muted hover:bg-muted-bg hover:text-foreground"
-                                }
-                              `}
-                            >
-                              {child.label}
-                            </Link>
-                          );
-                        }
-                      )}
-                    </div>
-                  )}
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={`
+                            block
+                            rounded-md
+                            px-3
+                            py-2
+                            text-sm
+                            transition
+                            ${
+                              childActive
+                                ? "bg-muted-bg font-medium text-primary"
+                                : "text-muted hover:bg-muted-bg hover:text-foreground"
+                            }
+                          `}
+                        >
+                          {translate(child.label)}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}

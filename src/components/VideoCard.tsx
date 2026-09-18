@@ -1,7 +1,25 @@
 import Link from "next/link";
 import Image from "next/image";
+
 import { formatTimeAgo } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+
+interface VideoCardTranslations {
+  noThumbnail: string;
+  views: string;
+  published: string;
+  draft: string;
+  free: string;
+  subscribersOnly: string;
+  manage: string;
+}
+
+interface VideoLevelTranslations {
+  beginner: string;
+  intermediate: string;
+  advanced: string;
+  fluent: string;
+}
 
 interface VideoCardProps {
   id: string;
@@ -16,11 +34,12 @@ interface VideoCardProps {
   level: string | null;
   accessType: "free" | "subscriber";
   categoryLabel?: string;
-
-  // Seller-specific
   status?: string;
   showStatus?: boolean;
   showManage?: boolean;
+  locale?: string;
+  translations?: VideoCardTranslations;
+  levelTranslations?: VideoLevelTranslations;
 }
 
 export default function VideoCard({
@@ -39,10 +58,51 @@ export default function VideoCard({
   status,
   showStatus = false,
   showManage = false,
+  locale = "en",
+  translations,
+  levelTranslations,
 }: VideoCardProps) {
+  const labels: VideoCardTranslations = {
+    noThumbnail:
+      translations?.noThumbnail ?? "No thumbnail available",
+    views:
+      translations?.views ?? "views",
+    published:
+      translations?.published ?? "Published",
+    draft:
+      translations?.draft ?? "Draft",
+    free:
+      translations?.free ?? "Free",
+    subscribersOnly:
+      translations?.subscribersOnly ?? "Subscribers only",
+    manage:
+      translations?.manage ?? "Manage",
+  };
+
+  const levels: VideoLevelTranslations = {
+    beginner:
+      levelTranslations?.beginner ?? "Beginner",
+    intermediate:
+      levelTranslations?.intermediate ?? "Intermediate",
+    advanced:
+      levelTranslations?.advanced ?? "Advanced",
+    fluent:
+      levelTranslations?.fluent ?? "Fluent",
+  };
+
+  const levelLabel =
+    level === "beginner"
+      ? levels.beginner
+      : level === "intermediate"
+        ? levels.intermediate
+        : level === "advanced"
+          ? levels.advanced
+          : level === "fluent"
+            ? levels.fluent
+            : level;
+
   return (
     <div className="group overflow-hidden rounded-xl border border-border bg-background transition hover:shadow-md">
-      {/* Thumbnail */}
       <Link href={`/videos/${slug}`}>
         <div className="relative aspect-video overflow-hidden bg-muted-bg">
           {thumbnail ? (
@@ -56,12 +116,11 @@ export default function VideoCard({
           ) : (
             <div className="flex h-full items-center justify-center bg-muted-bg">
               <span className="text-sm text-muted">
-                No thumbnail
+                {labels.noThumbnail}
               </span>
             </div>
           )}
 
-          {/* Category */}
           {categoryLabel && (
             <span className="absolute right-2 top-2 z-10 rounded-md bg-primary px-3 py-1 text-xs font-medium text-white shadow-sm">
               {categoryLabel}
@@ -70,9 +129,7 @@ export default function VideoCard({
         </div>
       </Link>
 
-      {/* Details */}
       <div className="space-y-2 p-4">
-        {/* Title */}
         <Link
           href={`/videos/${slug}`}
           className="mb-3 block"
@@ -82,7 +139,6 @@ export default function VideoCard({
           </h3>
         </Link>
 
-        {/* Channel */}
         <Link
           href={`/channels/${channelSlug}`}
           className="group/channel flex items-center gap-3"
@@ -108,37 +164,33 @@ export default function VideoCard({
           </p>
         </Link>
 
-        {/* Views + Time */}
         <div className="text-xs text-muted">
-          {views.toLocaleString()} views •{" "}
-          {formatTimeAgo(createdAt)}
+          {views.toLocaleString(locale)}{" "}
+          {labels.views} •{" "}
+          {formatTimeAgo(createdAt, locale)}
         </div>
 
-        {/* Tags */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          {/* Published / Draft - Seller only */}
           {showStatus && (
             <span
               className={
                 status === "published"
-                  ? "rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
+                  ? "rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground"
                   : "rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground"
               }
             >
               {status === "published"
-                ? "Published"
-                : "Draft"}
+                ? labels.published
+                : labels.draft}
             </span>
           )}
 
-          {/* Level */}
           {level && (
             <span className="rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground">
-              {level.charAt(0).toUpperCase() + level.slice(1)}
+              {levelLabel}
             </span>
           )}
 
-          {/* Access Type */}
           <span
             className={
               accessType === "free"
@@ -147,17 +199,16 @@ export default function VideoCard({
             }
           >
             {accessType === "free"
-              ? "Free"
-              : "Subscribers only"}
+              ? labels.free
+              : labels.subscribersOnly}
           </span>
         </div>
 
-        {/* Manage - Seller only */}
         {showManage && (
           <div className="flex justify-end pt-2">
             <Link href={`/seller/videos/${id}`}>
               <Button variant="outline" size="sm">
-                Manage
+                {labels.manage}
               </Button>
             </Link>
           </div>

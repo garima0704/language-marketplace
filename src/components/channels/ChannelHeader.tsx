@@ -24,12 +24,18 @@ interface ChannelHeaderProps {
       avatar_url: string | null;
     };
   };
-isSubscribed?: boolean;
+  isSubscribed?: boolean;
+  translations: {
+    created_by: string;
+    subscribed: string;
+    subscribe: string;
+  };
 }
 
 export default function ChannelHeader({
   channel,
   isSubscribed = false,
+  translations,
 }: ChannelHeaderProps) {
   return (
     <Card className="overflow-hidden rounded-2xl border-border bg-background pt-0 shadow-sm">
@@ -79,17 +85,13 @@ export default function ChannelHeader({
 
           <div className="min-w-0">
 
-            {/* Channel Name */}
-
             <h1 className="text-3xl font-bold text-foreground">
               {channel.channel_name}
             </h1>
 
-            {/* Seller */}
-
             <div className="mt-2 flex items-center gap-1.5 text-sm">
               <span className="text-muted">
-                Created by:
+                {translations.created_by}
               </span>
 
               <Link
@@ -99,8 +101,6 @@ export default function ChannelHeader({
                 @{channel.profiles.username}
               </Link>
             </div>
-
-            {/* About */}
 
             {channel.description && (
               <p className="mt-5 max-w-2xl text-sm italic leading-7 text-secondary">
@@ -116,15 +116,13 @@ export default function ChannelHeader({
 
           <div className="shrink-0">
             {isSubscribed ? (
-              <Button
-                disabled
-                className="rounded-xl bg-muted-bg px-6 text-foreground"
-              >
-                Subscribed
+              <Button disabled>
+                {translations.subscribed}
               </Button>
             ) : (
-              <Button className="rounded-xl bg-primary px-6 text-white hover:bg-secondary">
-                Subscribe ${channel.subscription_price}/
+              <Button>
+                {translations.subscribe} $
+                {channel.subscription_price}/
                 {channel.currency}
               </Button>
             )}

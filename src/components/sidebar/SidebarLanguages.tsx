@@ -1,22 +1,22 @@
-
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+type Language = {
+  code: string;
+  display_order: number;
+  name: string;
+};
+
 type Props = {
-  languages: {
-    id: string;
-    slug: string;
-    category_translations: {
-      name: string;
-      locale_code: string;
-    }[];
-  }[];
+  languages?: Language[];
+  title: string;
 };
 
 export default function SidebarLanguages({
-  languages,
+  languages = [],
+  title,
 }: Props) {
   const pathname = usePathname();
 
@@ -38,16 +38,17 @@ export default function SidebarLanguages({
           text-muted
         "
       >
-        Explore Languages
+        {title}
       </h3>
 
       {languages.map((language) => {
-        const isActive = selectedLanguage === language.slug;
+        const isActive =
+          selectedLanguage === language.code;
 
         return (
           <Link
-            key={language.id}
-            href={`/videos/${language.slug}`}
+            key={language.code}
+            href={`/videos/${language.code}`}
             className={`
               mx-3
               my-1
@@ -66,7 +67,7 @@ export default function SidebarLanguages({
               }
             `}
           >
-            {language.category_translations[0]?.name}
+            {language.name}
           </Link>
         );
       })}

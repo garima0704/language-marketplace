@@ -1,32 +1,32 @@
 export const guestMenu = [
   {
-    title: "Discover",
+    title: "sidebar.discover",
     items: [
       {
-        label: "Home",
+        label: "sidebar.home",
         href: "/",
         icon: "Home",
       },
       {
-        label: "Browse Videos",
+        label: "sidebar.browse_videos",
         href: "/videos",
         icon: "Search",
       },
       {
-        label: "Sellers",
+        label: "sidebar.sellers",
         href: "/sellers",
         icon: "Users",
       },
     ],
   },
-{
-    title: "For Sellers",
+  {
+    title: "sidebar.for_sellers",
     items: [
       {
         href: "/become-a-seller",
-        label: "Become a Seller",
+        label: "sidebar.become_a_seller",
         icon: "PlusCircle",
       },
     ],
   },
- ] as const;
+] as const;

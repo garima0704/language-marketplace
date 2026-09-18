@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 import { getSellerChannels } from "@/lib/channels/getSellerChannels";
+import { getTranslations } from "@/lib/translations";
 
 import ChannelCard from "@/components/channels/ChannelCard";
 
@@ -13,6 +15,26 @@ export default async function SellerProfilePage({
   const { username } = await params;
 
   const supabase = await createClient();
+
+  // =========================================================
+  // CURRENT UI LANGUAGE
+  // =========================================================
+
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
+
+  // =========================================================
+  // TRANSLATIONS
+  // =========================================================
+
+  const translations = await getTranslations(
+    [
+      "seller_profile.channels",
+    ],
+    locale
+  );
 
   // =========================================================
   // GET SELLER
@@ -40,7 +62,8 @@ export default async function SellerProfilePage({
   // GET SELLER CHANNELS + STATS
   // =========================================================
 
-  const channelStats = await getSellerChannels(seller.id);
+  const channelStats =
+    await getSellerChannels(seller.id);
 
   // =========================================================
   // PAGE
@@ -53,7 +76,7 @@ export default async function SellerProfilePage({
           SELLER HEADER
       ======================================================== */}
 
-      <div className="rounded-xl border bg-white p-8 shadow-sm">
+      <div className="rounded-xl border border-border bg-background p-8 shadow-sm">
 
         <div className="flex items-center gap-5">
 
@@ -64,22 +87,37 @@ export default async function SellerProfilePage({
               className="h-24 w-24 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gray-200 text-3xl font-semibold">
-              {seller.display_name?.charAt(0).toUpperCase()}
+            <div
+              className="
+                flex
+                h-24
+                w-24
+                items-center
+                justify-center
+                rounded-full
+                bg-muted-bg
+                text-3xl
+                font-semibold
+                text-muted
+              "
+            >
+              {seller.display_name
+                ?.charAt(0)
+                .toUpperCase()}
             </div>
           )}
 
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-foreground">
               {seller.display_name}
             </h1>
 
-            <p className="text-gray-500">
+            <p className="text-muted-foreground">
               @{seller.username}
             </p>
 
             {seller.country && (
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {seller.country}
               </p>
             )}
@@ -88,7 +126,7 @@ export default async function SellerProfilePage({
         </div>
 
         {seller.bio && (
-          <p className="mt-6 max-w-3xl text-gray-600">
+          <p className="mt-6 max-w-3xl text-muted-foreground">
             {seller.bio}
           </p>
         )}
@@ -101,8 +139,9 @@ export default async function SellerProfilePage({
 
       <div className="mt-10">
 
-        <h2 className="text-2xl font-bold text-gray-900">
-          Channels
+        <h2 className="text-2xl font-bold text-foreground">
+          {translations["seller_profile.channels"] ??
+            "Channels"}
         </h2>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">

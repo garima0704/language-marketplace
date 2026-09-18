@@ -9,6 +9,20 @@ type EditCategoryPageProps = {
   }>;
 };
 
+type Category = {
+  id: string;
+  parent_id: string | null;
+  level: number;
+  display_order: number;
+  slug: string;
+};
+
+type TranslationRow = {
+  translation_key: string;
+  locale_code: string;
+  value: string;
+};
+
 export default async function EditCategoryPage({
   params,
 }: EditCategoryPageProps) {
@@ -24,7 +38,7 @@ export default async function EditCategoryPage({
     await supabase
       .from("categories")
       .select(
-        "id, parent_id, level, display_order, is_active"
+        "id, parent_id, level, display_order, is_active, slug"
       )
       .eq("id", id)
       .single();
@@ -41,7 +55,7 @@ export default async function EditCategoryPage({
     await supabase
       .from("categories")
       .select(
-        "id, parent_id, level, display_order"
+        "id, parent_id, level, display_order, slug"
       )
       .order("level", { ascending: true })
       .order("display_order", { ascending: true });
@@ -53,19 +67,74 @@ export default async function EditCategoryPage({
     );
   }
 
+  const categoryList = (categories ?? []) as Category[];
+
   // --------------------------------------------------
-  // Fetch English translations
+  // Build category map
+  // --------------------------------------------------
+
+  const categoryMap = new Map<string, Category>();
+
+  for (const item of categoryList) {
+    categoryMap.set(item.id, item);
+  }
+
+  // --------------------------------------------------
+  // Build hierarchical translation keys
+  //
+  // Example:
+  // category.technical
+  // category.technical.business
+  // category.technical.business.customer-service
+  // --------------------------------------------------
+
+  const categoryKeyMap = new Map<string, string>();
+
+  function getCategoryPath(
+    currentCategory: Category
+  ): string {
+    const parts: string[] = [];
+    let current: Category | undefined = currentCategory;
+
+    while (current) {
+      parts.unshift(current.slug);
+
+      if (!current.parent_id) {
+        break;
+      }
+
+      current = categoryMap.get(current.parent_id);
+
+      if (!current) {
+        break;
+      }
+    }
+
+    return parts.join(".");
+  }
+
+  for (const item of categoryList) {
+    categoryKeyMap.set(
+      item.id,
+      `category.${getCategoryPath(item)}`
+    );
+  }
+
+  // --------------------------------------------------
+  // Fetch English category translations
   // --------------------------------------------------
 
   const {
     data: translations,
     error: translationsError,
   } = await supabase
-    .from("category_translations")
+    .from("translations")
     .select(
-      "category_id, locale_code, name"
+      "translation_key, locale_code, value"
     )
-    .eq("locale_code", "en");
+    .eq("section", "category")
+    .eq("locale_code", "en")
+    .eq("is_active", true);
 
   if (translationsError) {
     console.error(
@@ -78,12 +147,24 @@ export default async function EditCategoryPage({
   // Create English translation map
   // --------------------------------------------------
 
-  const translationMap = new Map(
-    (translations ?? []).map((translation) => [
-      translation.category_id,
-      translation.name.trim(),
-    ])
-  );
+  const translationMap = new Map<string, string>();
+
+  for (const translation of (translations ??
+    []) as TranslationRow[]) {
+    const categoryId = [...categoryKeyMap.entries()].find(
+      ([, translationKey]) =>
+        translationKey === translation.translation_key
+    )?.[0];
+
+    if (!categoryId) {
+      continue;
+    }
+
+    translationMap.set(
+      categoryId,
+      translation.value.trim()
+    );
+  }
 
   // --------------------------------------------------
   // Find descendants
@@ -95,7 +176,7 @@ export default async function EditCategoryPage({
   const descendantIds = new Set<string>();
 
   const findDescendants = (parentId: string) => {
-    for (const item of categories ?? []) {
+    for (const item of categoryList) {
       if (item.parent_id === parentId) {
         if (!descendantIds.has(item.id)) {
           descendantIds.add(item.id);
@@ -111,7 +192,7 @@ export default async function EditCategoryPage({
   // Build parent options
   // --------------------------------------------------
 
-  const parentOptions = (categories ?? [])
+  const parentOptions = categoryList
     .filter((item) => item.id !== id)
     .filter((item) => !descendantIds.has(item.id))
     .filter((item) => item.level < 4)
@@ -139,6 +220,7 @@ export default async function EditCategoryPage({
       <div className="mx-auto max-w-3xl space-y-6 p-6">
 
         {/* Header */}
+
         <div>
           <h1 className="text-2xl font-semibold text-foreground">
             Edit Category
@@ -151,6 +233,7 @@ export default async function EditCategoryPage({
         </div>
 
         {/* Category Form */}
+
         <CategoryForm
           mode="edit"
           categoryId={category.id}
