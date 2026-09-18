@@ -79,6 +79,7 @@ type Props = {
   languageRegions: LanguageRegion[];
   categories: Category[];
   categoryTranslations: CategoryTranslation[];
+  locale: string;
 };
 
 const steps = [

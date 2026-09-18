@@ -3,8 +3,6 @@ import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 
-import { getCategoryLabels } from "@/lib/categories";
-
 import EditVideoForm from "@/components/seller/EditVideoForm";
 
 interface PageProps {
@@ -150,13 +148,14 @@ export default async function EditVideoPage({
   const categoryIds =
     categories?.map((category) => category.id) ?? [];
 
-  const categoryLabels =
+  const { data: categoryTranslations } =
     categoryIds.length > 0
-      ? await getCategoryLabels(
-          categoryIds,
-          locale
-        )
-      : {};
+      ? await supabase
+          .from("category_translations")
+          .select("category_id, locale_code, name")
+          .in("category_id", categoryIds)
+          .eq("locale_code", locale)
+      : { data: [] };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -177,7 +176,8 @@ export default async function EditVideoPage({
         languages={languages ?? []}
         languageRegions={languageRegions ?? []}
         categories={categories ?? []}
-        categoryLabels={categoryLabels}
+        categoryTranslations={categoryTranslations ?? []}
+        locale={locale}
       />
     </div>
   );
