@@ -46,6 +46,7 @@ export default async function WatchHistoryPage() {
       // Video card
       "video.no_thumbnail",
       "video.views",
+      "video.view",
       "video.published",
       "video.draft",
       "video.free",
@@ -89,6 +90,10 @@ export default async function WatchHistoryPage() {
     manage:
       translations["video.manage"] ??
       "Manage",
+    
+    view:
+      translations["video.view"] ??
+      "View",
   };
 
   const levelTranslations = {
