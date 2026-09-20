@@ -253,6 +253,9 @@ export default async function ChannelPage({
                   manage:
                     translations["video.manage"] ??
                     "Manage",
+                  view: 
+                    translations["video.view"] ?? 
+                    "View",
                 }}
                 levelTranslations={{
                   beginner:
