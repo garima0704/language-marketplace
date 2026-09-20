@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "@/lib/translations";
+
 import VideoCard from "@/components/VideoCard";
 import { getCategoryLabel } from "@/lib/categories";
 
@@ -28,6 +30,36 @@ export default async function SavedVideosPage() {
 
   const locale =
     cookieStore.get("niceconvo_locale")?.value ?? "en";
+
+  /* ========================================================
+     TRANSLATIONS
+  ======================================================== */
+
+  const translations = await getTranslations(
+    [
+      // Saved videos
+      "saved_videos.title",
+      "saved_videos.description",
+      "saved_videos.empty.title",
+      "saved_videos.empty.description",
+
+      // Video card
+      "video.no_thumbnail",
+      "video.views",
+      "video.published",
+      "video.draft",
+      "video.free",
+      "video.subscribers_only",
+      "video.manage",
+
+      // Video levels
+      "level.beginner",
+      "level.intermediate",
+      "level.advanced",
+      "level.fluent",
+    ],
+    locale
+  );
 
   /* ========================================================
      GET SAVED VIDEOS
@@ -146,11 +178,12 @@ export default async function SavedVideosPage() {
 
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Saved Videos
+            {translations["saved_videos.title"] ?? "Saved Videos"}
           </h1>
 
           <p className="mt-2 text-sm text-muted">
-            Videos you've saved to watch later.
+            {translations["saved_videos.description"] ??
+              "Videos you've saved to watch later."}
           </p>
         </div>
 
@@ -161,12 +194,13 @@ export default async function SavedVideosPage() {
         {videos.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border px-6 py-16 text-center">
             <h2 className="text-lg font-semibold text-foreground">
-              No saved videos
+              {translations["saved_videos.empty.title"] ??
+                "No saved videos"}
             </h2>
 
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
-              Videos you save will appear here so you
-              can easily find them later.
+              {translations["saved_videos.empty.description"] ??
+                "Videos you save will appear here so you can easily find them later."}
             </p>
           </div>
         ) : (
@@ -191,6 +225,53 @@ export default async function SavedVideosPage() {
                 level={video.level}
                 accessType={video.access_type}
                 categoryLabel={video.category_label || ""}
+                locale={locale}
+                translations={{
+                  noThumbnail:
+                    translations["video.no_thumbnail"] ??
+                    "No thumbnail",
+
+                  views:
+                    translations["video.views"] ??
+                    "views",
+
+                  published:
+                    translations["video.published"] ??
+                    "Published",
+
+                  draft:
+                    translations["video.draft"] ??
+                    "Draft",
+
+                  free:
+                    translations["video.free"] ??
+                    "Free",
+
+                  subscribersOnly:
+                    translations["video.subscribers_only"] ??
+                    "Subscribers only",
+
+                  manage:
+                    translations["video.manage"] ??
+                    "Manage",
+                }}
+                levelTranslations={{
+                  beginner:
+                    translations["level.beginner"] ??
+                    "Beginner",
+
+                  intermediate:
+                    translations["level.intermediate"] ??
+                    "Intermediate",
+
+                  advanced:
+                    translations["level.advanced"] ??
+                    "Advanced",
+
+                  fluent:
+                    translations["level.fluent"] ??
+                    "Fluent",
+                }}
               />
             ))}
           </div>

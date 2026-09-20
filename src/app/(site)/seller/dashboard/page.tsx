@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 import { getSellerChannels } from "@/lib/channels/getSellerChannels";
+import { getTranslations } from "@/lib/translations";
 
 import DashboardStats from "@/components/seller/DashboardStats";
 import ChannelCard from "@/components/channels/ChannelCard";
@@ -20,6 +22,38 @@ export default async function SellerDashboardPage() {
   if (!user) {
     redirect("/login");
   }
+
+  // --------------------------------------------------
+  // LOCALE
+  // --------------------------------------------------
+
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
+
+  // --------------------------------------------------
+  // TRANSLATIONS
+  // --------------------------------------------------
+
+  const translations = await getTranslations(
+    [
+      "seller_dashboard.welcome",
+      "seller_dashboard.description",
+      "seller_dashboard.your_channels",
+      "seller_dashboard.no_channels",
+
+      "seller_dashboard.total_channels",
+      "seller_dashboard.channels_description",
+      "seller_dashboard.total_videos",
+      "seller_dashboard.videos_description",
+      "seller_dashboard.total_subscribers",
+      "seller_dashboard.subscribers_description",
+      "seller_dashboard.total_earnings",
+      "seller_dashboard.earnings_description",
+    ],
+    locale
+  );
 
   // --------------------------------------------------
   // PROFILE
@@ -128,6 +162,7 @@ export default async function SellerDashboardPage() {
         total + Number(payment.creator_amount || 0),
       0
     );
+  }
 
   // --------------------------------------------------
   // PAGE
@@ -138,11 +173,14 @@ export default async function SellerDashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">
-          Welcome back, {profile?.display_name}
+          {translations["seller_dashboard.welcome"] ??
+            "Welcome back"}{" "}
+          {profile?.display_name}
         </h1>
 
         <p className="mt-2 text-muted-foreground">
-          Manage your channels and grow your audience.
+          {translations["seller_dashboard.description"] ??
+            "Manage your channels and grow your audience."}
         </p>
       </div>
 
@@ -152,12 +190,46 @@ export default async function SellerDashboardPage() {
         videoCount={videoCount}
         subscriberCount={subscriberCount}
         earnings={earnings}
+        translations={{
+          totalChannels:
+            translations["seller_dashboard.total_channels"] ??
+            "Total Channels",
+
+          channelsDescription:
+            translations["seller_dashboard.channels_description"] ??
+            "Channels you currently manage",
+
+          totalVideos:
+            translations["seller_dashboard.total_videos"] ??
+            "Total Videos",
+
+          videosDescription:
+            translations["seller_dashboard.videos_description"] ??
+            "Videos uploaded to your channels",
+
+          totalSubscribers:
+            translations["seller_dashboard.total_subscribers"] ??
+            "Total Subscribers",
+
+          subscribersDescription:
+            translations["seller_dashboard.subscribers_description"] ??
+            "People subscribed to your channels",
+
+          totalEarnings:
+            translations["seller_dashboard.total_earnings"] ??
+            "Total Earnings",
+
+          earningsDescription:
+            translations["seller_dashboard.earnings_description"] ??
+            "Your total earnings after platform fees",
+        }}
       />
 
       {/* Channels */}
       <section className="space-y-4">
         <h2 className="text-2xl font-bold">
-          Your Channels
+          {translations["seller_dashboard.your_channels"] ??
+            "Your Channels"}
         </h2>
 
         {sellerChannels.length > 0 ? (
@@ -166,18 +238,18 @@ export default async function SellerDashboardPage() {
               <ChannelCard
                 key={channel.id}
                 channel={channel}
-                variant="seller"
+                variant="seller-management"
                 showActions={false}
               />
             ))}
           </div>
         ) : (
           <p className="text-muted-foreground">
-            No channels created yet.
+            {translations["seller_dashboard.no_channels"] ??
+              "No channels created yet."}
           </p>
         )}
       </section>
     </div>
   );
-}
 }

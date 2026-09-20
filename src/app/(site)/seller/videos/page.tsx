@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
 import { getCategoryLabel } from "@/lib/categories";
+import { getTranslations } from "@/lib/translations";
 
 import VideoSection from "@/components/VideoSection";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,20 @@ export default async function SellerVideosPage() {
 
   const locale =
     cookieStore.get("niceconvo_locale")?.value ?? "en";
+
+  // --------------------------------------------------
+  // TRANSLATIONS
+  // --------------------------------------------------
+
+  const translations = await getTranslations(
+  [
+    "seller_videos.title",
+    "seller_videos.description",
+    "seller_videos.upload_video",
+    "seller_videos.search_placeholder",
+  ],
+  locale
+);
 
   // --------------------------------------------------
   // Get seller channels
@@ -145,26 +160,30 @@ export default async function SellerVideosPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            My Videos
+          <h1 className="text-3xl font-bold text-foreground">
+            {translations["seller_videos.title"] ?? "My Videos"}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Upload and manage your language
-            learning videos.
+            {translations["seller_videos.description"] ??
+              "Upload and manage your language learning videos."}
           </p>
         </div>
 
         <Link href="/seller/videos/new">
           <Button>
-            Upload Video
+            {translations["seller_videos.upload_video"] ??
+              "Upload Video"}
           </Button>
         </Link>
       </div>
 
       {/* Search */}
       <Input
-        placeholder="Search videos..."
+        placeholder={
+          translations["seller_videos.search_placeholder"] ??
+          "Search videos..."
+        }
         className="max-w-md"
       />
 
@@ -174,7 +193,9 @@ export default async function SellerVideosPage() {
         showViewAll={false}
         showStatus
         showManage
+        showView
         compact
+        locale={locale}
       />
     </div>
   );

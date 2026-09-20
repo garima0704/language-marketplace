@@ -20,6 +20,7 @@ type Props = {
   languageRegions: LanguageRegion[];
   initialLanguageCode?: string;
   initialRegionId?: number | null;
+  uiTranslations?: Record<string, string>;
 };
 
 export default function LanguageRegionSelector({
@@ -27,39 +28,38 @@ export default function LanguageRegionSelector({
   languageRegions,
   initialLanguageCode = "",
   initialRegionId = null,
+  uiTranslations,
 }: Props) {
-
-const [languageCode, setLanguageCode] = useState(
-  initialLanguageCode
-);
-
-const [country, setCountry] = useState("");
-
-const [regionId, setRegionId] = useState(
-  initialRegionId ? String(initialRegionId) : ""
-);
-
-useEffect(() => {
-  const existingRegion = languageRegions.find(
-    (region) => region.id === initialRegionId
+  const [languageCode, setLanguageCode] = useState(
+    initialLanguageCode
   );
 
-  setLanguageCode(initialLanguageCode ?? "");
+  const [country, setCountry] = useState("");
 
-  if (existingRegion) {
-    setCountry(existingRegion.country.trim());
-    setRegionId(String(existingRegion.id));
-  } else {
-    setCountry("");
-    setRegionId("");
-  }
-}, [
-  initialLanguageCode,
-  initialRegionId,
-  languageRegions,
-]);
+  const [regionId, setRegionId] = useState(
+    initialRegionId ? String(initialRegionId) : ""
+  );
 
-  // Countries belonging to selected language
+  useEffect(() => {
+    const existingRegion = languageRegions.find(
+      (region) => region.id === initialRegionId
+    );
+
+    setLanguageCode(initialLanguageCode ?? "");
+
+    if (existingRegion) {
+      setCountry(existingRegion.country.trim());
+      setRegionId(String(existingRegion.id));
+    } else {
+      setCountry("");
+      setRegionId("");
+    }
+  }, [
+    initialLanguageCode,
+    initialRegionId,
+    languageRegions,
+  ]);
+
   const countries = useMemo(() => {
     if (!languageCode) return [];
 
@@ -74,7 +74,6 @@ useEffect(() => {
     return Array.from(uniqueCountries).sort();
   }, [languageCode, languageRegions]);
 
-  // States/regions belonging to selected language + country
   const states = useMemo(() => {
     if (!languageCode || !country) return [];
 
@@ -117,12 +116,48 @@ useEffect(() => {
     disabled:opacity-50
   `;
 
+  const languageOfVideoLabel =
+    uiTranslations?.["video.language_of_video"] ??
+    "Language of Video";
+
+  const selectLanguageLabel =
+    uiTranslations?.["video.select_language_placeholder"] ??
+    "Select Language";
+
+  const countryLabel =
+    uiTranslations?.["video.country"] ??
+    "Country";
+
+  const selectCountryLabel =
+    uiTranslations?.["video.select_country"] ??
+    "Select Country";
+
+  const selectLanguageFirstLabel =
+    uiTranslations?.["video.select_language_first"] ??
+    "Select Language First";
+
+  const stateRegionLabel =
+    uiTranslations?.["video.state_region"] ??
+    "State / Region";
+
+  const selectStateRegionLabel =
+    uiTranslations?.["video.select_state_region"] ??
+    "Select State / Region";
+
+  const selectCountryFirstLabel =
+    uiTranslations?.["video.select_country_first"] ??
+    "Select Country First";
+
+  const helperText =
+    uiTranslations?.["video.language_region_helper"] ??
+    "Select the language, country, and regional variety spoken in the video.";
+
   return (
     <div className="space-y-5">
       {/* Language */}
       <div>
         <label className="mb-2 block text-sm font-medium text-foreground">
-          Language of Video
+          {languageOfVideoLabel}
         </label>
 
         <select
@@ -134,7 +169,7 @@ useEffect(() => {
           required
         >
           <option value="">
-            Select Language
+            {selectLanguageLabel}
           </option>
 
           {languages.map((language) => (
@@ -147,7 +182,6 @@ useEffect(() => {
           ))}
         </select>
 
-        {/* Submitted with the form */}
         <input
           type="hidden"
           name="language_code"
@@ -158,7 +192,7 @@ useEffect(() => {
       {/* Country */}
       <div>
         <label className="mb-2 block text-sm font-medium text-foreground">
-          Country
+          {countryLabel}
         </label>
 
         <select
@@ -173,8 +207,8 @@ useEffect(() => {
         >
           <option value="">
             {languageCode
-              ? "Select Country"
-              : "Select Language First"}
+              ? selectCountryLabel
+              : selectLanguageFirstLabel}
           </option>
 
           {countries.map((countryName) => (
@@ -191,7 +225,7 @@ useEffect(() => {
       {/* State / Region */}
       <div>
         <label className="mb-2 block text-sm font-medium text-foreground">
-          State / Region
+          {stateRegionLabel}
         </label>
 
         <select
@@ -206,8 +240,8 @@ useEffect(() => {
         >
           <option value="">
             {country
-              ? "Select State / Region"
-              : "Select Country First"}
+              ? selectStateRegionLabel
+              : selectCountryFirstLabel}
           </option>
 
           {states.map((region) => (
@@ -222,8 +256,7 @@ useEffect(() => {
       </div>
 
       <p className="text-xs text-muted">
-        Select the language, country, and regional variety
-        spoken in the video.
+        {helperText}
       </p>
     </div>
   );

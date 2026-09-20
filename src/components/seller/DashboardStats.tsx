@@ -10,6 +10,16 @@ interface DashboardStatsProps {
   videoCount: number;
   subscriberCount: number;
   earnings: number;
+  translations: {
+    totalChannels: string;
+    channelsDescription: string;
+    totalVideos: string;
+    videosDescription: string;
+    totalSubscribers: string;
+    subscribersDescription: string;
+    totalEarnings: string;
+    earningsDescription: string;
+  };
 }
 
 export default function DashboardStats({
@@ -17,30 +27,31 @@ export default function DashboardStats({
   videoCount,
   subscriberCount,
   earnings,
+  translations,
 }: DashboardStatsProps) {
   const stats = [
     {
-      title: "Total Channels",
+      title: translations.totalChannels,
       value: channelCount,
-      description: "Channels you currently manage",
+      description: translations.channelsDescription,
       icon: Layers,
     },
     {
-      title: "Total Videos",
+      title: translations.totalVideos,
       value: videoCount,
-      description: "Videos uploaded to your channels",
+      description: translations.videosDescription,
       icon: Video,
     },
     {
-      title: "Total Subscribers",
+      title: translations.totalSubscribers,
       value: subscriberCount,
-      description: "People subscribed to your channels",
+      description: translations.subscribersDescription,
       icon: Users,
     },
     {
-      title: "Total Earnings",
+      title: translations.totalEarnings,
       value: `$${earnings.toFixed(2)}`,
-      description: "Your total earnings after platform fees",
+      description: translations.earningsDescription,
       icon: DollarSign,
     },
   ];

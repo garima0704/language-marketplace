@@ -504,13 +504,25 @@ export default async function VideosSlugPage({
     // WATCH ACCESS
     // ==================================================
 
-    const canWatch =
-      isAuthenticated &&
-      (
-        videoData.access_type ===
-          "free" ||
-        hasActiveSubscription
-      );
+  const channel = Array.isArray(videoData.channels)
+    ? videoData.channels[0]
+    : videoData.channels;
+
+  const channelProfile = Array.isArray(channel?.profiles)
+    ? channel.profiles[0]
+    : channel?.profiles;
+
+  const isVideoOwner =
+    !!user &&
+    user.id === channelProfile?.id;
+
+  const canWatch =
+    isAuthenticated &&
+    (
+      isVideoOwner ||
+      videoData.access_type === "free" ||
+      hasActiveSubscription
+    );
 
     // ==================================================
     // VIDEO URL

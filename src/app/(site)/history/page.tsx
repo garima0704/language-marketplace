@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "@/lib/translations";
+
 import VideoCard from "@/components/VideoCard";
 import { getCategoryLabel } from "@/lib/categories";
 
@@ -28,6 +30,84 @@ export default async function WatchHistoryPage() {
 
   const locale =
     cookieStore.get("niceconvo_locale")?.value ?? "en";
+
+  /* ========================================================
+     TRANSLATIONS
+  ======================================================== */
+
+  const translations = await getTranslations(
+    [
+      // Watch history
+      "watch_history.title",
+      "watch_history.description",
+      "watch_history.empty.title",
+      "watch_history.empty.description",
+
+      // Video card
+      "video.no_thumbnail",
+      "video.views",
+      "video.published",
+      "video.draft",
+      "video.free",
+      "video.subscribers_only",
+      "video.manage",
+
+      // Video levels
+      "level.beginner",
+      "level.intermediate",
+      "level.advanced",
+      "level.fluent",
+    ],
+    locale
+  );
+
+  const videoTranslations = {
+    noThumbnail:
+      translations["video.no_thumbnail"] ??
+      "No thumbnail",
+
+    views:
+      translations["video.views"] ??
+      "views",
+
+    published:
+      translations["video.published"] ??
+      "Published",
+
+    draft:
+      translations["video.draft"] ??
+      "Draft",
+
+    free:
+      translations["video.free"] ??
+      "Free",
+
+    subscribersOnly:
+      translations["video.subscribers_only"] ??
+      "Subscribers only",
+
+    manage:
+      translations["video.manage"] ??
+      "Manage",
+  };
+
+  const levelTranslations = {
+    beginner:
+      translations["level.beginner"] ??
+      "Beginner",
+
+    intermediate:
+      translations["level.intermediate"] ??
+      "Intermediate",
+
+    advanced:
+      translations["level.advanced"] ??
+      "Advanced",
+
+    fluent:
+      translations["level.fluent"] ??
+      "Fluent",
+  };
 
   /* ========================================================
      GET WATCH HISTORY
@@ -160,11 +240,13 @@ export default async function WatchHistoryPage() {
 
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Watch History
+            {translations["watch_history.title"] ??
+              "Watch History"}
           </h1>
 
           <p className="mt-2 text-sm text-muted">
-            Videos you've watched recently.
+            {translations["watch_history.description"] ??
+              "Videos you've watched recently."}
           </p>
         </div>
 
@@ -175,12 +257,13 @@ export default async function WatchHistoryPage() {
         {videos.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border px-6 py-16 text-center">
             <h2 className="text-lg font-semibold text-foreground">
-              No watch history
+              {translations["watch_history.empty.title"] ??
+                "No watch history"}
             </h2>
 
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
-              Videos you watch will appear here so
-              you can easily continue watching them later.
+              {translations["watch_history.empty.description"] ??
+                "Videos you watch will appear here so you can easily continue watching them later."}
             </p>
           </div>
         ) : (
@@ -205,6 +288,9 @@ export default async function WatchHistoryPage() {
                 level={video.level}
                 accessType={video.access_type}
                 categoryLabel={video.category_label || ""}
+                locale={locale}
+                translations={videoTranslations}
+                levelTranslations={levelTranslations}
               />
             ))}
           </div>

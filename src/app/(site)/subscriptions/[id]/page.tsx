@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import {
   ArrowLeft,
   CalendarDays,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "@/lib/translations";
 
 import ChannelHeader from "@/components/channels/ChannelHeader";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,43 @@ export default async function SubscriptionPage({
   const { id } = await params;
 
   const supabase = await createClient();
+
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
+
+  const translations = await getTranslations(
+    [
+      // ChannelHeader
+      "channel.created_by",
+      "channel.subscribed",
+      "channel.subscribe",
+
+      // Subscription page
+      "subscription.back",
+      "subscription.manage.title",
+      "subscription.manage.description",
+      "subscription.details.title",
+      "subscription.details.description",
+      "subscription.status",
+      "subscription.active",
+      "subscription.inactive",
+      "subscription.active_description",
+      "subscription.inactive_description",
+      "subscription.membership",
+      "subscription.monthly",
+      "subscription.per_month",
+      "subscription.next_renewal",
+      "subscription.renewal_description",
+      "subscription.manage",
+      "subscription.manage_description",
+      "subscription.continue_learning",
+      "subscription.cancel",
+      "subscription.note",
+    ],
+    locale
+  );
 
   // =========================================================
   // AUTH
@@ -132,7 +171,7 @@ export default async function SubscriptionPage({
 
   const isActive = subscription.status === "active";
 
-  const renewalDate = new Intl.DateTimeFormat("en-US", {
+  const renewalDate = new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -146,7 +185,7 @@ export default async function SubscriptionPage({
       0
   );
 
-  const formattedPrice = new Intl.NumberFormat("en-US", {
+  const formattedPrice = new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
   }).format(price);
@@ -168,7 +207,7 @@ export default async function SubscriptionPage({
           className="mb-6 inline-flex items-center gap-2 text-sm text-muted transition hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to My Subscriptions
+          {translations["subscription.back"] ?? "Back to My Subscriptions"}
         </Link>
 
         {/* =====================================================
@@ -177,11 +216,13 @@ export default async function SubscriptionPage({
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">
-            Manage Subscription
+            {translations["subscription.manage.title"] ??
+              "Manage Subscription"}
           </h1>
 
           <p className="mt-2 text-sm text-muted">
-            Manage your subscription to{" "}
+            {translations["subscription.manage.description"] ??
+              "Manage your subscription to"}{" "}
             {channel.channel_name}.
           </p>
         </div>
@@ -193,6 +234,14 @@ export default async function SubscriptionPage({
         <ChannelHeader
           channel={channelHeaderData}
           isSubscribed={isActive}
+          translations={{
+            created_by:
+              translations["channel.created_by"] ?? "Created by",
+            subscribed:
+              translations["channel.subscribed"] ?? "Subscribed",
+            subscribe:
+              translations["channel.subscribe"] ?? "Subscribe",
+          }}
         />
 
         {/* =====================================================
@@ -209,11 +258,13 @@ export default async function SubscriptionPage({
 
             <div className="border-b border-border px-6 py-5">
               <h2 className="text-lg font-semibold text-foreground">
-                Subscription Details
+                {translations["subscription.details.title"] ??
+                  "Subscription Details"}
               </h2>
 
               <p className="mt-1 text-sm text-muted">
-                Information about your current membership.
+                {translations["subscription.details.description"] ??
+                  "Information about your current membership."}
               </p>
             </div>
 
@@ -232,20 +283,24 @@ export default async function SubscriptionPage({
 
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      Status
+                      {translations["subscription.status"] ?? "Status"}
                     </p>
 
                     <p className="mt-0.5 text-sm text-muted">
                       {isActive
-                        ? "Your subscription is active."
-                        : "Your subscription is inactive."}
+                        ? translations["subscription.active_description"] ??
+                          "Your subscription is active."
+                        : translations["subscription.inactive_description"] ??
+                          "Your subscription is inactive."}
                     </p>
                   </div>
                 </div>
 
-                <span className="rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground">
-                  {isActive ? "Active" : "Inactive"}
-                </span>
+               <span className="rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground">
+                {isActive
+                  ? translations["subscription.active"] ?? "Active"
+                  : translations["subscription.inactive"] ?? "Inactive"}
+              </span>
               </div>
 
               {/* PRICE */}
@@ -257,11 +312,11 @@ export default async function SubscriptionPage({
 
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      Membership
+                      {translations["subscription.membership"] ?? "Membership"}
                     </p>
 
                     <p className="mt-0.5 text-sm text-muted">
-                      Monthly subscription
+                      {translations["subscription.monthly"] ?? "Monthly subscription"}
                     </p>
                   </div>
                 </div>
@@ -270,7 +325,7 @@ export default async function SubscriptionPage({
                   {formattedPrice}
 
                   <span className="ml-1 font-normal text-muted">
-                    / month
+                    {translations["subscription.per_month"] ?? "/ month"}
                   </span>
                 </p>
               </div>
@@ -284,11 +339,12 @@ export default async function SubscriptionPage({
 
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      Next renewal
+                      {translations["subscription.next_renewal"] ?? "Next renewal"}
                     </p>
 
                     <p className="mt-0.5 text-sm text-muted">
-                      Your subscription renews automatically.
+                      {translations["subscription.renewal_description"] ??
+                        "Your subscription renews automatically."}
                     </p>
                   </div>
                 </div>
@@ -309,11 +365,12 @@ export default async function SubscriptionPage({
 
             <div className="border-b border-border px-6 py-5">
               <h2 className="text-lg font-semibold text-foreground">
-                Manage
+                {translations["subscription.manage"] ?? "Manage"}
               </h2>
 
               <p className="mt-1 text-sm text-muted">
-                Manage your access to this channel.
+                {translations["subscription.manage_description"] ??
+                  "Manage your access to this channel."}
               </p>
             </div>
 
@@ -326,7 +383,8 @@ export default async function SubscriptionPage({
                 className="block"
               >
                 <Button className="w-full rounded-lg">
-                  Continue Learning
+                  {translations["subscription.continue_learning"] ??
+                    "Continue Learning"}
                 </Button>
               </Link>
 
@@ -337,7 +395,8 @@ export default async function SubscriptionPage({
                   variant="outline"
                   className="w-full rounded-lg border-border"
                 >
-                  Cancel Subscription
+                  {translations["subscription.cancel"] ??
+                    "Cancel Subscription"}
                 </Button>
               )}
 
@@ -350,11 +409,8 @@ export default async function SubscriptionPage({
         ====================================================== */}
 
         <p className="mt-6 text-xs leading-5 text-muted">
-          Your subscription gives you access to
-          subscriber-only content from this channel.
-          Cancelling your subscription should keep your
-          access active until the end of the current billing
-          period.
+          {translations["subscription.note"] ??
+            "Your subscription gives you access to subscriber-only content from this channel. Cancelling your subscription should keep your access active until the end of the current billing period."}
         </p>
 
       </div>

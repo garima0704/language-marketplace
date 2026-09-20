@@ -33,7 +33,10 @@ type SubscriptionInfo = {
 interface ChannelCardProps {
   channel: Channel;
   seller?: SellerInfo | null;
-  variant: "subscription" | "seller";
+  variant:
+  | "subscription"
+  | "seller-management"
+  | "seller-public";
   subscription?: SubscriptionInfo;
   showActions?: boolean;
 }
@@ -164,7 +167,7 @@ export default async function ChannelCard({
         )}
 
         {/* Seller Details */}
-        {variant === "seller" && (
+        {(variant === "seller-management" || variant === "seller-public") && (
           <>
             <div className="mt-5 flex items-center justify-between">
               <span className="text-sm font-semibold text-foreground">
@@ -233,15 +236,7 @@ export default async function ChannelCard({
               </Button>
             </Link>
           </div>
-        ) : variant === "seller" ? (
-          <div className="mt-6">
-            <Link href={`/channels/${channel.slug}`} className="block">
-              <Button className="w-full rounded-lg">
-                {translations["channel.view"] ?? "View"}
-              </Button>
-            </Link>
-          </div>
-        ) : (
+        ) : variant === "seller-management" ? (
           <div className="mt-6 flex gap-3">
             <Link
               href={`/seller/channels/${channel.id}`}
@@ -252,6 +247,20 @@ export default async function ChannelCard({
               </Button>
             </Link>
 
+            <Link
+              href={`/channels/${channel.slug}`}
+              className="flex-1"
+            >
+              <Button
+                variant="outline"
+                className="w-full rounded-lg"
+              >
+                {translations["channel.view"] ?? "View"}
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-6">
             <Link
               href={`/channels/${channel.slug}`}
               className="block"

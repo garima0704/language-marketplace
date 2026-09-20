@@ -50,30 +50,8 @@ type Props = {
   categories: Category[];
   categoryTranslations: CategoryTranslation[];
   locale: string;
+  translations: Record<string, string>;
 };
-
-const steps = [
-  {
-    number: 1,
-    title: "Video",
-  },
-  {
-    number: 2,
-    title: "Details",
-  },
-  {
-    number: 3,
-    title: "Language",
-  },
-  {
-    number: 4,
-    title: "Learning",
-  },
-  {
-    number: 5,
-    title: "Category & Access",
-  },
-];
 
 export default function NewVideoForm({
   channels,
@@ -81,6 +59,8 @@ export default function NewVideoForm({
   languageRegions,
   categories,
   categoryTranslations,
+  locale,
+  translations,
 }: Props) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -109,6 +89,31 @@ export default function NewVideoForm({
 
   const [categoryId, setCategoryId] = useState("");
   const [accessType, setAccessType] = useState("subscriber");
+
+  const steps = [
+  {
+    number: 1,
+    title: translations["video.step_video"] ?? "Video",
+  },
+  {
+    number: 2,
+    title: translations["video.step_details"] ?? "Details",
+  },
+  {
+    number: 3,
+    title: translations["video.step_language"] ?? "Language",
+  },
+  {
+    number: 4,
+    title: translations["video.step_learning"] ?? "Learning",
+  },
+  {
+    number: 5,
+    title:
+      translations["video.step_category_access"] ??
+      "Category & Access",
+  },
+];
 
   function nextStep() {
     setCurrentStep((step) =>
@@ -213,7 +218,10 @@ export default function NewVideoForm({
     // --------------------------------
 
     if (!videoFile) {
-      alert("Please select a video file.");
+      alert(
+        translations["video.select_video"] ??
+          "Please select a video file."
+      );
       return;
     }
 
@@ -240,11 +248,6 @@ export default function NewVideoForm({
     const languageCodeValue = String(
       formData.get("language_code") ?? ""
     );
-
-    if (!languageCodeValue) {
-      alert("Please select a language.");
-      return;
-    }
 
     const languageRegionIdValue = String(
       formData.get("language_region_id") ?? ""
@@ -290,32 +293,50 @@ export default function NewVideoForm({
     // --------------------------------
 
     if (!titleValue) {
-      alert("Please enter a video title.");
+      alert(
+        translations["video.enter_title_error"] ??
+          "Please enter a video title."
+      );
       return;
     }
 
     if (!channelIdValue) {
-      alert("Please select a channel.");
+      alert(
+        translations["video.select_channel_error"] ??
+          "Please select a channel."
+      );
       return;
     }
 
     if (!languageCodeValue) {
-      alert("Please select a language.");
+      alert(
+        translations["video.select_language"] ??
+          "Please select a language."
+      );
       return;
     }
 
     if (!languageRegionIdValue) {
-      alert("Please select a language region.");
+      alert(
+        translations["video.select_region_error"] ??
+          "Please select a language region."
+      );
       return;
     }
 
     if (!levelValue) {
-      alert("Please select a level.");
+      alert(
+        translations["video.select_level_error"] ??
+          "Please select a level."
+      );
       return;
     }
 
     if (!categoryIdValue) {
-      alert("Please select a category.");
+      alert(
+        translations["video.select_category_error"] ??
+          "Please select a category."
+      );
       return;
     }
 
@@ -340,7 +361,10 @@ export default function NewVideoForm({
     }
 
     if (!user) {
-      alert("You must be logged in to publish a video.");
+      alert(
+        translations["video.login_publish"] ??
+          "You must be logged in to publish a video."
+      );
       return;
     }
 
@@ -575,7 +599,10 @@ if (thumbnailUpdateError) {
   );
 }
 
-alert("Video published successfully!");
+  alert(
+    translations["video.published_success"] ??
+      "Video published successfully!"
+  );
 
   router.push("/seller/videos");
   router.refresh();
@@ -603,7 +630,10 @@ async function handleSaveDraft() {
     // 1. Check video
     // --------------------------------
     if (!videoFile) {
-      alert("Please select a video file.");
+      alert(
+        translations["video.select_video"] ??
+          "Please select a video file."
+      );
       return;
     }
 
@@ -643,12 +673,18 @@ async function handleSaveDraft() {
     );
 
     if (!languageCodeValue) {
-      alert("Please select a language.");
+      alert(
+        translations["video.select_language"] ??
+          "Please select a language."
+      );
       return;
     }
 
     if (!languageRegionIdValue) {
-      alert("Please select a language region.");
+       alert(
+        translations["video.select_region_error"] ??
+          "Please select a language region."
+      );
       return;
     }
 
@@ -660,12 +696,18 @@ async function handleSaveDraft() {
     );
 
     if (!channelIdValue) {
-      alert("Please select a channel.");
+      alert(
+        translations["video.select_channel_error"] ??
+          "Please select a channel."
+      );
       return;
     }
 
     if (!levelValue) {
-      alert("Please select a level.");
+      alert(
+        translations["video.select_level_error"] ??
+          "Please select a level."
+      );
       return;
     }
 
@@ -694,7 +736,10 @@ async function handleSaveDraft() {
     );
 
     if (!categoryIdValue) {
-      alert("Please select a category.");
+      alert(
+        translations["video.select_category_error"] ??
+          "Please select a category."
+      );
       return;
     }
 
@@ -721,7 +766,10 @@ async function handleSaveDraft() {
     }
 
     if (!user) {
-      alert("You must be logged in to save a draft.");
+      alert(
+        translations["video.login_draft"] ??
+          "You must be logged in to save a draft."
+      );
       return;
     }
 
@@ -955,7 +1003,10 @@ async function handleSaveDraft() {
     // --------------------------------
     // 11. Success
     // --------------------------------
-    alert("Video saved as draft!");
+    alert(
+      translations["video.draft_success"] ??
+        "Video saved as draft!"
+    );
 
     router.push("/seller/videos");
     router.refresh();
@@ -1054,56 +1105,77 @@ async function handleSaveDraft() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Upload Video
+              {translations["video.upload_video"] ?? "Upload Video"}
             </CardTitle>
           </CardHeader>
 
           <CardContent>
             <div className="rounded-xl border-2 border-dashed border-border bg-light-bg p-12 text-center">
               <p className="text-lg font-medium">
-                Drag & Drop your video here
+                {translations["video.drag_drop_video"] ??
+                  "Drag & Drop your video here"}
               </p>
 
               <p className="mt-2 text-sm text-muted-foreground">
-                or choose a file from your computer
+                {translations["video.choose_file"] ??
+                  "or choose a file from your computer"}
               </p>
 
-              <Input
-  type="file"
-  accept="video/*"
-  onChange={async (event) => {
-    const file = event.target.files?.[0] ?? null;
+              <div className="mt-4">
+  <label
+    htmlFor="video-upload"
+    className="inline-flex cursor-pointer items-center rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted-bg"
+  >
+    {translations["video.choose_video"] ?? "Choose Video"}
+  </label>
 
-    setVideoFile(file);
-    setThumbnailFile(null);
-    setThumbnailPreview(null);
+  <input
+    id="video-upload"
+    type="file"
+    accept="video/*"
+    className="sr-only"
+    onChange={async (event) => {
+      const file = event.target.files?.[0] ?? null;
 
-    if (!file) return;
+      setVideoFile(file);
+      setThumbnailFile(null);
+      setThumbnailPreview(null);
 
-    try {
-      const thumbnail = await generateThumbnail(file);
+      if (!file) return;
 
-      setThumbnailFile(thumbnail);
+      try {
+        const thumbnail = await generateThumbnail(file);
+        setThumbnailFile(thumbnail);
 
-      const previewUrl = URL.createObjectURL(thumbnail);
-      setThumbnailPreview(previewUrl);
+        const previewUrl = URL.createObjectURL(thumbnail);
+        setThumbnailPreview(previewUrl);
+      } catch (error) {
+        console.error("THUMBNAIL GENERATION ERROR:", error);
 
-    } catch (error) {
-      console.error("THUMBNAIL GENERATION ERROR:", error);
-      alert("Could not generate video thumbnail.");
-    }
-  }}
-/>
+        alert(
+          translations["video.thumbnail_generation_error"] ??
+            "Could not generate video thumbnail."
+        );
+      }
+    }}
+  />
+
+  {videoFile && (
+    <p className="mt-3 text-sm text-muted-foreground">
+      {videoFile.name}
+    </p>
+  )}
+</div>
 
 {thumbnailPreview && (
   <div className="mt-6">
     <div className="mb-2 flex items-center justify-between">
       <p className="text-sm font-medium">
-        Video Thumbnail
+        {translations["video.thumbnail"] ?? "Video Thumbnail"}
       </p>
 
       <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
-        Change Thumbnail
+        {translations["video.change_thumbnail"] ?? "Change Thumbnail"}
 
         <input
           type="file"
@@ -1134,8 +1206,8 @@ async function handleSaveDraft() {
     </div>
 
     <p className="mt-2 text-xs text-muted-foreground">
-      A thumbnail was automatically generated from your video.
-      You can change it if you prefer.
+      {translations["video.thumbnail_auto_generated"] ??
+      "A thumbnail was automatically generated from your video. You can change it if you prefer."}
     </p>
   </div>
 )}
@@ -1150,7 +1222,7 @@ async function handleSaveDraft() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Video Details
+              {translations["video.details"] ?? "Video Details"}
             </CardTitle>
           </CardHeader>
 
@@ -1159,14 +1231,17 @@ async function handleSaveDraft() {
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Title
+                {translations["video.title"] ?? "Title"}
               </label>
 
               <Input
                 name="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter video title"
+                placeholder={
+                  translations["video.enter_title"] ??
+                  "Enter video title"
+                }
                 required
               />
             </div>
@@ -1175,7 +1250,7 @@ async function handleSaveDraft() {
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Description
+                {translations["video.description"] ?? "Description"}
               </label>
 
               <Textarea
@@ -1183,7 +1258,10 @@ async function handleSaveDraft() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={6}
-                placeholder="Describe what learners will learn in this video"
+                placeholder={
+                  translations["video.describe_learning"] ??
+                  "Describe what learners will learn in this video"
+                }
               />
             </div>
 
@@ -1191,7 +1269,7 @@ async function handleSaveDraft() {
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Channel
+                {translations["video.channel"] ?? "Channel"}
               </label>
 
               <select
@@ -1202,7 +1280,7 @@ async function handleSaveDraft() {
                 required
               >
                 <option value="">
-                  Select Channel
+                  {translations["video.select_channel"] ?? "Select Channel"}
                 </option>
 
                 {channels.map((channel) => (
@@ -1225,7 +1303,7 @@ async function handleSaveDraft() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Language
+              {translations["video.step_language"] ?? "Language"}
             </CardTitle>
           </CardHeader>
 
@@ -1233,13 +1311,14 @@ async function handleSaveDraft() {
             <LanguageRegionSelector
               languages={languages}
               languageRegions={languageRegions}
+              uiTranslations={translations}
             />
 
             {/* Native Speaker */}
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Native Speaker
+                {translations["video.native_speaker"] ?? "Native Speaker"}
               </label>
 
               <div className="flex gap-6">
@@ -1251,7 +1330,7 @@ async function handleSaveDraft() {
                     defaultChecked
                     className="h-4 w-4 accent-primary"
                   />
-                  Yes
+                  {translations["common.yes"] ?? "Yes"}
                 </label>
 
                 <label className="flex items-center gap-2">
@@ -1260,7 +1339,7 @@ async function handleSaveDraft() {
                     name="is_native_speaker"
                     value="false"
                   />
-                  No
+                  {translations["common.no"] ?? "No"}
                 </label>
               </div>
             </div>
@@ -1274,7 +1353,7 @@ async function handleSaveDraft() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Learning Details
+              {translations["video.learning_details"] ?? "Learning Details"}
             </CardTitle>
           </CardHeader>
 
@@ -1283,7 +1362,7 @@ async function handleSaveDraft() {
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Level
+                {translations["video.level"] ?? "Level"}
               </label>
 
               <select
@@ -1294,19 +1373,19 @@ async function handleSaveDraft() {
                 required
               >
                 <option value="">
-                  Select Level
+                  {translations["video.select_level"] ?? "Select Level"}
                 </option>
 
                 <option value="beginner">
-                  Beginner
+                  {translations["level.beginner"] ?? "Beginner"}
                 </option>
 
                 <option value="intermediate">
-                  Intermediate
+                  {translations["level.intermediate"] ?? "Intermediate"}
                 </option>
 
                 <option value="advanced">
-                  Advanced
+                  {translations["level.advanced"] ?? "Advanced"}
                 </option>
               </select>
             </div>
@@ -1315,7 +1394,8 @@ async function handleSaveDraft() {
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Captions for Original Language
+                {translations["video.captions_original"] ??
+                "Captions for Original Language"}
               </label>
 
               <div className="flex gap-6">
@@ -1325,7 +1405,7 @@ async function handleSaveDraft() {
                     name="captions_original"
                     value="true"
                   />
-                  Yes
+                  {translations["common.yes"] ?? "Yes"}
                 </label>
 
                 <label className="flex items-center gap-2">
@@ -1335,7 +1415,7 @@ async function handleSaveDraft() {
                     value="false"
                     defaultChecked
                   />
-                  No
+                  {translations["common.no"] ?? "No"}
                 </label>
               </div>
             </div>
@@ -1344,7 +1424,8 @@ async function handleSaveDraft() {
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Subtitles for Second Language
+                {translations["video.subtitles_second_language"] ??
+                "Subtitles for Second Language"}
               </label>
 
               <select
@@ -1352,7 +1433,7 @@ async function handleSaveDraft() {
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
               >
                 <option value="">
-                  No subtitles
+                  {translations["video.no_subtitles"] ?? "No subtitles"}
                 </option>
 
                 {languages.map((language) => (
@@ -1370,7 +1451,8 @@ async function handleSaveDraft() {
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Explains Original Language Idioms
+                {translations["video.explains_idioms"] ??
+                "Explains Original Language Idioms"}
               </label>
 
               <div className="flex gap-6">
@@ -1380,7 +1462,7 @@ async function handleSaveDraft() {
                     name="explains_idioms"
                     value="true"
                   />
-                  Yes
+                  {translations["common.yes"] ?? "Yes"}
                 </label>
 
                 <label className="flex items-center gap-2">
@@ -1390,7 +1472,7 @@ async function handleSaveDraft() {
                     value="false"
                     defaultChecked
                   />
-                  No
+                  {translations["common.no"] ?? "No"}
                 </label>
               </div>
             </div>
@@ -1399,7 +1481,8 @@ async function handleSaveDraft() {
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Explains Technical Lingo
+                {translations["video.explains_technical_lingo"] ??
+                "Explains Technical Lingo"}
               </label>
 
               <div className="flex gap-6">
@@ -1409,7 +1492,7 @@ async function handleSaveDraft() {
                     name="explains_technical_lingo"
                     value="true"
                   />
-                  Yes
+                  {translations["common.yes"] ?? "Yes"}
                 </label>
 
                 <label className="flex items-center gap-2">
@@ -1419,7 +1502,7 @@ async function handleSaveDraft() {
                     value="false"
                     defaultChecked
                   />
-                  No
+                  {translations["common.no"] ?? "No"}
                 </label>
               </div>
             </div>
@@ -1428,7 +1511,7 @@ async function handleSaveDraft() {
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Profanity
+                {translations["video.profanity"] ?? "Profanity"}
               </label>
 
               <div className="flex gap-6">
@@ -1438,7 +1521,7 @@ async function handleSaveDraft() {
                     name="profanity"
                     value="true"
                   />
-                  Yes
+                  {translations["common.yes"] ?? "Yes"}
                 </label>
 
                 <label className="flex items-center gap-2">
@@ -1448,7 +1531,7 @@ async function handleSaveDraft() {
                     value="false"
                     defaultChecked
                   />
-                  No
+                  {translations["common.no"] ?? "No"}
                 </label>
               </div>
             </div>
@@ -1457,7 +1540,7 @@ async function handleSaveDraft() {
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                AI Voice
+                {translations["video.ai_voice"] ?? "AI Voice"}
               </label>
 
               <div className="flex gap-6">
@@ -1467,7 +1550,7 @@ async function handleSaveDraft() {
                     name="ai_voice"
                     value="true"
                   />
-                  Yes
+                  {translations["common.yes"] ?? "Yes"}
                 </label>
 
                 <label className="flex items-center gap-2">
@@ -1477,7 +1560,7 @@ async function handleSaveDraft() {
                     value="false"
                     defaultChecked
                   />
-                  No
+                  {translations["common.no"] ?? "No"}
                 </label>
               </div>
             </div>
@@ -1488,32 +1571,33 @@ async function handleSaveDraft() {
       {/* STEP 5 */}
 
       <div className={currentStep === 5 ? "block" : "hidden"}>
-        <>
-          {/* Category */}
+        <div className="space-y-6">
 
+          {/* Category */}
           <Card>
             <CardHeader>
               <CardTitle>
-                Category
+                {translations["video.category"] ?? "Category"}
               </CardTitle>
             </CardHeader>
 
             <CardContent>
               <CategorySelector
+                languages={languages}
                 categories={categories}
-                translations={categoryTranslations}
-                localeCode="en"
+                categoryTranslations={categoryTranslations}
+                localeCode={locale}
                 onCategoryChange={setCategoryId}
+                uiTranslations={translations}
               />
             </CardContent>
           </Card>
 
           {/* Access */}
-
           <Card>
             <CardHeader>
               <CardTitle>
-                Access
+                {translations["video.access"] ?? "Access"}
               </CardTitle>
             </CardHeader>
 
@@ -1527,7 +1611,8 @@ async function handleSaveDraft() {
                     checked={accessType === "subscriber"}
                     onChange={() => setAccessType("subscriber")}
                   />
-                  Subscribers Only
+                  {translations["video.subscribers_only"] ??
+                    "Subscribers Only"}
                 </label>
 
                 <label className="flex items-center gap-3">
@@ -1538,12 +1623,14 @@ async function handleSaveDraft() {
                     checked={accessType === "free"}
                     onChange={() => setAccessType("free")}
                   />
-                  Free Preview
+                  {translations["video.free_preview"] ??
+                    "Free Preview"}
                 </label>
               </div>
             </CardContent>
           </Card>
-        </>
+
+        </div>
       </div>
 
       {/* Navigation */}
@@ -1556,7 +1643,7 @@ async function handleSaveDraft() {
               variant="outline"
               onClick={previousStep}
             >
-              ← Previous
+              ← {translations["common.previous"] ?? "Previous"}
             </Button>
           )}
         </div>
@@ -1569,7 +1656,9 @@ async function handleSaveDraft() {
               disabled={isSaving}
               onClick={() => handleSaveDraft()}
             >
-              {isSaving ? "Saving..." : "Save Draft"}
+              {isSaving
+                ? translations["video.saving"] ?? "Saving..."
+                : translations["video.save_draft"] ?? "Save Draft"}
             </Button>
           )}
 
@@ -1578,14 +1667,16 @@ async function handleSaveDraft() {
               type="button"
               onClick={nextStep}
             >
-              Next →
+              {translations["common.next"] ?? "Next"} →
             </Button>
           ) : (
             <Button
               type="submit"
               disabled={isSaving}
             >
-              {isSaving ? "Publishing..." : "Publish Video"}
+              {isSaving
+                ? translations["video.publishing"] ?? "Publishing..."
+                : translations["video.publish"] ?? "Publish Video"}
             </Button>
           )}
         </div>

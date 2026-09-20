@@ -1,12 +1,31 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "@/lib/translations";
 import { Button } from "@/components/ui/button";
 import ChannelCard from "@/components/channels/ChannelCard";
 
 export default async function SubscriptionsPage() {
   const supabase = await createClient();
+
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
+
+  const translations = await getTranslations(
+    [
+      "subscriptions.title",
+      "subscriptions.description",
+      "subscriptions.empty.title",
+      "subscriptions.empty.description",
+      "subscriptions.browse_sellers",
+      "subscriptions.error",
+    ],
+    locale
+  );
 
   const {
     data: { user },
@@ -38,11 +57,12 @@ export default async function SubscriptionsPage() {
     return (
       <div className="px-8 py-8">
         <h1 className="text-3xl font-bold text-foreground">
-          My Subscriptions
+          {translations["subscriptions.title"] ?? "My Subscriptions"}
         </h1>
 
         <p className="mt-4 text-muted">
-          Failed to load subscriptions.
+          {translations["subscriptions.error"] ??
+            "Failed to load subscriptions."}
         </p>
       </div>
     );
@@ -56,11 +76,12 @@ export default async function SubscriptionsPage() {
     return (
       <div className="px-8 py-8">
         <h1 className="text-3xl font-bold text-foreground">
-          My Subscriptions
+          {translations["subscriptions.title"] ?? "My Subscriptions"}
         </h1>
 
         <p className="mt-2 text-muted">
-          Continue learning from the channels you've subscribed to.
+          {translations["subscriptions.description"] ??
+            "Continue learning from the channels you've subscribed to."}
         </p>
 
         <div className="mt-8 rounded-xl border border-border bg-background px-8 py-16 text-center">
@@ -69,17 +90,19 @@ export default async function SubscriptionsPage() {
           </div>
 
           <h2 className="text-2xl font-semibold text-foreground">
-            No subscriptions yet
+            {translations["subscriptions.empty.title"] ??
+              "No subscriptions yet"}
           </h2>
 
           <p className="mx-auto mt-3 max-w-md text-muted">
-            Subscribe to your favorite language channels and
-            continue learning anytime.
+            {translations["subscriptions.empty.description"] ??
+              "Subscribe to your favorite language channels and continue learning anytime."}
           </p>
 
           <Link href="/sellers">
             <Button className="mt-8 rounded-lg">
-              Browse Sellers
+              {translations["subscriptions.browse_sellers"] ??
+                "Browse Sellers"}
             </Button>
           </Link>
         </div>
@@ -134,11 +157,12 @@ export default async function SubscriptionsPage() {
 
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground">
-          My Subscriptions
+          {translations["subscriptions.title"] ?? "My Subscriptions"}
         </h1>
 
         <p className="mt-2 text-muted">
-          Continue learning from the channels you've subscribed to.
+          {translations["subscriptions.description"] ??
+            "Continue learning from the channels you've subscribed to."}
         </p>
       </div>
 

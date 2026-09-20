@@ -12,6 +12,7 @@ interface VideoCardTranslations {
   free: string;
   subscribersOnly: string;
   manage: string;
+  view: string;
 }
 
 interface VideoLevelTranslations {
@@ -37,6 +38,7 @@ interface VideoCardProps {
   status?: string;
   showStatus?: boolean;
   showManage?: boolean;
+  showView?: boolean;
   locale?: string;
   translations?: VideoCardTranslations;
   levelTranslations?: VideoLevelTranslations;
@@ -58,6 +60,7 @@ export default function VideoCard({
   status,
   showStatus = false,
   showManage = false,
+  showView = false,
   locale = "en",
   translations,
   levelTranslations,
@@ -77,6 +80,8 @@ export default function VideoCard({
       translations?.subscribersOnly ?? "Subscribers only",
     manage:
       translations?.manage ?? "Manage",
+    view:
+      translations?.view ?? "View",
   };
 
   const levels: VideoLevelTranslations = {
@@ -204,13 +209,37 @@ export default function VideoCard({
           </span>
         </div>
 
-        {showManage && (
-          <div className="flex justify-end pt-2">
-            <Link href={`/seller/videos/${id}`}>
-              <Button variant="outline" size="sm">
-                {labels.manage}
-              </Button>
-            </Link>
+        {(showView || showManage) && (
+          <div className="mt-6 flex gap-3">
+            {showManage && (
+              <Link
+                href={`/seller/videos/${id}`}
+                className={
+                  showView && status === "published"
+                    ? "flex-1"
+                    : "w-full"
+                }
+              >
+                <Button size="sm" className="w-full">
+                  {labels.manage}
+                </Button>
+              </Link>
+            )}
+
+            {showView && status === "published" && (
+              <Link
+                href={`/videos/${slug}`}
+                className="flex-1"
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  {labels.view}
+                </Button>
+              </Link>
+            )}           
           </div>
         )}
       </div>

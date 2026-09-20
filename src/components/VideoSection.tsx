@@ -36,6 +36,7 @@ interface Props {
   showViewAll?: boolean;
   videos?: Video[];
   showManage?: boolean;
+  showView?: boolean;
   showStatus?: boolean;
   compact?: boolean;
   locale?: string;
@@ -46,6 +47,7 @@ export default async function VideoSection({
   showViewAll = true,
   videos = [],
   showManage = false,
+  showView = false,
   showStatus = false,
   compact = false,
   locale = "en",
@@ -60,6 +62,7 @@ export default async function VideoSection({
       "video.free",
       "video.subscribers_only",
       "video.manage",
+      "video.view",
 
       // Home / video section
       "home.view_all",
@@ -96,6 +99,9 @@ export default async function VideoSection({
 
     manage:
       translations["video.manage"] ?? "Manage",
+
+    view:
+    translations["video.view"] ?? "View",
   };
 
   const levelTranslations = {
@@ -181,6 +187,7 @@ export default async function VideoSection({
                 status={video.status}
                 showStatus={showStatus}
                 showManage={showManage}
+                showView={showView}
                 locale={locale}
                 translations={videoTranslations}
                 levelTranslations={levelTranslations}

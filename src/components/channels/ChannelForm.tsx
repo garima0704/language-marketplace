@@ -20,36 +20,63 @@ interface Channel {
   subscription_price: number;
 }
 
+interface ChannelFormTranslations {
+  generalInformation: string;
+  generalInformationDescription: string;
+  channelName: string;
+  channelNameRequired: string;
+  channelNameHint: string;
+  description: string;
+  descriptionHint: string;
+
+  pricing: string;
+  pricingDescription: string;
+  monthlySubscription: string;
+  priceHint: string;
+
+  branding: string;
+  brandingDescription: string;
+  channelLogo: string;
+  logoHint: string;
+  noLogo: string;
+  removeLogo: string;
+
+  channelBanner: string;
+  bannerHint: string;
+  noBanner: string;
+  removeBanner: string;
+
+  chooseFile: string;
+  noFileChosen: string;
+
+  cancel: string;
+  creating: string;
+  saving: string;
+  createChannel: string;
+  saveChanges: string;
+
+  invalidImageType: string;
+  imageTooLarge: string;
+  nameRequired: string;
+  invalidPrice: string;
+  invalidChannelName: string;
+  genericError: string;
+}
+
 interface Props {
   mode: "create" | "edit";
   userId?: string;
   channel?: Channel;
+  translations: ChannelFormTranslations;
 }
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-
-function validateImage(file: File) {
-  const allowedTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-  ];
-
-  if (!allowedTypes.includes(file.type)) {
-    return "Please upload a JPG, PNG, or WEBP image.";
-  }
-
-  if (file.size > MAX_IMAGE_SIZE) {
-    return "Image size must be 5 MB or less.";
-  }
-
-  return null;
-}
 
 export default function ChannelForm({
   mode,
   userId,
   channel,
+  translations,
 }: Props) {
   const supabase = createClient();
   const router = useRouter();
@@ -125,6 +152,28 @@ export default function ChannelForm({
       counter += 1;
       slug = `${baseSlug}-${counter}`;
     }
+  }
+
+  // --------------------------------------------------
+  // Image validation
+  // --------------------------------------------------
+
+  function validateImage(file: File) {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      return translations.invalidImageType;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      return translations.imageTooLarge;
+    }
+
+    return null;
   }
 
   // --------------------------------------------------
@@ -304,89 +353,91 @@ export default function ChannelForm({
     const subscriptionPrice = Number(price);
 
     if (!trimmedName) {
-      setError("Channel name is required.");
+      setError(translations.nameRequired);
       return;
     }
 
     if (isNaN(subscriptionPrice) || subscriptionPrice < 0) {
-      setError("Subscription price must be $0 or greater.");
+      setError(translations.invalidPrice);
       return;
     }
 
     setLoading(true);
 
     try {
-     // --------------------------------------------------
-    // CREATE
-    // --------------------------------------------------
+      // --------------------------------------------------
+      // CREATE
+      // --------------------------------------------------
 
-    if (mode === "create") {
-      if (!generatedSlug) {
-        setError("Please enter a valid channel name.");
-        return;
-      }
-
-      const uniqueSlug = await generateUniqueSlug(generatedSlug);
-
-      const { data, error: createError } = await supabase
-        .from("channels")
-        .insert({
-          user_id: userId,
-          channel_name: trimmedName,
-          slug: uniqueSlug,
-          description: trimmedDescription,
-          subscription_price: subscriptionPrice,
-        })
-        .select("id")
-        .single();
-
-      if (createError) {
-        setError(createError.message);
-        return;
-      }
-
-      const channelId = data.id;
-
-      let logoUrl: string | null = null;
-      let bannerUrl: string | null = null;
-
-      // Upload logo
-      if (logoFile) {
-        logoUrl = await uploadChannelAsset(
-          channelId,
-          "logo",
-          logoFile
-        );
-      }
-
-      // Upload banner
-      if (bannerFile) {
-        bannerUrl = await uploadChannelAsset(
-          channelId,
-          "banner",
-          bannerFile
-        );
-      }
-
-      // Save asset URLs
-      if (logoUrl || bannerUrl) {
-        const { error: assetUpdateError } = await supabase
-          .from("channels")
-          .update({
-            ...(logoUrl ? { logo_url: logoUrl } : {}),
-            ...(bannerUrl ? { banner_url: bannerUrl } : {}),
-          })
-          .eq("id", channelId);
-
-        if (assetUpdateError) {
-          setError(assetUpdateError.message);
+      if (mode === "create") {
+        if (!generatedSlug) {
+          setError(translations.invalidChannelName);
           return;
         }
-      }
 
-      router.push(`/seller/channels/${channelId}`);
-      return;
-    }
+        const uniqueSlug =
+          await generateUniqueSlug(generatedSlug);
+
+        const { data, error: createError } =
+          await supabase
+            .from("channels")
+            .insert({
+              user_id: userId,
+              channel_name: trimmedName,
+              slug: uniqueSlug,
+              description: trimmedDescription,
+              subscription_price: subscriptionPrice,
+            })
+            .select("id")
+            .single();
+
+        if (createError) {
+          setError(createError.message);
+          return;
+        }
+
+        const channelId = data.id;
+
+        let logoUrl: string | null = null;
+        let bannerUrl: string | null = null;
+
+        if (logoFile) {
+          logoUrl = await uploadChannelAsset(
+            channelId,
+            "logo",
+            logoFile
+          );
+        }
+
+        if (bannerFile) {
+          bannerUrl = await uploadChannelAsset(
+            channelId,
+            "banner",
+            bannerFile
+          );
+        }
+
+        if (logoUrl || bannerUrl) {
+          const { error: assetUpdateError } =
+            await supabase
+              .from("channels")
+              .update({
+                ...(logoUrl ? { logo_url: logoUrl } : {}),
+                ...(bannerUrl
+                  ? { banner_url: bannerUrl }
+                  : {}),
+              })
+              .eq("id", channelId);
+
+          if (assetUpdateError) {
+            setError(assetUpdateError.message);
+            return;
+          }
+        }
+
+        router.push(`/seller/channels/${channelId}`);
+        return;
+      }
 
       // --------------------------------------------------
       // EDIT
@@ -397,7 +448,6 @@ export default function ChannelForm({
       let logoUrl = channel?.logo_url ?? null;
       let bannerUrl = channel?.banner_url ?? null;
 
-      // Replace logo
       if (logoFile) {
         logoUrl = await uploadChannelAsset(
           channelId,
@@ -406,13 +456,11 @@ export default function ChannelForm({
         );
       }
 
-      // Remove logo
       if (removeLogo && !logoFile) {
         await deleteChannelAsset(channelId, "logo");
         logoUrl = null;
       }
 
-      // Replace banner
       if (bannerFile) {
         bannerUrl = await uploadChannelAsset(
           channelId,
@@ -421,7 +469,6 @@ export default function ChannelForm({
         );
       }
 
-      // Remove banner
       if (removeBanner && !bannerFile) {
         await deleteChannelAsset(channelId, "banner");
         bannerUrl = null;
@@ -448,7 +495,7 @@ export default function ChannelForm({
       setError(
         err instanceof Error
           ? err.message
-          : "Something went wrong. Please try again."
+          : translations.genericError
       );
     } finally {
       setLoading(false);
@@ -457,28 +504,24 @@ export default function ChannelForm({
 
   return (
     <div className="max-w-4xl space-y-10">
-
-      {/* ==================================================
-          General Information
-      ================================================== */}
-
+      {/* General Information */}
       <div className="rounded-2xl border border-border bg-background p-8 shadow-sm">
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-foreground">
-            General Information
+            {translations.generalInformation}
           </h2>
 
           <p className="mt-1 text-sm text-muted">
-            Update how your channel appears across NiceConvo.
+            {translations.generalInformationDescription}
           </p>
         </div>
 
         <div className="space-y-8">
-
           {/* Channel Name */}
           <div className="space-y-2">
             <Label htmlFor="channelName">
-              Channel Name <span className="text-red-600">*</span>
+              {translations.channelName}{" "}
+              <span className="text-red-600">*</span>
             </Label>
 
             <Input
@@ -489,7 +532,7 @@ export default function ChannelForm({
             />
 
             <p className="text-xs text-muted">
-              This is the name learners will see.
+              {translations.channelNameHint}
             </p>
           </div>
 
@@ -497,7 +540,7 @@ export default function ChannelForm({
           <div className="space-y-2">
             <div className="flex justify-between">
               <Label htmlFor="description">
-                Description
+                {translations.description}
               </Label>
 
               <span className="text-xs text-muted">
@@ -514,31 +557,27 @@ export default function ChannelForm({
             />
 
             <p className="text-xs text-muted">
-              Describe what learners can expect.
+              {translations.descriptionHint}
             </p>
           </div>
-
         </div>
       </div>
 
-      {/* ==================================================
-          Pricing
-      ================================================== */}
-
+      {/* Pricing */}
       <div className="rounded-2xl border border-border bg-background p-8 shadow-sm">
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-foreground">
-            Pricing
+            {translations.pricing}
           </h2>
 
           <p className="mt-1 text-sm text-muted">
-            Set your monthly subscription price.
+            {translations.pricingDescription}
           </p>
         </div>
 
         <div className="max-w-sm space-y-2">
           <Label htmlFor="price">
-            Monthly Subscription
+            {translations.monthlySubscription}
           </Label>
 
           <div className="relative">
@@ -558,37 +597,31 @@ export default function ChannelForm({
           </div>
 
           <p className="text-xs text-muted">
-            You can change this later.
+            {translations.priceHint}
           </p>
         </div>
       </div>
 
-    {/* ==================================================
-          Channel Branding
-      ================================================== */}
-
-    <div className="rounded-2xl border border-border bg-background p-8 shadow-sm">
-      <div className="mb-8">
+      {/* Channel Branding */}
+      <div className="rounded-2xl border border-border bg-background p-8 shadow-sm">
+        <div className="mb-8">
           <h2 className="text-xl font-semibold text-foreground">
-            Channel Branding
+            {translations.branding}
           </h2>
 
           <p className="mt-1 text-sm text-muted">
-            Add a logo and banner to give your channel its own identity.
+            {translations.brandingDescription}
           </p>
         </div>
 
         <div className="space-y-10">
-
           {/* Logo */}
           <div className="space-y-4">
             <div>
-              <Label>
-                Channel Logo
-              </Label>
+              <Label>{translations.channelLogo}</Label>
 
               <p className="mt-1 text-xs text-muted">
-                Recommended: 400 × 400 px. JPG, PNG or WEBP. Max 5 MB.
+                {translations.logoHint}
               </p>
             </div>
 
@@ -597,27 +630,36 @@ export default function ChannelForm({
                 {logoPreview ? (
                   <img
                     src={logoPreview}
-                    alt="Channel logo preview"
+                    alt={translations.channelLogo}
                     className="h-full w-full object-cover"
                   />
                 ) : (
                   <span className="px-4 text-center text-xs text-muted">
-                    No logo
+                    {translations.noLogo}
                   </span>
                 )}
               </div>
 
               <div className="space-y-3">
-                <div>
-                  <Input
-                    id="channelLogo"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handleLogoChange}
-                    disabled={loading}
-                    className="max-w-sm"
-                  />
-                </div>
+                <label
+                  htmlFor="channelLogo"
+                  className="inline-flex cursor-pointer items-center rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted-bg"
+                >
+                  {translations.chooseFile}
+                </label>
+
+                <input
+                  id="channelLogo"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleLogoChange}
+                  disabled={loading}
+                  className="sr-only"
+                />
+
+                <p className="text-xs text-muted">
+                  {logoFile?.name ?? translations.noFileChosen}
+                </p>
 
                 {logoPreview && (
                   <Button
@@ -627,7 +669,7 @@ export default function ChannelForm({
                     disabled={loading}
                     onClick={handleRemoveLogo}
                   >
-                    Remove Logo
+                    {translations.removeLogo}
                   </Button>
                 )}
               </div>
@@ -637,12 +679,10 @@ export default function ChannelForm({
           {/* Banner */}
           <div className="space-y-4">
             <div>
-              <Label>
-                Channel Banner
-              </Label>
+              <Label>{translations.channelBanner}</Label>
 
               <p className="mt-1 text-xs text-muted">
-                Recommended: 1500 × 500 px. JPG, PNG or WEBP. Max 5 MB.
+                {translations.bannerHint}
               </p>
             </div>
 
@@ -651,13 +691,13 @@ export default function ChannelForm({
                 {bannerPreview ? (
                   <img
                     src={bannerPreview}
-                    alt="Channel banner preview"
+                    alt={translations.channelBanner}
                     className="h-full w-full object-cover"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center">
                     <span className="text-xs text-muted">
-                      No banner
+                      {translations.noBanner}
                     </span>
                   </div>
                 )}
@@ -665,14 +705,25 @@ export default function ChannelForm({
             </div>
 
             <div className="flex items-center gap-3">
-              <Input
+              <label
+                htmlFor="channelBanner"
+                className="inline-flex cursor-pointer items-center rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted-bg"
+              >
+                {translations.chooseFile}
+              </label>
+
+              <input
                 id="channelBanner"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleBannerChange}
                 disabled={loading}
-                className="max-w-sm"
+                className="sr-only"
               />
+
+              <p className="text-xs text-muted">
+                {bannerFile?.name ?? translations.noFileChosen}
+              </p>
 
               {bannerPreview && (
                 <Button
@@ -682,12 +733,11 @@ export default function ChannelForm({
                   disabled={loading}
                   onClick={handleRemoveBanner}
                 >
-                  Remove Banner
+                  {translations.removeBanner}
                 </Button>
               )}
             </div>
           </div>
-
         </div>
       </div>
 
@@ -706,7 +756,7 @@ export default function ChannelForm({
           disabled={loading}
           onClick={() => router.push("/seller/channels")}
         >
-          Cancel
+          {translations.cancel}
         </Button>
 
         <Button
@@ -717,14 +767,13 @@ export default function ChannelForm({
         >
           {loading
             ? mode === "create"
-              ? "Creating..."
-              : "Saving..."
+              ? translations.creating
+              : translations.saving
             : mode === "create"
-              ? "Create Channel"
-              : "Save Changes"}
+              ? translations.createChannel
+              : translations.saveChanges}
         </Button>
       </div>
-
     </div>
   );
 }
