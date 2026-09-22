@@ -235,6 +235,10 @@ export default async function SavedVideosPage() {
                     translations["video.views"] ??
                     "views",
 
+                  view:
+                    translations["video.view"] ??
+                    "View",
+
                   published:
                     translations["video.published"] ??
                     "Published",
