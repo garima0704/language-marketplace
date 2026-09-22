@@ -175,7 +175,7 @@ export default async function ProfilePage() {
                       display_name: profile.display_name,
                       avatar_url: profile.avatar_url,
                     }}
-                    variant="seller"
+                    variant="seller-management"
                   />
                 ))
               ) : (
