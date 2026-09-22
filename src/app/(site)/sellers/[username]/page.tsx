@@ -155,7 +155,7 @@ export default async function SellerProfilePage({
                 display_name: seller.display_name,
                 avatar_url: seller.avatar_url,
               }}
-              variant="seller"
+              variant="seller-public"
             />
           ))}
 
