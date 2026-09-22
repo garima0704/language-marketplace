@@ -34,7 +34,7 @@ interface ProfileLanguage {
   locales?: {
     code: string;
     name: string;
-  } | null;
+  }[] | null;
 }
 
 interface EditableLanguage {
@@ -71,7 +71,7 @@ export default function EditLanguagesDialog({
         id: String(language.id),
         language_code: language.language_code,
         name:
-          language.locales?.name ??
+          language.locales?.[0]?.name ??
           language.language_code,
         proficiency: language.proficiency,
         is_native: language.is_native,
