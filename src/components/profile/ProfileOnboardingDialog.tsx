@@ -425,12 +425,10 @@ export default function ProfileOnboardingDialog({
         language_code: unused.code,
         proficiency: "intermediate",
         is_native: false,
-        locales: [
-          {
+        locales: {
             code: unused.code,
             name: unused.name,
           },
-        ],
       },
     ]);
   }
@@ -459,12 +457,10 @@ export default function ProfileOnboardingDialog({
             ...item,
             language_code: value,
             locales: selected
-              ? [
-                  {
+              ? {
                     code: selected.code,
                     name: selected.name,
-                  },
-                ]
+                  }
               : item.locales,
           };
         }

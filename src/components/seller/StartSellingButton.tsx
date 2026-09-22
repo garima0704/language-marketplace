@@ -20,10 +20,10 @@ type Language = {
   language_code: string;
   proficiency: string;
   is_native: boolean;
-  locales: {
+   locales?: {
     code: string;
     name: string;
-  }[] | null;
+  } | null;
 };
 
 type AvailableLanguage = {
