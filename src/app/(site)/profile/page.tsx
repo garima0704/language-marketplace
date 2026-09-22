@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import BasicDetailsSection from "@/components/profile/BasicDetailsSection";
 import LanguagesSection from "@/components/profile/LanguagesSection";
 import SocialLinksSection from "@/components/profile/SocialLinksSection";
+import ProfileOnboardingWrapper from "@/components/profile/ProfileOnboardingWrapper";
 import ChannelCard from "@/components/channels/ChannelCard";
 import StartSellingButton from "@/components/seller/StartSellingButton";
 
@@ -43,10 +44,19 @@ export default async function ProfilePage() {
   }
 
   // --------------------------------------------------
+  // Onboarding
+  // --------------------------------------------------
+
+  const shouldOpenOnboarding =
+    profile.role === "user" &&
+    !profile.onboarding_completed &&
+    !profile.onboarding_dismissed_at;
+
+  // --------------------------------------------------
   // Languages
   // --------------------------------------------------
 
-  const { data: languages } = await supabase
+  const { data: profileLanguages } = await supabase
     .from("profile_languages")
     .select(`
       id,
@@ -60,6 +70,16 @@ export default async function ProfilePage() {
     `)
     .eq("profile_id", user.id)
     .order("is_native", { ascending: false });
+
+  const languages = (profileLanguages ?? []).map((language) => ({
+    id: language.id,
+    language_code: language.language_code,
+    proficiency: language.proficiency,
+    is_native: language.is_native,
+    locales: Array.isArray(language.locales)
+      ? language.locales[0] ?? null
+      : language.locales ?? null,
+  }));
 
   // --------------------------------------------------
   // Available Languages
@@ -88,7 +108,9 @@ export default async function ProfilePage() {
 
   const { data: availablePlatforms } = await supabase
     .from("social_platforms")
-    .select("id, name, slug, url_prefix, placeholder")
+    .select(
+      "id, name, slug, url_prefix, placeholder"
+    )
     .eq("is_active", true)
     .order("display_order");
 
@@ -102,6 +124,25 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-6 px-6 py-6">
+      {/* First-time profile onboarding */}
+      <ProfileOnboardingWrapper
+        shouldOpen={shouldOpenOnboarding}
+        profile={{
+          id: profile.id,
+          username: profile.username,
+          display_name: profile.display_name,
+          avatar_url: profile.avatar_url,
+          bio: profile.bio,
+          country: profile.country,
+          date_of_birth: profile.date_of_birth,
+          gender: profile.gender,
+        }}
+        languages={languages ?? []}
+        availableLanguages={availableLanguages ?? []}
+        socialLinks={socialLinks ?? []}
+        availablePlatforms={availablePlatforms ?? []}
+      />
+
       {/* Basic Details */}
       <BasicDetailsSection profile={profile} />
 
@@ -129,7 +170,8 @@ export default async function ProfilePage() {
 
             <p className="mt-2 text-sm text-muted-foreground">
               Share your language knowledge, create your own
-              channels, upload videos, and earn from your subscribers.
+              channels, upload videos, and earn from your
+              subscribers.
             </p>
 
             <StartSellingButton
@@ -172,8 +214,10 @@ export default async function ProfilePage() {
                     channel={channel}
                     seller={{
                       username: profile.username,
-                      display_name: profile.display_name,
-                      avatar_url: profile.avatar_url,
+                      display_name:
+                        profile.display_name,
+                      avatar_url:
+                        profile.avatar_url,
                     }}
                     variant="seller-management"
                   />

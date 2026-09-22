@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+
 import { signUp } from "@/app/(auth)/actions";
 
 const initialState = {
@@ -10,9 +11,16 @@ const initialState = {
   error: "",
 };
 
-export default function SignupForm() {
+interface SignupFormProps {
+  translations: Record<string, string>;
+}
+
+export default function SignupForm({
+  translations,
+}: SignupFormProps) {
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] =
+    useState(false);
 
   const [state, formAction, pending] = useActionState(
     signUp,
@@ -34,7 +42,7 @@ export default function SignupForm() {
           htmlFor="username"
           className="mb-1 block text-sm font-medium"
         >
-          Username
+          {translations["auth.username"] ?? "Username"}
         </label>
 
         <input
@@ -43,7 +51,10 @@ export default function SignupForm() {
           type="text"
           required
           minLength={3}
-          placeholder="john_doe"
+          placeholder={
+            translations["auth.username_placeholder"] ??
+            "john_doe"
+          }
           className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none transition focus:border-gray-900"
         />
       </div>
@@ -54,7 +65,7 @@ export default function SignupForm() {
           htmlFor="email"
           className="mb-1 block text-sm font-medium"
         >
-          Email
+          {translations["auth.email"] ?? "Email"}
         </label>
 
         <input
@@ -73,7 +84,7 @@ export default function SignupForm() {
           htmlFor="password"
           className="mb-1 block text-sm font-medium"
         >
-          Password
+          {translations["auth.password"] ?? "Password"}
         </label>
 
         <div className="relative">
@@ -83,14 +94,26 @@ export default function SignupForm() {
             type={showPassword ? "text" : "password"}
             required
             minLength={8}
-            placeholder="Minimum 8 characters"
+            placeholder={
+              translations["auth.password_placeholder"] ??
+              "Minimum 8 characters"
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2 pr-12 outline-none transition focus:border-gray-900"
           />
 
           <button
             type="button"
-            onClick={() => setShowPassword(!showPassword)}
+            onClick={() =>
+              setShowPassword(!showPassword)
+            }
             className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            aria-label={
+              showPassword
+                ? translations["auth.hide_password"] ??
+                  "Hide password"
+                : translations["auth.show_password"] ??
+                  "Show password"
+            }
           >
             {showPassword ? (
               <EyeOff size={20} />
@@ -107,26 +130,43 @@ export default function SignupForm() {
           htmlFor="confirmPassword"
           className="mb-1 block text-sm font-medium"
         >
-          Confirm Password
+          {translations["auth.confirm_password"] ??
+            "Confirm Password"}
         </label>
 
         <div className="relative">
           <input
             id="confirmPassword"
             name="confirmPassword"
-            type={showConfirmPassword ? "text" : "password"}
+            type={
+              showConfirmPassword
+                ? "text"
+                : "password"
+            }
             required
             minLength={8}
-            placeholder="Confirm Password"
+            placeholder={
+              translations["auth.confirm_password_placeholder"] ??
+              "Confirm Password"
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2 pr-12 outline-none transition focus:border-gray-900"
           />
 
           <button
             type="button"
             onClick={() =>
-              setShowConfirmPassword(!showConfirmPassword)
+              setShowConfirmPassword(
+                !showConfirmPassword
+              )
             }
             className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            aria-label={
+              showConfirmPassword
+                ? translations["auth.hide_password"] ??
+                  "Hide password"
+                : translations["auth.show_password"] ??
+                  "Show password"
+            }
           >
             {showConfirmPassword ? (
               <EyeOff size={20} />
@@ -146,20 +186,23 @@ export default function SignupForm() {
         {pending ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Creating Account...
+            {translations["auth.creating_account"] ??
+              "Creating Account..."}
           </>
         ) : (
+          translations["auth.create_account_button"] ??
           "Create Account"
         )}
       </button>
 
       <p className="pt-1 text-center text-sm text-gray-600">
-        Already have an account?{" "}
+        {translations["auth.have_account"] ??
+          "Already have an account?"}{" "}
         <Link
           href="/login"
           className="font-semibold text-gray-900 hover:underline"
         >
-          Login
+          {translations["auth.login"] ?? "Login"}
         </Link>
       </p>
     </form>

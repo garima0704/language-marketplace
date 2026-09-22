@@ -11,8 +11,22 @@ export default async function LoginPage() {
 
   const translations = await getTranslations(
     [
+      // Page
       "auth.welcome_back",
       "auth.login_description",
+
+      // Form
+      "auth.email",
+      "auth.password",
+      "auth.forgot_password",
+      "auth.password_placeholder",
+      "auth.remember_me",
+      "auth.sign_in",
+      "auth.signing_in",
+      "auth.no_account",
+      "auth.sign_up",
+      "auth.show_password",
+      "auth.hide_password",
     ],
     locale
   );
@@ -32,7 +46,7 @@ export default async function LoginPage() {
           "Sign in to continue learning on NiceConvo."}
       </p>
 
-      <LoginForm />
+      <LoginForm translations={translations} />
     </>
   );
 }

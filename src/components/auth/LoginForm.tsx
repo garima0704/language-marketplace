@@ -12,11 +12,11 @@ const initialState = {
 };
 
 interface LoginFormProps {
-  translations?: Record<string, string>;
+  translations: Record<string, string>;
 }
 
 export default function LoginForm({
-  translations = {},
+  translations,
 }: LoginFormProps) {
   const [showPassword, setShowPassword] =
     useState(false);

@@ -12,22 +12,35 @@ type Language = {
 type ProfileLanguage = {
   id: number;
   language_code: string;
-  proficiency: "beginner" | "intermediate" | "advanced" | "fluent";
+  proficiency:
+    | "beginner"
+    | "intermediate"
+    | "advanced"
+    | "fluent";
   is_native: boolean;
   locales?: {
     code: string;
     name: string;
-  }[] | null;
+  } | null;
 };
 
 type SocialLink = {
-  id?: number;
+  id: number;
   platform: string;
   url: string;
 };
 
+type SocialPlatform = {
+  id: number;
+  name: string;
+  slug: string;
+  url_prefix: string;
+  placeholder: string | null;
+};
+
 interface ProfileOnboardingWrapperProps {
   shouldOpen: boolean;
+
   profile: {
     id: string;
     username: string;
@@ -38,9 +51,12 @@ interface ProfileOnboardingWrapperProps {
     date_of_birth: string | null;
     gender: string | null;
   };
+
   languages: ProfileLanguage[];
   availableLanguages: Language[];
+
   socialLinks: SocialLink[];
+  availablePlatforms: SocialPlatform[];
 }
 
 export default function ProfileOnboardingWrapper({
@@ -49,8 +65,10 @@ export default function ProfileOnboardingWrapper({
   languages,
   availableLanguages,
   socialLinks,
+  availablePlatforms,
 }: ProfileOnboardingWrapperProps) {
-  const [open, setOpen] = useState(shouldOpen);
+  const [open, setOpen] =
+    useState(shouldOpen);
 
   return (
     <ProfileOnboardingDialog
@@ -60,6 +78,7 @@ export default function ProfileOnboardingWrapper({
       languages={languages}
       availableLanguages={availableLanguages}
       socialLinks={socialLinks}
+      availablePlatforms={availablePlatforms}
     />
   );
 }

@@ -17,9 +17,9 @@ interface ProfileLanguage {
     | "fluent";
   is_native: boolean;
   locales?: {
-  code: string;
-  name: string;
-  }[] | null;
+    code: string;
+    name: string;
+  } | null;
 }
 
 interface LanguagesSectionProps {
@@ -74,8 +74,7 @@ export default function LanguagesSection({
               >
                 {/* Language */}
                 <span className="min-w-0 font-medium">
-                  {language.locales?.[0]?.name ??
-                    language.language_code}
+                  {language.locales?.name ?? language.language_code}
                 </span>
 
                 {/* Proficiency */}
