@@ -25,21 +25,24 @@ interface Rating {
 interface VideoRatingsProps {
   videoId: string;
   isAuthenticated: boolean;
+  translations: Record<string, string>;
 }
 
 function getDisplayName(
-  rating: Rating
+  rating: Rating,
+  translations: Record<string, string>
 ) {
   return (
     rating.profile?.display_name ||
     rating.profile?.username ||
-    "User"
+    translations["rating.user"]
   );
 }
 
 export default function VideoRatings({
   videoId,
   isAuthenticated,
+  translations,
 }: VideoRatingsProps) {
   const supabase = createClient();
 
@@ -137,7 +140,7 @@ export default function VideoRatings({
       );
 
       setError(
-        "Unable to load ratings right now."
+        translations["rating.loading_error"]
       );
     } finally {
       setLoading(false);
@@ -180,7 +183,7 @@ export default function VideoRatings({
   const submitRating = async () => {
     if (!isAuthenticated) {
       setError(
-        "Please log in to rate this video."
+        translations["rating.login_error"]
       );
       return;
     }
@@ -190,7 +193,7 @@ export default function VideoRatings({
       selectedRating > 5
     ) {
       setError(
-        "Please select a rating."
+        translations["rating.select_error"]
       );
       return;
     }
@@ -200,14 +203,14 @@ export default function VideoRatings({
       review.trim().length < 3
     ) {
       setError(
-        "Your review must be at least 3 characters."
+        translations["rating.review_min_error"]
       );
       return;
     }
 
     if (review.length > 2000) {
       setError(
-        "Your review cannot exceed 2000 characters."
+        translations["rating.review_max_error"]
       );
       return;
     }
@@ -224,7 +227,7 @@ export default function VideoRatings({
 
       if (!user) {
         throw new Error(
-          "You must be logged in."
+          translations["rating.login_error"]
         );
       }
 
@@ -261,7 +264,7 @@ export default function VideoRatings({
 
       setError(
         err?.message ||
-          "Unable to save your rating."
+          translations["rating.save_error"]
       );
     } finally {
       setSaving(false);
@@ -289,14 +292,14 @@ export default function VideoRatings({
       {/* Header */}
       <div className="mb-5 flex items-center justify-between border-b border-border pb-3">
         <h2 className="text-xl font-semibold text-foreground">
-          Ratings & Reviews
+          {translations["rating.title"]}
         </h2>
 
         <span className="text-sm text-muted">
           {ratings.length}{" "}
           {ratings.length === 1
-            ? "rating"
-            : "ratings"}
+            ? translations["rating.rating"]
+            : translations["rating.ratings"]}
         </span>
       </div>
 
@@ -341,10 +344,10 @@ export default function VideoRatings({
       {ratings.length
         ? `${ratings.length} ${
             ratings.length === 1
-              ? "rating"
-              : "ratings"
+              ? translations["rating.rating"]
+              : translations["rating.ratings"]
           }`
-        : "No ratings yet"}
+        : translations["rating.no_ratings"]}
     </p>
 
     {/* Distribution */}
@@ -365,7 +368,7 @@ export default function VideoRatings({
               {rating}
             </span>
 
-            <Star className="h-3 w-3 fill-current text-rating]" />
+            <Star className="h-3 w-3 fill-current text-rating" />
 
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-white">
               <div
@@ -399,13 +402,13 @@ export default function VideoRatings({
       <div>
         <h3 className="text-base font-semibold text-foreground">
           {ownRating && !editing
-            ? "Your rating"
-            : "Rate this video"}
+            ? translations["rating.your_rating"]
+            : translations["rating.rate_video"]}
         </h3>
 
         {!isAuthenticated && (
           <p className="mt-1 text-sm text-muted">
-            Log in to rate this video.
+            {translations["rating.login_to_rate"]}
           </p>
         )}
       </div>
@@ -420,7 +423,7 @@ export default function VideoRatings({
             className="rounded-lg"
           >
             <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            Edit
+            {translations["rating.edit"]}
           </Button>
         )}
 
@@ -446,7 +449,9 @@ export default function VideoRatings({
                 setSelectedRating(star)
               }
               className="rounded-md p-1 transition hover:bg-muted-bg disabled:cursor-default"
-              aria-label={`Rate ${star} out of 5`}
+              aria-label={translations[
+                "rating.rating_aria"
+              ].replace("{count}", String(star))}
             >
               <Star
                 className={`h-7 w-7 ${
@@ -471,7 +476,9 @@ export default function VideoRatings({
                 setReview(event.target.value)
               }
               maxLength={2000}
-              placeholder="Share your experience with this video (optional)"
+              placeholder={translations[
+                "rating.review_placeholder"
+              ]}
               className="mt-5 min-h-[110px] w-full resize-y rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted focus:border-foreground"
             />
 
@@ -492,7 +499,7 @@ export default function VideoRatings({
                     disabled={saving}
                     className="rounded-lg"
                   >
-                    Cancel
+                    {translations["channel_form.cancel"]}
                   </Button>
                 )}
 
@@ -508,8 +515,8 @@ export default function VideoRatings({
                   )}
 
                   {ownRating
-                    ? "Update Rating"
-                    : "Submit Rating"}
+                    ? translations["rating.update"]
+                    : translations["rating.submit"]}
                 </Button>
 
               </div>
@@ -548,7 +555,7 @@ export default function VideoRatings({
 
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-base font-semibold text-foreground">
-                  Reviews
+                  {translations["rating.reviews"]}
                 </h3>
               </div>
 
@@ -579,15 +586,11 @@ export default function VideoRatings({
                                     .profile
                                     .avatar_url
                                 }
-                                alt={getDisplayName(
-                                  item
-                                )}
+                                alt={getDisplayName(item, translations)}
                                 className="h-full w-full object-cover"
                               />
                             ) : (
-                              getDisplayName(
-                                item
-                              )
+                              getDisplayName(item, translations)
                                 .slice(0, 2)
                                 .toUpperCase()
                             )}
@@ -596,9 +599,7 @@ export default function VideoRatings({
 
                           <div>
                             <p className="text-sm font-medium text-foreground">
-                              {getDisplayName(
-                                item
-                              )}
+                              {getDisplayName(item, translations)}
                             </p>
 
                             <p className="text-xs text-muted">
@@ -643,13 +644,11 @@ export default function VideoRatings({
           {!ratings.length && (
             <div className="mt-6 rounded-xl border border-dashed border-border p-6 text-center">
               <p className="font-medium text-foreground">
-                Be the first to rate this video
+                {translations["rating.first_to_rate"]}
               </p>
 
               <p className="mt-1 text-sm text-muted">
-                Your rating helps other learners
-                decide if this video is right for
-                them.
+                {translations["rating.first_to_rate_description"]}
               </p>
             </div>
           )}

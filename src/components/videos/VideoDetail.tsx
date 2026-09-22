@@ -46,6 +46,8 @@ import VideoRatings from "@/components/videos/VideoRatings";
 interface VideoDetailProps {
   video: any;
   relatedVideos: any[];
+  translations: Record<string, string>;
+  locale: string;
 }
 
 /* =========================================================
@@ -55,6 +57,8 @@ interface VideoDetailProps {
 export default function VideoDetail({
   video,
   relatedVideos,
+  translations,
+  locale,
 }: VideoDetailProps) {
   /* -------------------------------------------------------
      CHANNEL
@@ -488,14 +492,14 @@ export default function VideoDetail({
         ================================================== */}
 
         <nav
-          aria-label="Breadcrumb"
+          aria-label={translations["video.breadcrumb"] ?? "Breadcrumb"}
           className="mb-5 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-sm"
         >
           <Link
             href="/"
             className="shrink-0 text-muted transition hover:text-foreground"
           >
-            Home
+            {translations["video.home"] ?? "Home"}
           </Link>
 
           <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
@@ -504,7 +508,7 @@ export default function VideoDetail({
             href="/videos"
             className="shrink-0 text-muted transition hover:text-foreground"
           >
-            Videos
+            {translations["general.videos"] ?? "Videos"}
           </Link>
 
           {categoryPath.map(
@@ -611,7 +615,8 @@ export default function VideoDetail({
 
               <div className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-muted">
                 <span>
-                  {video.view_count ?? 0} views
+                  {video.view_count ?? 0}{" "}
+                  {translations["video.views"] ?? "views"}
                 </span>
 
                 <span>•</span>
@@ -619,7 +624,7 @@ export default function VideoDetail({
                 <span>
                   {formatTimeAgo(
                     video.published_at ??
-                      video.created_at
+                      video.created_at, locale
                   )}
                 </span>
               </div>
@@ -661,9 +666,8 @@ export default function VideoDetail({
                       src={video.video_url}
                       type="video/mp4"
                     />
-
-                    Your browser does not support
-                    the video player.
+                    {translations["video.browser_not_supported"] ??
+                    "Your browser does not support the video player."}
                   </video>
 
                   {duration && (
@@ -699,18 +703,23 @@ export default function VideoDetail({
                       {!video.is_authenticated && (
                         <>
                           <h2 className="mt-4 text-xl font-semibold text-white">
-                            Login to watch
+                            {translations["video.login_to_watch"] ??
+                            "Login to watch"}
                           </h2>
 
                           <p className="mt-2 text-sm leading-6 text-white/80">
                             {isFree
-                              ? "Log in to your account to watch this free video."
-                              : "Log in to your account to watch this video."}
+                              ? translations["video.login_free_video"] ??
+                                "Log in to your account to watch this free video."
+                              : translations["video.login_video"] ??
+                                "Log in to your account to watch this video."
+                            }
                           </p>
 
                           <Link href="/login">
                             <Button className="mt-4 rounded-lg bg-white px-5 text-black hover:bg-white/90">
-                              Log in to Watch
+                              {translations["video.login_to_watch_button"] ??
+                              "Log in to Watch"}
                             </Button>
                           </Link>
                         </>
@@ -721,16 +730,18 @@ export default function VideoDetail({
                         !video.has_active_subscription && (
                           <>
                             <h2 className="mt-4 text-xl font-semibold text-white">
-                              Subscribers only
+                              {translations["video.subscribers_only"] ??
+                                "Subscribers only"}
                             </h2>
 
                             <p className="mt-2 text-sm leading-6 text-white/80">
-                              Subscribe to this channel to watch this video.
+                              {translations["video.subscribe_to_watch"] ??
+                                "Subscribe to this channel to watch this video."}
                             </p>
-
                             {subscriptionPrice && (
                               <p className="mt-3 text-sm font-medium text-white">
-                                {subscriptionPrice} / month
+                                {subscriptionPrice}{" "}
+                                / {translations["channel.month"] ?? "month"}
                               </p>
                             )}
 
@@ -739,7 +750,8 @@ export default function VideoDetail({
                                 href={`/channels/${channel.slug}`}
                               >
                                 <Button className="mt-4 rounded-lg bg-white px-5 text-black hover:bg-white/90">
-                                  Subscribe to Channel
+                                  {translations["video.subscribe_to_channel"] ??
+                                  "Subscribe to Channel"}
                                 </Button>
                               </Link>
                             )}
@@ -766,6 +778,7 @@ export default function VideoDetail({
                   isAuthenticated={
                     video.is_authenticated
                   }
+                  translations={translations}
                 />
 
                 <SaveVideoButton
@@ -774,6 +787,7 @@ export default function VideoDetail({
                   isAuthenticated={
                     video.is_authenticated
                   }
+                  translations={translations}
                 />
 
                 <ReportVideoButton
@@ -781,6 +795,7 @@ export default function VideoDetail({
                   isAuthenticated={
                     video.is_authenticated
                   }
+                  translations={translations}
                 />
               </div>
 
@@ -788,7 +803,7 @@ export default function VideoDetail({
               {username && (
                 <div className="ml-auto flex shrink-0 items-center gap-1.5 text-sm">
                   <span className="text-muted">
-                    Posted by
+                    {translations["video.posted_by"] ?? "Posted by"}
                   </span>
 
                   <Link
@@ -808,7 +823,7 @@ export default function VideoDetail({
             <Card className="mt-5 rounded-xl border-border bg-white p-5 shadow-none">
 
               <h2 className="text-base font-semibold text-foreground">
-                Description
+                {translations["video.description"] ?? "Description"}
               </h2>
 
               {video.description ? (
@@ -817,8 +832,8 @@ export default function VideoDetail({
                 </p>
               ) : (
                 <p className="mt-3 text-sm text-muted">
-                  No description has been added
-                  for this video.
+                  {translations["video.no_description"] ??
+                  "No description has been added for this video."}
                 </p>
               )}
 
@@ -834,6 +849,7 @@ export default function VideoDetail({
                   isAuthenticated={
                     video.is_authenticated
                   }
+                  translations={translations}
                 />
               </section>
 
@@ -852,7 +868,7 @@ export default function VideoDetail({
             <Card className="rounded-xl border-border bg-muted-bg p-4 shadow-none">
 
               <h2 className="text-base font-semibold text-foreground">
-                Video Details
+                {translations["video.details"] ?? "Video Details"}
               </h2>
 
               <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-4">
@@ -862,10 +878,13 @@ export default function VideoDetail({
                     icon={
                       <Sparkles className="h-3.5 w-3.5" />
                     }
-                    label="Skill"
-                    value={formatText(
-                      video.level
-                    )}
+                    label={
+                      translations["video.skill"] ?? "Skill"
+                    }
+                    value={
+                      translations[`level.${video.level}`] ??
+                      formatText(video.level)
+                    }
                   />
                 )}
 
@@ -873,11 +892,14 @@ export default function VideoDetail({
                   icon={
                     <Globe2 className="h-3.5 w-3.5" />
                   }
-                  label="Language"
+                  label={
+                    translations["video.language"] ?? "Language"
+                  }
                   value={
                     languageDescription ||
                     language
                   }
+                  isLongValue
                 />
 
                 {subtitleLanguage && (
@@ -885,10 +907,13 @@ export default function VideoDetail({
                     icon={
                       <Languages className="h-3.5 w-3.5" />
                     }
-                    label="Subtitles"
+                    label={
+                      translations["video.subtitles"] ?? "Subtitles"
+                    }
                     value={
                       subtitleLanguage
                     }
+                    isLongValue
                   />
                 )}
 
@@ -896,11 +921,14 @@ export default function VideoDetail({
                   icon={
                     <UserRound className="h-3.5 w-3.5" />
                   }
-                  label="Native Speaker"
+                  label={
+                    translations["video.native_speaker"] ??
+                    "Native Speaker"
+                  }
                   value={
                     video.is_native_speaker
-                      ? "Yes"
-                      : "No"
+                      ? translations["common.yes"] ?? "Yes"
+                      : translations["common.no"] ?? "No"
                   }
                 />
 
@@ -908,11 +936,13 @@ export default function VideoDetail({
                   icon={
                     <Captions className="h-3.5 w-3.5" />
                   }
-                  label="Captions"
+                  label={
+                    translations["video.captions"] ?? "Captions"
+                  }
                   value={
                     video.captions_original
-                      ? "Original"
-                      : "No"
+                      ? translations["video.original"] ?? "Original"
+                      : translations["common.no"] ?? "No"
                   }
                 />
 
@@ -920,11 +950,13 @@ export default function VideoDetail({
                   icon={
                     <MessageCircle className="h-3.5 w-3.5" />
                   }
-                  label="Idioms"
+                  label={
+                    translations["video.idioms"] ?? "Idioms"
+                  }
                   value={
                     video.explains_idioms
-                      ? "Yes"
-                      : "No"
+                      ? translations["common.yes"] ?? "Yes"
+                      : translations["common.no"] ?? "No"
                   }
                 />
 
@@ -932,11 +964,13 @@ export default function VideoDetail({
                   icon={
                     <Sparkles className="h-3.5 w-3.5" />
                   }
-                  label="Technical"
+                  label={
+                    translations["video.technical"] ?? "Technical"
+                  }
                   value={
                     video.explains_technical_lingo
-                      ? "Yes"
-                      : "No"
+                      ? translations["common.yes"] ?? "Yes"
+                      : translations["common.no"] ?? "No"
                   }
                 />
 
@@ -944,11 +978,13 @@ export default function VideoDetail({
                   icon={
                     <MessageCircle className="h-3.5 w-3.5" />
                   }
-                  label="Profanity"
+                  label={
+                    translations["video.profanity"] ?? "Profanity"
+                  }
                   value={
                     video.profanity
-                      ? "Yes"
-                      : "No"
+                      ? translations["common.yes"] ?? "Yes"
+                      : translations["common.no"] ?? "No"
                   }
                 />
 
@@ -956,11 +992,13 @@ export default function VideoDetail({
                   icon={
                     <Volume2 className="h-3.5 w-3.5" />
                   }
-                  label="AI Voice"
+                  label={
+                    translations["video.ai_voice"] ?? "AI Voice"
+                  }
                   value={
                     video.ai_voice
-                      ? "Yes"
-                      : "No"
+                      ? translations["common.yes"] ?? "Yes"
+                      : translations["common.no"] ?? "No"
                   }
                 />
 
@@ -976,17 +1014,17 @@ export default function VideoDetail({
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted">
-                        Video access
+                        {translations["video.video_access"] ?? "Video access"}
                       </p>
 
                       <p className="mt-0.5 text-base font-semibold text-foreground">
-                        Free
+                        {translations["video.free"] ?? "Free"}
                       </p>
                     </div>
 
                     <span className="inline-flex items-center gap-1 text-xs font-medium">
                       <Check className="h-3.5 w-3.5" />
-                      Available
+                      {translations["video.available"] ?? "Available"}
                     </span>
                   </div>
                 ) : (
@@ -994,7 +1032,8 @@ export default function VideoDetail({
 
                     <div>
                       <p className="text-xs text-muted">
-                        Channel subscription
+                        {translations["video.channel_subscription"] ??
+                        "Channel subscription"}
                       </p>
 
                       {subscriptionPrice && (
@@ -1002,7 +1041,7 @@ export default function VideoDetail({
                           {subscriptionPrice}
 
                           <span className="ml-1 text-xs font-normal text-muted">
-                            / month
+                            / {translations["channel.month"] ?? "month"}
                           </span>
                         </p>
                       )}
@@ -1011,7 +1050,7 @@ export default function VideoDetail({
                     {video.has_active_subscription ? (
                       <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium">
                         <Check className="h-3.5 w-3.5" />
-                        Subscribed
+                        {translations["channel.subscribed"] ?? "Subscribed"}
                       </span>
                     ) : (
                       channel?.slug && (
@@ -1022,7 +1061,7 @@ export default function VideoDetail({
                             size="sm"
                             className="rounded-lg px-3"
                           >
-                            Subscribe
+                            {translations["channel.subscribe"] ?? "Subscribe"}
                           </Button>
                         </Link>
                       )
@@ -1044,14 +1083,15 @@ export default function VideoDetail({
 
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-base font-semibold text-foreground">
-                    Related Videos
+                    {translations["video.related_videos"] ??
+                    "Related Videos"}
                   </h2>
 
                   <Link
                     href={categoryVideosHref}
                     className="text-xs font-medium text-muted transition hover:text-foreground"
                   >
-                    View all
+                    {translations["video.view_all"] ?? "View all"}
                   </Link>
                 </div>
 
@@ -1064,6 +1104,12 @@ export default function VideoDetail({
                         }
                         video={
                           relatedVideo
+                        }
+                        translations={
+                          translations
+                        }
+                        locale={
+                          locale
                         }
                       />
                     )
@@ -1087,6 +1133,8 @@ export default function VideoDetail({
             isAuthenticated={
               video.is_authenticated
             }
+            translations={translations}
+            locale={locale}
           />
         </section>
 
@@ -1101,8 +1149,12 @@ export default function VideoDetail({
 
 function RelatedVideoCard({
   video,
+  translations,
+  locale,
 }: {
   video: any;
+  translations: Record<string, string>;
+  locale: string;
 }) {
   const channel = Array.isArray(
     video.channels
@@ -1132,12 +1184,14 @@ function RelatedVideoCard({
   const metadata: string[] = [];
 
   metadata.push(
-    `${video.view_count ?? 0} views`
+    `${video.view_count ?? 0} ${
+      translations["video.views"] ?? "views"
+    }`
   );
 
   if (publishedAt) {
     metadata.push(
-      formatTimeAgo(publishedAt)
+      formatTimeAgo(publishedAt, locale)
     );
   }
 
@@ -1163,7 +1217,8 @@ function RelatedVideoCard({
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-muted-bg">
               <span className="text-[10px] text-muted">
-                No thumbnail
+                {translations["video.no_thumbnail"] ??
+                "No thumbnail"}
               </span>
             </div>
           )}
@@ -1249,15 +1304,13 @@ function CompactDetail({
   icon,
   label,
   value,
+  isLongValue = false,
 }: {
   icon: ReactNode;
   label: string;
   value: string;
+  isLongValue?: boolean;
 }) {
-  const isLongValue =
-    label === "Language" ||
-    label === "Subtitles";
-
   return (
     <div className="min-w-0">
 

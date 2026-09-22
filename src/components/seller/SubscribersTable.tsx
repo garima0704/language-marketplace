@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChangeEvent, useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { getInitials } from "@/lib/utils";
@@ -37,12 +37,17 @@ interface Subscriber {
 
 interface SubscribersTableProps {
   subscribers: Subscriber[];
+  translations: Record<string, string>;
+  locale: string;
 }
 
-function formatDate(dateString: string) {
+function formatDate(
+  dateString: string,
+  locale: string
+) {
   const date = new Date(dateString);
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -59,14 +64,14 @@ function formatCurrency(
       currency: currency || "USD",
     }).format(amount);
   } catch {
-    return `${amount.toFixed(2)} ${
-      currency || "USD"
-    }`;
+    return `$${amount.toFixed(2)}`;
   }
 }
 
 export default function SubscribersTable({
   subscribers,
+  translations,
+  locale,
 }: SubscribersTableProps) {
   const [search, setSearch] =
     useState("");
@@ -80,7 +85,7 @@ export default function SubscribersTable({
         search.trim().toLowerCase();
 
       return subscribers.filter(
-        (subscriber) => {
+        (subscriber: Subscriber) => {
           const matchesSearch =
             !searchValue ||
             subscriber.subscriberName
@@ -126,10 +131,13 @@ export default function SubscribersTable({
 
           <Input
             value={search}
-            onChange={(event) =>
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
               setSearch(event.target.value)
             }
-            placeholder="Search subscribers..."
+            placeholder={
+              translations["seller.search_subscribers"] ??
+              "Search subscribers..."
+            }
             className="h-10 rounded-lg border-border pl-9"
           />
 
@@ -150,7 +158,7 @@ export default function SubscribersTable({
                 : "text-secondary hover:bg-muted-bg"
             }`}
           >
-            All
+            {translations["seller.all"] ?? "All"}
           </button>
 
           <button
@@ -164,7 +172,7 @@ export default function SubscribersTable({
                 : "text-secondary hover:bg-muted-bg"
             }`}
           >
-            Active
+            {translations["seller.active"] ?? "Active"}
           </button>
 
           <button
@@ -178,7 +186,7 @@ export default function SubscribersTable({
                 : "text-secondary hover:bg-muted-bg"
             }`}
           >
-            Cancelled
+            {translations["seller.cancelled"] ?? "Cancelled"}
           </button>
 
           <button
@@ -192,7 +200,7 @@ export default function SubscribersTable({
                 : "text-secondary hover:bg-muted-bg"
             }`}
           >
-            Expired
+            {translations["seller.expired"] ?? "Expired"}
           </button>
 
         </div>
@@ -208,14 +216,18 @@ export default function SubscribersTable({
 
           <p className="font-medium text-foreground">
             {subscribers.length === 0
-              ? "No subscribers yet"
-              : "No subscribers found"}
+              ? translations["seller.no_subscribers"] ??
+                "No subscribers yet"
+              : translations["seller.no_subscribers_found"] ??
+                "No subscribers found"}
           </p>
 
           <p className="mt-2 text-sm text-muted">
             {subscribers.length === 0
-              ? "Your subscribers will appear here when someone subscribes to your channel."
-              : "Try changing your search or status filter."}
+              ? translations["seller.no_subscribers_description"] ??
+                "Your subscribers will appear here when someone subscribes to your channel."
+              : translations["seller.try_change_search_filter"] ??
+                "Try changing your search or status filter."}
           </p>
 
         </div>
@@ -234,27 +246,27 @@ export default function SubscribersTable({
 
                 <tr>
                   <th className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted">
-                    Subscriber
+                    {translations["seller.subscriber"] ?? "Subscriber"}
                   </th>
 
                   <th className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted">
-                    Channel
+                    {translations["seller.channel"] ?? "Channel"}
                   </th>
 
                   <th className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted">
-                    Subscription
+                    {translations["seller.subscription"] ?? "Subscription"}
                   </th>
 
                   <th className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted">
-                    Status
+                    {translations["seller.status"] ?? "Status"}
                   </th>
 
                   <th className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted">
-                    Renewal
+                    {translations["seller.renewal"] ?? "Renewal"}
                   </th>
 
                   <th className="px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted">
-                    Joined
+                    {translations["seller.joined"] ?? "Joined"}
                   </th>
                 </tr>
 
@@ -352,12 +364,12 @@ export default function SubscribersTable({
                         <p className="text-sm font-medium text-foreground">
                           {formatCurrency(
                             subscriber.price,
-                            subscriber.currency
+                            subscriber.currency,
                           )}
                         </p>
 
                         <p className="text-xs text-muted">
-                          per month
+                          {translations["seller.per_month"] ?? "per month"}
                         </p>
 
                       </td>
@@ -373,6 +385,9 @@ export default function SubscribersTable({
                           cancelAtPeriodEnd={
                             subscriber.cancelAtPeriodEnd
                           }
+                          translations={
+                            translations
+                          }
                         />
 
                       </td>
@@ -383,13 +398,15 @@ export default function SubscribersTable({
 
                         <p className="text-sm text-foreground">
                           {formatDate(
-                            subscriber.currentPeriodEnd
+                            subscriber.currentPeriodEnd,
+                            locale
                           )}
                         </p>
 
                         {subscriber.cancelAtPeriodEnd && (
                           <p className="mt-0.5 text-xs text-muted">
-                            Ends after period
+                            {translations["seller.ends_after_period"] ??
+                            "Ends after period"}
                           </p>
                         )}
 
@@ -401,7 +418,8 @@ export default function SubscribersTable({
 
                         <span className="text-sm text-secondary">
                           {formatDate(
-                            subscriber.startedAt
+                            subscriber.startedAt,
+                            locale
                           )}
                         </span>
 
@@ -486,6 +504,9 @@ export default function SubscribersTable({
                       cancelAtPeriodEnd={
                         subscriber.cancelAtPeriodEnd
                       }
+                      translations={
+                        translations
+                      }
                     />
 
                   </div>
@@ -494,7 +515,7 @@ export default function SubscribersTable({
 
                     <div>
                       <p className="text-xs text-muted">
-                        Channel
+                        {translations["seller.channel"] ?? "Channel"}
                       </p>
 
                       <p className="mt-1 font-medium text-foreground">
@@ -506,41 +527,43 @@ export default function SubscribersTable({
 
                     <div>
                       <p className="text-xs text-muted">
-                        Subscription
+                        {translations["seller.subscription"] ?? "Subscription"}
                       </p>
 
                       <p className="mt-1 font-medium text-foreground">
                         {formatCurrency(
                           subscriber.price,
-                          subscriber.currency
+                          subscriber.currency,                        
                         )}
                         <span className="text-xs font-normal text-muted">
                           {" "}
-                          / month
+                          / {translations["seller.per_month"] ?? "per month"}
                         </span>
                       </p>
                     </div>
 
                     <div>
                       <p className="text-xs text-muted">
-                        Renewal
+                        {translations["seller.renewal"] ?? "Renewal"}
                       </p>
 
                       <p className="mt-1 text-foreground">
                         {formatDate(
-                          subscriber.currentPeriodEnd
+                          subscriber.currentPeriodEnd,
+                          locale
                         )}
                       </p>
                     </div>
 
                     <div>
                       <p className="text-xs text-muted">
-                        Joined
+                        {translations["seller.joined"] ?? "Joined"}
                       </p>
 
                       <p className="mt-1 text-foreground">
                         {formatDate(
-                          subscriber.startedAt
+                          subscriber.startedAt,
+                          locale
                         )}
                       </p>
                     </div>
@@ -567,17 +590,16 @@ export default function SubscribersTable({
 function StatusBadge({
   status,
   cancelAtPeriodEnd,
+  translations,
 }: {
   status: string;
   cancelAtPeriodEnd: boolean;
+  translations: Record<string, string>;
 }) {
-  if (
-    status === "active" &&
-    cancelAtPeriodEnd
-  ) {
+  if (status === "active" && cancelAtPeriodEnd) {
     return (
       <span className="inline-flex rounded-full bg-muted-bg px-2.5 py-1 text-xs font-medium text-foreground">
-        Cancelling
+        {translations["seller.cancelling"] ?? "Cancelling"}
       </span>
     );
   }
@@ -585,7 +607,7 @@ function StatusBadge({
   if (status === "active") {
     return (
       <span className="inline-flex rounded-full bg-muted-bg px-2.5 py-1 text-xs font-medium text-foreground">
-        Active
+        {translations["seller.active"] ?? "Active"}
       </span>
     );
   }
@@ -593,14 +615,14 @@ function StatusBadge({
   if (status === "cancelled") {
     return (
       <span className="inline-flex rounded-full bg-muted-bg px-2.5 py-1 text-xs font-medium text-muted">
-        Cancelled
+        {translations["seller.cancelled"] ?? "Cancelled"}
       </span>
     );
   }
 
   return (
     <span className="inline-flex rounded-full bg-muted-bg px-2.5 py-1 text-xs font-medium text-muted">
-      Expired
+      {translations["seller.expired"] ?? "Expired"}
     </span>
   );
 }

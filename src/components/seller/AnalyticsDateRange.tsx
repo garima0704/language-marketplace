@@ -12,17 +12,23 @@ import {
 } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-const ranges = [
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
-  { value: "90d", label: "Last 90 days" },
-  { value: "6m", label: "Last 6 months" },
-  { value: "1y", label: "Last year" },
-  { value: "all", label: "All time" },
-  { value: "custom", label: "Custom range" },
-];
+interface AnalyticsDateRangeProps {
+  translations: {
+    last7Days: string;
+    last30Days: string;
+    last90Days: string;
+    last6Months: string;
+    lastYear: string;
+    allTime: string;
+    customRange: string;
+    to: string;
+    apply: string;
+  };
+}
 
-export default function AnalyticsDateRange() {
+export default function AnalyticsDateRange({
+  translations,
+}: AnalyticsDateRangeProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -41,6 +47,37 @@ export default function AnalyticsDateRange() {
   const [to, setTo] = useState(
     searchParams.get("to") || ""
   );
+
+  const ranges = [
+    {
+      value: "7d",
+      label: translations.last7Days,
+    },
+    {
+      value: "30d",
+      label: translations.last30Days,
+    },
+    {
+      value: "90d",
+      label: translations.last90Days,
+    },
+    {
+      value: "6m",
+      label: translations.last6Months,
+    },
+    {
+      value: "1y",
+      label: translations.lastYear,
+    },
+    {
+      value: "all",
+      label: translations.allTime,
+    },
+    {
+      value: "custom",
+      label: translations.customRange,
+    },
+  ];
 
   const selectedRange =
     ranges.find(
@@ -86,8 +123,6 @@ export default function AnalyticsDateRange() {
 
       params.set("range", "custom");
 
-      // Keep existing dates if already selected.
-      // Otherwise start with empty dates.
       router.push(
         `${pathname}?${params.toString()}`
       );
@@ -140,9 +175,7 @@ export default function AnalyticsDateRange() {
       ref={ref}
       className="relative flex flex-wrap items-center gap-2"
     >
-      {/* --------------------------------------------------
-          RANGE BUTTON
-      -------------------------------------------------- */}
+      {/* RANGE BUTTON */}
 
       <button
         type="button"
@@ -165,8 +198,11 @@ export default function AnalyticsDateRange() {
           hover:shadow-md
         "
       >
-        <div className="flex items-center gap-2">
-          <CalendarDays size={17} />
+        <div className="flex min-w-0 items-center gap-2">
+          <CalendarDays
+            size={17}
+            className="shrink-0"
+          />
 
           <span className="truncate">
             {selectedRange.label}
@@ -175,15 +211,13 @@ export default function AnalyticsDateRange() {
 
         <ChevronDown
           size={16}
-          className={`transition-transform duration-200 ${
+          className={`shrink-0 transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
-      {/* --------------------------------------------------
-          DROPDOWN
-      -------------------------------------------------- */}
+      {/* DROPDOWN */}
 
       {open && (
         <div
@@ -241,9 +275,7 @@ export default function AnalyticsDateRange() {
         </div>
       )}
 
-      {/* --------------------------------------------------
-          CUSTOM DATE RANGE
-      -------------------------------------------------- */}
+      {/* CUSTOM DATE RANGE */}
 
       {currentRange === "custom" && (
         <div className="flex flex-wrap items-center gap-2">
@@ -272,7 +304,7 @@ export default function AnalyticsDateRange() {
           />
 
           <span className="text-sm text-muted">
-            to
+            {translations.to}
           </span>
 
           <input
@@ -282,21 +314,21 @@ export default function AnalyticsDateRange() {
               setTo(event.target.value)
             }
             className="
-                h-10
-                rounded-full
-                border
-                border-border
-                bg-background
-                px-4
-                text-sm
-                text-foreground
-                outline-none
-                transition
-                focus:border-primary
-                focus:ring-2
-                focus:ring-primary/20
-                [color-scheme:light]
-              "
+              h-10
+              rounded-full
+              border
+              border-border
+              bg-background
+              px-4
+              text-sm
+              text-foreground
+              outline-none
+              transition
+              focus:border-primary
+              focus:ring-2
+              focus:ring-primary/20
+              [color-scheme:light]
+            "
           />
 
           <button
@@ -317,7 +349,7 @@ export default function AnalyticsDateRange() {
               disabled:opacity-40
             "
           >
-            Apply
+            {translations.apply}
           </button>
         </div>
       )}

@@ -8,11 +8,13 @@ import { createClient } from "@/lib/supabase/client";
 interface VideoLikeButtonProps {
   videoId: string;
   isAuthenticated: boolean;
+  translations: Record<string, string>;
 }
 
 export default function VideoLikeButton({
   videoId,
   isAuthenticated,
+  translations,
 }: VideoLikeButtonProps) {
   const supabase = createClient();
 
@@ -213,8 +215,10 @@ export default function VideoLikeButton({
       disabled={saving || loading}
       aria-label={
         isLiked
-          ? "Unlike video"
-          : "Like video"
+          ? translations["video.unlike"] ??
+            "Unlike video"
+          : translations["video.like"] ??
+            "Like video"
       }
       className="
         group

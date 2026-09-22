@@ -35,12 +35,7 @@ type Category = {
   parent_id: string | null;
   level: number;
   display_order: number;
-};
-
-type CategoryTranslation = {
-  category_id: string;
-  locale_code: string;
-  name: string;
+  slug: string;
 };
 
 type Props = {
@@ -48,7 +43,6 @@ type Props = {
   languages: Language[];
   languageRegions: LanguageRegion[];
   categories: Category[];
-  categoryTranslations: CategoryTranslation[];
   locale: string;
   translations: Record<string, string>;
 };
@@ -58,7 +52,6 @@ export default function NewVideoForm({
   languages,
   languageRegions,
   categories,
-  categoryTranslations,
   locale,
   translations,
 }: Props) {
@@ -1585,10 +1578,8 @@ async function handleSaveDraft() {
               <CategorySelector
                 languages={languages}
                 categories={categories}
-                categoryTranslations={categoryTranslations}
-                localeCode={locale}
+                translations={translations}
                 onCategoryChange={setCategoryId}
-                uiTranslations={translations}
               />
             </CardContent>
           </Card>

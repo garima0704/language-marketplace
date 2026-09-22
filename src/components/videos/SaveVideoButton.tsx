@@ -9,12 +9,14 @@ interface SaveVideoButtonProps {
   videoId: string;
   isSaved: boolean;
   isAuthenticated: boolean;
+  translations: Record<string, string>;
 }
 
 export default function SaveVideoButton({
   videoId,
   isSaved: initialIsSaved,
   isAuthenticated,
+  translations,
 }: SaveVideoButtonProps) {
   const supabase = createClient();
 
@@ -120,15 +122,20 @@ export default function SaveVideoButton({
       disabled={loading}
       aria-label={
         isSaved
-          ? "Remove from saved"
-          : "Save video"
+          ? translations["video.remove_from_saved"] ??
+            "Remove from saved"
+          : translations["video.save"] ??
+            "Save"
       }
       title={
         isAuthenticated
           ? isSaved
-            ? "Remove from saved"
-            : "Save video"
-          : "Log in to save"
+            ? translations["video.remove_from_saved"] ??
+              "Remove from saved"
+            : translations["video.save"] ??
+              "Save"
+          : translations["video.login_to_save"] ??
+            "Log in to save"
       }
       className={`
         inline-flex
@@ -161,7 +168,11 @@ export default function SaveVideoButton({
       )}
 
       <span>
-        {isSaved ? "Saved" : "Save"}
+        {isSaved
+          ? translations["video.saved"] ??
+            "Saved"
+          : translations["video.save"] ??
+            "Save"}
       </span>
     </button>
   );

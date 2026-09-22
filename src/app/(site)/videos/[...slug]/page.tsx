@@ -122,11 +122,162 @@ export default async function VideosSlugPage({
     // Current UI translations
     // --------------------------------------------------
 
-    const translations =
-      await getTranslations(
-        ["video.from"],
-        locale
-      );
+    const translations = await getTranslations(
+      [
+        "video.from",
+        "video.home",
+        "general.videos",
+        "video.views",
+
+        "video.browser_not_supported",
+
+        "video.login_to_watch",
+        "video.login_free_video",
+        "video.login_video",
+        "video.login_to_watch_button",
+
+        "video.subscribe_to_watch",
+        "video.subscribe_to_channel",
+
+        "video.posted_by",
+        "video.description",
+        "channel.no_description",
+
+        "video.details",
+        "video.skill",
+        "video.language",
+        "video.subtitles",
+        "video.native_speaker",
+        "video.captions",
+        "video.explains_idioms",
+        "video.explains_technical_lingo",
+        "video.profanity",
+        "video.ai_voice",
+        "video.idioms",
+        "video.technical",
+
+        "video.access",
+        "video.video_access",
+        "video.free",
+        "video.subscribers_only",
+        "video.available",
+
+        "channel.month",
+        "channel.subscribed",
+        "channel.subscribe",
+
+        "common.yes",
+        "common.no",
+
+        "video.original",
+
+        "video.related_videos",
+        "video.view_all",
+        "video.no_thumbnail",
+        "video.channel_subscription",
+
+        "video.save",
+        "video.saved",
+        "video.remove_from_saved",
+        "video.login_to_save",
+
+        "video.comments",
+        "video.add_comment",
+        "video.comment",
+        "video.reply",
+        "video.delete",
+        "video.like_comment",
+        "video.unlike_comment",
+        "video.like",
+        "video.unlike",
+        "video.login_to_like",
+        "video.reply_to",
+        "video.posting",
+        "video.hide_replies",
+        "video.view",
+        "video.replies",
+        "video.login_to_comment",
+        "video.login_to_join_conversation",
+        "video.loading_comments",
+        "video.no_comments",
+        "video.first_comment",
+        "video.comments_load_error",
+        "video.comment_post_error",
+        "video.reply_post_error",
+        "video.comment_like_exists",
+        "video.comment_like_error",
+        "video.comment_delete_error",
+        "video.delete_comment_confirm",
+        "video.you",
+        "channel_form.cancel",
+
+        "report.report",
+        "report.reported",
+        "report.report_video",
+        "report.login_to_report",
+        "report.submitted",
+        "report.submitted_description",
+        "report.already_reported",
+        "report.already_reported_description",
+        "report.description",
+        "report.reason_question",
+        "report.reason_spam",
+        "report.reason_inappropriate",
+        "report.reason_copyright",
+        "report.reason_harassment",
+        "report.reason_violence",
+        "report.reason_misleading",
+        "report.reason_other",
+        "report.additional_details",
+        "report.details_placeholder",
+        "report.submitting",
+        "report.submit",
+        "report.submit_error",
+        "common.done",
+        "common.close",
+        "common.optional",
+
+        "rating.title",
+        "rating.rating",
+        "rating.ratings",
+        "rating.no_ratings",
+        "rating.your_rating",
+        "rating.rate_video",
+        "rating.login_to_rate",
+        "rating.edit",
+        "rating.update",
+        "rating.submit",
+        "rating.review_placeholder",
+        "rating.rating_aria",
+        "rating.loading_error",
+        "rating.login_error",
+        "rating.select_error",
+        "rating.review_min_error",
+        "rating.review_max_error",
+        "rating.save_error",
+        "rating.reviews",
+        "rating.first_to_rate",
+        "rating.first_to_rate_description",
+        "rating.user",
+
+        "auth.login",
+
+        "level.beginner",
+        "level.intermediate",
+        "level.advanced",
+        "level.fluent",
+
+        "language.en",
+        "language.es",
+        "language.ar",
+        "language.zh",
+        "language.fr",
+        "language.de",
+        "language.it",
+        "language.pt",
+      ],
+      locale
+    );
 
     // --------------------------------------------------
     // Fetch current video
@@ -305,33 +456,19 @@ export default async function VideosSlugPage({
       languageName;
 
     // --------------------------------------------------
-    // Language name
+    // Translated language name
     // --------------------------------------------------
 
     if (videoData.language_code) {
-      const {
-        data: videoLanguage,
-        error: videoLanguageError,
-      } = await supabase
-        .from("locales")
-        .select("code, name")
-        .eq(
-          "code",
-          videoData.language_code
-        )
-        .maybeSingle();
+      const languageKey =
+        `language.${videoData.language_code}`;
 
-      if (videoLanguageError) {
-        console.error(
-          "Video language lookup error:",
-          videoLanguageError
-        );
-      }
+      languageName =
+        translations[languageKey] ??
+        videoData.language_code;
 
-      if (videoLanguage?.name) {
-        languageName =
-          videoLanguage.name;
-      }
+      languageDescription =
+        languageName;
     }
 
     // --------------------------------------------------
@@ -372,8 +509,7 @@ export default async function VideosSlugPage({
         if (locationParts.length > 0) {
           languageDescription =
             `${languageName} ${
-              translations["video.from"] ??
-              "from"
+              translations["video.from"] ?? "from"
             } ${locationParts.join(", ")}`;
         } else {
           languageDescription =
@@ -387,34 +523,15 @@ export default async function VideosSlugPage({
     // ==================================================
 
     let subtitleLanguageName =
-      videoData.subtitle_language_code;
+      videoData.subtitle_language_code || "";
 
-    if (
-      videoData.subtitle_language_code
-    ) {
-      const {
-        data: subtitleLanguage,
-        error: subtitleLanguageError,
-      } = await supabase
-        .from("locales")
-        .select("code, name")
-        .eq(
-          "code",
-          videoData.subtitle_language_code
-        )
-        .maybeSingle();
+    if (videoData.subtitle_language_code) {
+      const subtitleLanguageKey =
+        `language.${videoData.subtitle_language_code}`;
 
-      if (subtitleLanguageError) {
-        console.error(
-          "Subtitle language lookup error:",
-          subtitleLanguageError
-        );
-      }
-
-      if (subtitleLanguage?.name) {
-        subtitleLanguageName =
-          subtitleLanguage.name;
-      }
+      subtitleLanguageName =
+        translations[subtitleLanguageKey] ??
+        videoData.subtitle_language_code;
     }
 
     // ==================================================
@@ -681,9 +798,9 @@ export default async function VideosSlugPage({
     return (
       <VideoDetail
         video={video}
-        relatedVideos={
-          relatedVideos
-        }
+        relatedVideos={relatedVideos}
+        translations={translations}
+        locale={locale}
       />
     );
   }

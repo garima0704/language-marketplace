@@ -34,7 +34,7 @@ interface ProfileLanguage {
   locales?: {
     code: string;
     name: string;
-  }[] | null;
+  } | null;
 }
 
 interface EditableLanguage {
@@ -71,7 +71,7 @@ export default function EditLanguagesDialog({
         id: String(language.id),
         language_code: language.language_code,
         name:
-          language.locales?.[0]?.name ??
+          language.locales?.name ??
           language.language_code,
         proficiency: language.proficiency,
         is_native: language.is_native,
@@ -85,7 +85,8 @@ export default function EditLanguagesDialog({
     const unused = availableLanguages.find(
       (language) =>
         !items.some(
-          (item) => item.language_code === language.code
+          (item) =>
+            item.language_code === language.code
         )
     );
 
@@ -126,7 +127,10 @@ export default function EditLanguagesDialog({
     );
   }
 
-  function setNative(id: string, checked: boolean) {
+  function setNative(
+    id: string,
+    checked: boolean
+  ) {
     setItems((current) =>
       current.map((item) => ({
         ...item,
@@ -150,7 +154,8 @@ export default function EditLanguagesDialog({
 
     if (!result.success) {
       setError(
-        result.error ?? "Failed to save languages."
+        result.error ??
+          "Failed to save languages."
       );
       setSaving(false);
       return;
@@ -190,21 +195,23 @@ export default function EditLanguagesDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-6 space-y-5">
+        <div className="mt-6 space-y-6">
           {items.length > 0 ? (
-            <div>
-              {/* Table Header */}
+            <div className="overflow-hidden rounded-xl border">
+              {/* Header */}
               <div
                 className="
                   hidden
-                  grid-cols-[minmax(0,1fr)_180px_80px_40px]
+                  grid-cols-[minmax(0,1fr)_180px_90px_40px]
                   items-center
                   gap-4
-                  px-1
-                  pb-3
+                  border-b
+                  bg-light-bg
+                  px-4
+                  py-3
                   text-sm
                   font-medium
-                  text-muted-foreground
+                  text-muted-foreground/70
                   sm:grid
                 "
               >
@@ -216,12 +223,13 @@ export default function EditLanguagesDialog({
                 <span />
               </div>
 
-              {/* Language Rows */}
+              {/* Rows */}
               <div>
                 {items.map((item, index) => (
                   <div
                     key={item.id}
                     className={`
+                      px-4
                       py-4
                       ${
                         index !== items.length - 1
@@ -234,7 +242,7 @@ export default function EditLanguagesDialog({
                       className="
                         grid
                         gap-4
-                        sm:grid-cols-[minmax(0,1fr)_180px_80px_40px]
+                        sm:grid-cols-[minmax(0,1fr)_180px_90px_40px]
                         sm:items-center
                       "
                     >
@@ -245,7 +253,9 @@ export default function EditLanguagesDialog({
                         </label>
 
                         <select
-                          value={item.language_code}
+                          value={
+                            item.language_code
+                          }
                           onChange={(e) => {
                             const selectedLanguage =
                               availableLanguages.find(
@@ -311,7 +321,9 @@ export default function EditLanguagesDialog({
                         </label>
 
                         <select
-                          value={item.proficiency}
+                          value={
+                            item.proficiency
+                          }
                           onChange={(e) =>
                             updateLanguage(
                               item.id,
@@ -401,7 +413,7 @@ export default function EditLanguagesDialog({
               </div>
             </div>
           ) : (
-            <div className="py-8 text-center">
+            <div className="rounded-xl border border-dashed p-8 text-center">
               <p className="text-sm text-muted-foreground">
                 No languages added yet.
               </p>
@@ -415,7 +427,8 @@ export default function EditLanguagesDialog({
             onClick={addLanguage}
             disabled={
               saving ||
-              items.length >= availableLanguages.length
+              items.length >=
+                availableLanguages.length
             }
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -446,7 +459,9 @@ export default function EditLanguagesDialog({
             onClick={handleSave}
             className="transition-opacity hover:opacity-90"
           >
-            {saving ? "Saving..." : "Save Changes"}
+            {saving
+              ? "Saving..."
+              : "Save Changes"}
           </Button>
         </div>
       </DialogContent>

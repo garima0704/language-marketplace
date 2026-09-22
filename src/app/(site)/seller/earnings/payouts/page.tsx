@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import {
   ArrowLeft,
   Banknote,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "@/lib/translations";
 
 function formatCurrency(
   amount: number,
@@ -20,17 +22,23 @@ function formatCurrency(
   }).format(amount);
 }
 
-function formatDate(dateString: string | null) {
+function formatDate(
+  dateString: string | null,
+  locale = "en"
+) {
   if (!dateString) return "—";
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
   }).format(new Date(dateString));
 }
 
-function formatProvider(provider: string) {
+function formatProvider(
+  provider: string,
+  translations: Record<string, string>
+) {
   switch (provider) {
     case "stripe":
       return "Stripe";
@@ -39,26 +47,29 @@ function formatProvider(provider: string) {
       return "PayPal";
 
     case "bank":
-      return "Bank Transfer";
+      return translations["seller.bank_transfer"];
 
     default:
       return provider;
   }
 }
 
-function getStatusLabel(status: string) {
+function getStatusLabel(
+  status: string,
+  translations: Record<string, string>
+) {
   switch (status) {
     case "pending":
-      return "Pending";
+      return translations["seller.pending"];
 
     case "processing":
-      return "Processing";
+      return translations["seller.processing"];
 
     case "completed":
-      return "Completed";
+      return translations["seller.completed"];
 
     case "failed":
-      return "Failed";
+      return translations["seller.failed"];
 
     default:
       return status;
@@ -84,6 +95,49 @@ function getStatusIcon(status: string) {
 
 export default async function SellerPayoutsPage() {
   const supabase = await createClient();
+
+  // --------------------------------------------------
+  // Locale
+  // --------------------------------------------------
+
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value || "en";
+
+  // --------------------------------------------------
+  // Translations
+  // --------------------------------------------------
+
+  const translations = await getTranslations(
+    [
+      "seller.back_to_earnings",
+      "seller.payouts",
+      "seller.track_payouts",
+      "seller.total_paid_out",
+      "seller.completed_payouts",
+      "seller.pending",
+      "seller.pending_or_processing",
+      "seller.failed",
+      "seller.failed_payouts",
+      "seller.payout_count",
+      "seller.total_payout_records",
+      "seller.payout_history",
+      "seller.all_payouts_associated",
+      "seller.no_payouts",
+      "seller.payouts_will_appear",
+      "seller.payout",
+      "seller.amount",
+      "seller.provider",
+      "seller.payout_id",
+      "seller.status",
+      "seller.date",
+      "seller.bank_transfer",
+      "seller.processing",
+      "seller.completed",
+    ],
+    locale
+  );
 
   // --------------------------------------------------
   // Current seller
@@ -192,7 +246,7 @@ export default async function SellerPayoutsPage() {
         className="mb-6 inline-flex items-center gap-2 text-sm text-muted transition hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Earnings
+        {translations["seller.back_to_earnings"]}
       </Link>
 
       {/* ==================================================
@@ -201,11 +255,11 @@ export default async function SellerPayoutsPage() {
 
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Payouts
+          {translations["seller.payouts"]}
         </h1>
 
         <p className="mt-2 text-sm text-muted">
-          Track payouts sent to your payout account.
+          {translations["seller.track_payouts"]}
         </p>
       </div>
 
@@ -220,7 +274,7 @@ export default async function SellerPayoutsPage() {
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-muted">
-              Total Paid Out
+              {translations["seller.total_paid_out"]}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -236,7 +290,7 @@ export default async function SellerPayoutsPage() {
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            Completed payouts
+            {translations["seller.completed_payouts"]}
           </p>
         </div>
 
@@ -245,7 +299,7 @@ export default async function SellerPayoutsPage() {
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-muted">
-              Pending
+              {translations["seller.pending"]}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -261,7 +315,7 @@ export default async function SellerPayoutsPage() {
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            Pending or processing
+            {translations["seller.pending_or_processing"]}
           </p>
         </div>
 
@@ -270,7 +324,7 @@ export default async function SellerPayoutsPage() {
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-muted">
-              Failed
+              {translations["seller.failed"]}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -286,7 +340,7 @@ export default async function SellerPayoutsPage() {
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            Failed payouts
+            {translations["seller.failed_payouts"]}
           </p>
         </div>
 
@@ -295,7 +349,7 @@ export default async function SellerPayoutsPage() {
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-muted">
-              Payouts
+              {translations["seller.payout_count"]}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -304,11 +358,11 @@ export default async function SellerPayoutsPage() {
           </div>
 
           <p className="mt-5 text-2xl font-bold tracking-tight text-foreground">
-            {payoutList.length.toLocaleString()}
+            {payoutList.length.toLocaleString(locale)}
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            Total payout records
+            {translations["seller.total_payout_records"]}
           </p>
         </div>
 
@@ -322,11 +376,11 @@ export default async function SellerPayoutsPage() {
 
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-foreground">
-            Payout History
+            {translations["seller.payout_history"]}
           </h2>
 
           <p className="mt-1 text-sm text-muted">
-            All payouts associated with your account.
+            {translations["seller.all_payouts_associated"]}
           </p>
         </div>
 
@@ -338,12 +392,11 @@ export default async function SellerPayoutsPage() {
             </div>
 
             <p className="mt-4 font-medium text-foreground">
-              No payouts yet
+              {translations["seller.no_payouts"]}
             </p>
 
             <p className="mt-2 text-sm text-muted">
-              Your payouts will appear here once
-              earnings are sent to your payout account.
+              {translations["seller.payouts_will_appear"]}
             </p>
 
           </div>
@@ -359,27 +412,27 @@ export default async function SellerPayoutsPage() {
                   <tr>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Payout
+                      {translations["seller.payout"]}
                     </th>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Amount
+                      {translations["seller.amount"]}
                     </th>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Provider
+                      {translations["seller.provider"]}
                     </th>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Payout ID
+                      {translations["seller.payout_id"]}
                     </th>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Status
+                      {translations["seller.status"]}
                     </th>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Date
+                      {translations["seller.date"]}
                     </th>
 
                   </tr>
@@ -407,7 +460,7 @@ export default async function SellerPayoutsPage() {
 
                           <div>
                             <p className="font-medium text-foreground">
-                              Payout
+                              {translations["seller.payout"]}
                             </p>
 
                             <p className="mt-0.5 text-xs text-muted">
@@ -432,7 +485,8 @@ export default async function SellerPayoutsPage() {
 
                         <td className="px-5 py-4 text-muted">
                           {formatProvider(
-                            payout.provider
+                            payout.provider,
+                            translations
                           )}
                         </td>
 
@@ -463,7 +517,8 @@ export default async function SellerPayoutsPage() {
                             <StatusIcon className="h-3.5 w-3.5" />
 
                             {getStatusLabel(
-                              payout.status
+                              payout.status,
+                              translations
                             )}
 
                           </span>
@@ -476,7 +531,8 @@ export default async function SellerPayoutsPage() {
 
                           {formatDate(
                             payout.processed_at ||
-                              payout.created_at
+                              payout.created_at,
+                            locale
                           )}
 
                         </td>

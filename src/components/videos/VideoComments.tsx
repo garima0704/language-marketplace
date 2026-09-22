@@ -41,6 +41,8 @@ interface Comment {
 interface VideoCommentsProps {
   videoId: string;
   isAuthenticated: boolean;
+  translations: Record<string, string>;
+  locale: string;
 }
 
 function getProfile(
@@ -56,6 +58,8 @@ function getProfile(
 export default function VideoComments({
   videoId,
   isAuthenticated,
+  translations,
+  locale,
 }: VideoCommentsProps) {
   const supabase = createClient();
 
@@ -148,7 +152,10 @@ export default function VideoComments({
           commentsError
         );
 
-        setError("Unable to load comments.");
+        setError(
+          translations["video.comments_load_error"] ??
+            "Unable to load comments."
+        );
         setComments([]);
         return;
       }
@@ -231,7 +238,10 @@ export default function VideoComments({
         error
       );
 
-      setError("Unable to load comments.");
+      setError(
+        translations["video.comments_load_error"] ??
+          "Unable to load comments."
+      );
     } finally {
       setLoading(false);
     }
@@ -268,7 +278,10 @@ export default function VideoComments({
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        setError("Please log in to comment.");
+        setError(
+          translations["video.login_to_comment"] ??
+            "Please log in to comment."
+        );
         return;
       }
 
@@ -306,7 +319,10 @@ export default function VideoComments({
           insertError
         );
 
-        setError("Unable to post your comment.");
+        setError(
+          translations["video.comment_post_error"] ??
+            "Unable to post your comment."
+        );
         return;
       }
 
@@ -387,7 +403,10 @@ export default function VideoComments({
           insertError
         );
 
-        setError("Unable to post your reply.");
+        setError(
+          translations["video.reply_post_error"] ??
+            "Unable to post your reply."
+        );
         return;
       }
 
@@ -525,11 +544,13 @@ export default function VideoComments({
 
     if (error?.code === "23505") {
       setError(
-        "You have already liked this comment."
+        translations["video.comment_like_exists"] ??
+          "You have already liked this comment."
       );
     } else {
       setError(
-        "Unable to update your comment like."
+        translations["video.comment_like_error"] ??
+          "Unable to update your comment like."
       );
     }
   } finally {
@@ -567,7 +588,10 @@ export default function VideoComments({
         error
       );
 
-      setError("Unable to delete comment.");
+      setError(
+        translations["video.comment_delete_error"] ??
+          "Unable to delete comment."
+      );
       return;
     }
     
@@ -676,7 +700,7 @@ export default function VideoComments({
 
             <span className="text-xs text-muted">
               {formatTimeAgo(
-                comment.created_at
+                comment.created_at, locale
               )}
             </span>
           </div>
@@ -698,15 +722,18 @@ export default function VideoComments({
               disabled={isLiking}
               aria-label={
                 comment.isLiked
-                  ? "Unlike comment"
-                  : "Like comment"
+                  ? translations["video.unlike_comment"] ??
+                    "Unlike comment"
+                  : translations["video.like_comment"] ??
+                    "Like comment"
               }
               title={
                 isAuthenticated
                   ? comment.isLiked
-                    ? "Unlike"
-                    : "Like"
-                  : "Log in to like"
+                    ? translations["video.unlike"] ?? "Unlike"
+                    : translations["video.like"] ?? "Like"
+                  : translations["video.login_to_like"] ??
+                    "Log in to like"
               }
               className={`inline-flex items-center gap-1.5 text-xs font-medium transition ${
                 comment.isLiked
@@ -762,7 +789,7 @@ export default function VideoComments({
                 }}
                 className="text-xs font-medium text-muted transition hover:text-foreground"
               >
-                Reply
+                {translations["video.reply"] ?? "Reply"}
               </button>
             )}
 
@@ -778,7 +805,7 @@ export default function VideoComments({
               >
                 <Trash2 className="h-3.5 w-3.5" />
 
-                Delete
+                {translations["video.delete"] ?? "Delete"}
               </button>
             )}
           </div>
@@ -790,7 +817,7 @@ export default function VideoComments({
               <div className="mt-4 flex gap-3">
                 <Avatar className="h-8 w-8 shrink-0">
                   <AvatarFallback className="bg-primary text-xs text-white">
-                    You
+                    {translations["video.you"] ?? "You"}
                   </AvatarFallback>
                 </Avatar>
 
@@ -802,7 +829,7 @@ export default function VideoComments({
                         event.target.value
                       )
                     }
-                    placeholder={`Reply to ${name}...`}
+                    placeholder={`${translations["video.reply_to"] ?? "Reply to"} ${name}...`}
                     rows={2}
                     maxLength={2000}
                     autoFocus
@@ -820,7 +847,7 @@ export default function VideoComments({
                       }}
                     >
                       <X className="mr-1 h-4 w-4" />
-                      Cancel
+                      {translations["channel_form.cancel"] ?? "Cancel"}
                     </Button>
 
                     <Button
@@ -840,8 +867,8 @@ export default function VideoComments({
                       <Send className="mr-1 h-4 w-4" />
 
                       {posting
-                        ? "Posting..."
-                        : "Reply"}
+                        ? translations["video.posting"] ?? "Posting..."
+                        : translations["video.reply"] ?? "Reply"}
                     </Button>
                   </div>
                 </div>
@@ -860,11 +887,14 @@ export default function VideoComments({
                 className="text-xs font-semibold text-muted transition hover:text-foreground"
               >
                 {areRepliesExpanded
-                  ? "Hide replies"
-                  : `View ${replies.length} ${
+                  ? translations["video.hide_replies"] ??
+                    "Hide replies"
+                  : `${translations["video.view"] ?? "View"} ${
+                      replies.length
+                    } ${
                       replies.length === 1
-                        ? "reply"
-                        : "replies"
+                        ? translations["video.reply"] ?? "reply"
+                        : translations["video.replies"] ?? "replies"
                     }`}
               </button>
 
@@ -900,7 +930,7 @@ export default function VideoComments({
           <MessageCircle className="h-5 w-5 text-muted" />
 
           <h2 className="text-xl font-semibold text-foreground">
-            Comments
+            {translations["video.comments"] ?? "Comments"}
           </h2>
 
           <span className="text-sm text-muted">
@@ -919,7 +949,7 @@ export default function VideoComments({
           >
             <Avatar className="h-10 w-10 shrink-0">
               <AvatarFallback className="bg-primary text-white">
-                You
+                {translations["video.you"] ?? "You"}
               </AvatarFallback>
             </Avatar>
 
@@ -931,7 +961,10 @@ export default function VideoComments({
                     event.target.value
                   )
                 }
-                placeholder="Add a comment..."
+                placeholder={
+                  translations["video.add_comment"] ??
+                  "Add a comment..."
+                }
                 rows={3}
                 maxLength={2000}
                 className="w-full resize-none rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-foreground"
@@ -953,8 +986,8 @@ export default function VideoComments({
                   <Send className="mr-2 h-4 w-4" />
 
                   {posting
-                    ? "Posting..."
-                    : "Comment"}
+                    ? translations["video.posting"] ?? "Posting..."
+                    : translations["video.comment"] ?? "Comment"}
                 </Button>
               </div>
             </div>
@@ -962,7 +995,9 @@ export default function VideoComments({
         ) : (
           <div className="rounded-xl border border-border bg-muted-bg px-5 py-4">
             <p className="text-sm text-muted">
-              Log in to join the conversation.
+              { translations["video.login_to_join_conversation"] ??
+                "Log in to join the conversation."
+              }
             </p>
           </div>
         )}
@@ -980,18 +1015,21 @@ export default function VideoComments({
 
       {loading ? (
         <div className="py-8 text-center text-sm text-muted">
-          Loading comments...
+          {translations["video.loading_comments"] ??
+          "Loading comments..."}
         </div>
       ) : topLevelComments.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border px-6 py-10 text-center">
           <MessageCircle className="mx-auto h-8 w-8 text-muted" />
 
           <p className="mt-3 font-medium text-foreground">
-            No comments yet
+            {translations["video.no_comments"] ??
+            "No comments yet"}
           </p>
 
           <p className="mt-1 text-sm text-muted">
-            Be the first to share your thoughts.
+            {translations["video.first_comment"] ??
+            "Be the first to share your thoughts."}
           </p>
         </div>
       ) : (

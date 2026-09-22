@@ -12,24 +12,17 @@ type Category = {
   parent_id: string | null;
   level: number;
   display_order: number;
-};
-
-type CategoryTranslation = {
-  category_id: string;
-  locale_code: string;
-  name: string;
+  slug: string;
 };
 
 type Props = {
   languages: Language[];
   categories: Category[];
-  categoryTranslations: CategoryTranslation[];
-  localeCode?: string;
+  translations?: Record<string, string>;
   initialLanguageCode?: string;
   initialCategoryId?: string;
   onLanguageChange?: (languageCode: string) => void;
   onCategoryChange?: (categoryId: string) => void;
-  uiTranslations?: Record<string, string>;
 };
 
 type SelectedLevels = {
@@ -88,13 +81,11 @@ function getInitialLevels(
 export default function CategorySelector({
   languages,
   categories,
-  categoryTranslations,
-  localeCode = "en",
+  translations = {},
   initialLanguageCode = "",
   initialCategoryId = "",
   onLanguageChange,
   onCategoryChange,
-  uiTranslations,
 }: Props) {
   const initialCategory = categories.find(
     (category) => category.id === initialCategoryId
@@ -105,13 +96,20 @@ export default function CategorySelector({
     initialCategory
   );
 
-  const [languageCode, setLanguageCode] = useState(
-    initialLanguageCode
+  const [languageCode, setLanguageCode] =
+    useState(initialLanguageCode);
+
+  const [level1, setLevel1] = useState(
+    initialLevels.level1
   );
 
-  const [level1, setLevel1] = useState(initialLevels.level1);
-  const [level2, setLevel2] = useState(initialLevels.level2);
-  const [level3, setLevel3] = useState(initialLevels.level3);
+  const [level2, setLevel2] = useState(
+    initialLevels.level2
+  );
+
+  const [level3, setLevel3] = useState(
+    initialLevels.level3
+  );
 
   useEffect(() => {
     setLanguageCode(initialLanguageCode);
@@ -120,7 +118,10 @@ export default function CategorySelector({
       (item) => item.id === initialCategoryId
     );
 
-    const levels = getInitialLevels(categories, category);
+    const levels = getInitialLevels(
+      categories,
+      category
+    );
 
     setLevel1(levels.level1);
     setLevel2(levels.level2);
@@ -131,53 +132,53 @@ export default function CategorySelector({
     initialLanguageCode,
   ]);
 
-  /*
-  * Category names use the SITE/UI locale.
-  *
-  * The language selected in this component is the
-  * language being taught, not the language spoken in the video.
-  */
-  const translationMap = useMemo(() => {
-    const map = new Map<string, string>();
+  const getCategoryTranslationKey = (category: Category) => {
+  const parts: string[] = [category.slug];
 
-    categoryTranslations.forEach((translation) => {
-      if (translation.locale_code === localeCode) {
-        map.set(
-          translation.category_id,
-          translation.name
-        );
-      }
-    });
+  let current = category;
 
-    return map;
-  }, [categoryTranslations, localeCode]);
-
-  const getName = (category: Category) => {
-    return (
-      translationMap.get(category.id) ??
-      categoryTranslations.find(
-        (translation) =>
-          translation.category_id === category.id &&
-          translation.locale_code === "en"
-      )?.name ??
-      category.id
+  while (current.parent_id) {
+    const parent = categories.find(
+      (item) => item.id === current.parent_id
     );
-  };
 
-  /*
-   * The first UI Category selector contains LANGUAGES.
-   *
-   * Language is intentionally NOT stored in categories.
-   * It is saved separately as videos.language_code.
-   */
-  const availableLanguages = useMemo(() => {
+    if (!parent) break;
+
+    parts.unshift(parent.slug);
+    current = parent;
+  }
+
+  return `category.${parts.join(".")}`;
+};
+
+const getName = (category: Category) => {
+  const key = getCategoryTranslationKey(category);
+
+  return (
+    translations[key] ??
+    category.slug ??
+    category.id
+  );
+};
+
+console.log(
+  "CATEGORY DEBUG",
+  categories.map((category) => ({
+    slug: category.slug,
+    key: getCategoryTranslationKey(category),
+    translation:
+      translations[getCategoryTranslationKey(category)],
+  }))
+);
+
+  const languagesList = useMemo(() => {
     return [...languages].sort((a, b) =>
       a.name.localeCompare(b.name)
     );
   }, [languages]);
 
   /*
-   * The second UI selector contains actual Category Level 1.
+   * Level 1 = Category
    */
   const categoriesLevel1 = useMemo(() => {
     return categories
@@ -193,7 +194,7 @@ export default function CategorySelector({
   }, [categories]);
 
   /*
-   * Category Level 2
+   * Level 2 = Topic
    */
   const categoriesLevel2 = useMemo(() => {
     if (!level1) return [];
@@ -211,7 +212,7 @@ export default function CategorySelector({
   }, [categories, level1]);
 
   /*
-   * Category Level 3
+   * Level 3 = Subtopic
    */
   const categoriesLevel3 = useMemo(() => {
     if (!level2) return [];
@@ -238,7 +239,17 @@ export default function CategorySelector({
     setLevel2("");
     setLevel3("");
 
-    onCategoryChange?.("");
+    const hasLevel2 = categories.some(
+      (category) =>
+        category.level === 2 &&
+        category.parent_id === value
+    );
+
+    if (!hasLevel2) {
+      onCategoryChange?.(value);
+    } else {
+      onCategoryChange?.("");
+    }
   }
 
   function handleLevel2Change(value: string) {
@@ -259,59 +270,59 @@ export default function CategorySelector({
   }
 
   function handleLevel3Change(value: string) {
-  setLevel3(value);
-  onCategoryChange?.(value);
-}
+    setLevel3(value);
+    onCategoryChange?.(value);
+  }
 
   const selectClassName =
     "h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10";
 
+  const languageLabel =
+    translations["category.language"] ??
+    "Language";
+
+  const selectLanguageLabel =
+    translations["category.select_language"] ??
+    "Select Language";
+
   const categoryLabel =
-    uiTranslations?.["category.category"] ??
+    translations["category.category"] ??
     "Category";
 
   const selectCategoryLabel =
-    uiTranslations?.["category.select_category"] ??
+    translations["category.select_category"] ??
     "Select Category";
 
-  const subcategoryLabel =
-    uiTranslations?.["category.subcategory"] ??
-    "Subcategory";
-
-  const selectSubcategoryLabel =
-    uiTranslations?.[
-      "category.select_subcategory"
-    ] ?? "Select Subcategory";
-
   const topicLabel =
-    uiTranslations?.["category.topic"] ??
+    translations["category.topic"] ??
     "Topic";
 
   const selectTopicLabel =
-    uiTranslations?.["category.select_topic"] ??
+    translations["category.select_topic"] ??
     "Select Topic";
 
   const subtopicLabel =
-  uiTranslations?.["category.subtopic"] ??
-  "Subtopic";
+    translations["category.subtopic"] ??
+    "Subtopic";
 
   const selectSubtopicLabel =
-    uiTranslations?.["category.select_subtopic"] ??
+    translations["category.select_subtopic"] ??
     "Select Subtopic";
 
   const helperText =
-    uiTranslations?.["category.helper"] ??
-    "Select a category and continue through the available subcategories.";
+    translations["category.helper"] ??
+    "Select the language learners want to learn, then choose what the video is about.";
 
   return (
     <div className="space-y-5">
-      {/* Category — Language */}
+      {/* Language */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          {categoryLabel}
+          {languageLabel}
         </label>
 
         <select
+          name="language_code"
           value={languageCode}
           onChange={(event) =>
             handleLanguageChange(event.target.value)
@@ -319,51 +330,49 @@ export default function CategorySelector({
           className={selectClassName}
         >
           <option value="">
-            {selectCategoryLabel}
+            {selectLanguageLabel}
           </option>
 
-          {availableLanguages.map((language) => (
+          {languagesList.map((language) => (
             <option
               key={language.code}
               value={language.code}
             >
-              {language.name}
+              {translations[`language.${language.code}`] ?? language.name}
             </option>
           ))}
         </select>
       </div>
 
-      {/* Subcategory — Category Level 1 */}
-      {languageCode && (
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-foreground">
-            {subcategoryLabel}
-          </label>
+      {/* Category - Level 1 */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-foreground">
+          {categoryLabel}
+        </label>
 
-          <select
-            value={level1}
-            onChange={(event) =>
-              handleLevel1Change(event.target.value)
-            }
-            className={selectClassName}
-          >
-            <option value="">
-              {selectSubcategoryLabel}
+        <select
+          value={level1}
+          onChange={(event) =>
+            handleLevel1Change(event.target.value)
+          }
+          className={selectClassName}
+        >
+          <option value="">
+            {selectCategoryLabel}
+          </option>
+
+          {categoriesLevel1.map((category) => (
+            <option
+              key={category.id}
+              value={category.id}
+            >
+              {getName(category)}
             </option>
+          ))}
+        </select>
+      </div>
 
-            {categoriesLevel1.map((category) => (
-              <option
-                key={category.id}
-                value={category.id}
-              >
-                {getName(category)}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Topic — Category Level 2 */}
+      {/* Topic - Level 2 */}
       {level1 && categoriesLevel2.length > 0 && (
         <div className="space-y-2">
           <label className="block text-sm font-medium text-foreground">
@@ -393,40 +402,39 @@ export default function CategorySelector({
         </div>
       )}
 
-            {/* Subtopic — Category Level 3 */}
-{level2 && categoriesLevel3.length > 0 && (
-  <div className="space-y-2">
-    <label className="block text-sm font-medium text-foreground">
-      {subtopicLabel}
-    </label>
+      {/* Subtopic - Level 3 */}
+      {level2 && categoriesLevel3.length > 0 && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-foreground">
+            {subtopicLabel}
+          </label>
 
-    <select
-      name="category_id"
-      value={level3}
-      onChange={(event) =>
-        handleLevel3Change(event.target.value)
-      }
-      className={selectClassName}
-    >
-      <option value="">
-        {selectSubtopicLabel}
-      </option>
+          <select
+            name="category_id"
+            value={level3}
+            onChange={(event) =>
+              handleLevel3Change(event.target.value)
+            }
+            className={selectClassName}
+          >
+            <option value="">
+              {selectSubtopicLabel}
+            </option>
 
-      {categoriesLevel3.map((category) => (
-        <option
-          key={category.id}
-          value={category.id}
-        >
-          {getName(category)}
-        </option>
-      ))}
-    </select>
-  </div>
-)}
+            {categoriesLevel3.map((category) => (
+              <option
+                key={category.id}
+                value={category.id}
+              >
+                {getName(category)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
-      {/* Final category when Level 1 is deepest */}
-      {languageCode &&
-        level1 &&
+      {/* If Level 1 is the final category */}
+      {level1 &&
         categoriesLevel2.length === 0 && (
           <input
             type="hidden"
@@ -435,14 +443,15 @@ export default function CategorySelector({
           />
         )}
 
-      {/* Final category when Level 2 is deepest */}
-      {level2 && categoriesLevel3.length === 0 && (
-        <input
-          type="hidden"
-          name="category_id"
-          value={level2}
-        />
-      )}
+      {/* If Level 2 is the final category */}
+      {level2 &&
+        categoriesLevel3.length === 0 && (
+          <input
+            type="hidden"
+            name="category_id"
+            value={level2}
+          />
+        )}
 
       <p className="text-xs text-muted-foreground">
         {helperText}

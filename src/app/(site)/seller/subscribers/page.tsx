@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import {
   Users,
   UserCheck,
@@ -6,10 +7,60 @@ import {
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "@/lib/translations";
 import SubscribersTable from "@/components/seller/SubscribersTable";
 
 export default async function SubscribersPage() {
   const supabase = await createClient();
+
+  const cookieStore = await cookies();
+
+  const locale =
+  cookieStore.get("niceconvo_locale")?.value || "en";
+
+  // --------------------------------------------------
+  // Translations
+  // --------------------------------------------------
+
+  const translations = await getTranslations(
+  [
+    "seller.subscribers",
+    "seller.subscribers_description",
+    "seller.no_channels",
+    "seller.create_channel_subscribers",
+
+    "seller.subscriber",
+    "seller.channel",
+
+    "seller.total_subscribers",
+    "seller.total_subscribers_description",
+    "seller.active_subscribers",
+    "seller.active_subscribers_description",
+    "seller.monthly_subscription_value",
+    "seller.monthly_subscription_value_description",
+    "seller.your_subscribers",
+    "seller.your_subscribers_description",
+
+    // Subscribers table
+    "seller.search_subscribers",
+    "seller.all",
+    "seller.active",
+    "seller.cancelled",
+    "seller.expired",
+    "seller.no_subscribers",
+    "seller.no_subscribers_found",
+    "seller.no_subscribers_description",
+    "seller.try_change_search_filter",
+    "seller.subscription",
+    "seller.status",
+    "seller.renewal",
+    "seller.joined",
+    "seller.per_month",
+    "seller.ends_after_period",
+    "seller.cancelling",
+  ],
+  locale
+);
 
   // --------------------------------------------------
   // Current seller
@@ -80,22 +131,24 @@ export default async function SubscribersPage() {
     return (
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Subscribers
+          <h1>
+            {translations["seller.subscribers"] ?? "Subscribers"}
           </h1>
 
-          <p className="mt-2 text-sm text-muted">
-            Manage the people subscribed to your channels.
+          <p>
+            {translations["seller.subscribers_description"] ??
+              "Manage the people subscribed to your channels."}
           </p>
         </div>
 
         <div className="rounded-xl border border-border bg-background px-6 py-12 text-center">
           <p className="font-medium text-foreground">
-            No channels yet
+            {translations["seller.no_channels"] ?? "No channels yet"}
           </p>
 
           <p className="mt-2 text-sm text-muted">
-            Create a channel to start getting subscribers.
+            {translations["seller.create_channel_subscribers"] ??
+              "Create a channel to start getting subscribers."}
           </p>
         </div>
       </div>
@@ -176,6 +229,7 @@ export default async function SubscribersPage() {
         subscriberName:
           subscriberProfile?.display_name ||
           subscriberProfile?.username ||
+          translations["seller.subscriber"] ||
           "Subscriber",
 
         username:
@@ -185,7 +239,9 @@ export default async function SubscribersPage() {
           subscriberProfile?.avatar_url || null,
 
         channelName:
-          channel?.channel_name || "Channel",
+          channel?.channel_name || 
+           translations["seller.channel"] ||
+          "Channel",
 
         channelSlug:
           channel?.slug || null,
@@ -266,11 +322,12 @@ export default async function SubscribersPage() {
 
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Subscribers
+           {translations["seller.subscribers"] ?? "Subscribers"}
         </h1>
 
         <p className="mt-2 text-sm text-muted">
-          Manage the people subscribed to your channels.
+          {translations["seller.subscribers_description"] ??
+          "Manage the people subscribed to your channels."}
         </p>
       </div>
 
@@ -287,7 +344,7 @@ export default async function SubscribersPage() {
           <div className="flex items-center justify-between">
 
             <p className="text-lg font-bold text-muted">
-              Total Subscribers
+              {translations["seller.total_subscribers"] ?? "Total Subscribers"}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -301,7 +358,8 @@ export default async function SubscribersPage() {
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            People subscribed to your channels
+            {translations["seller.total_subscribers_description"] ??
+            "People subscribed to your channels"}
           </p>
 
         </div>
@@ -313,7 +371,7 @@ export default async function SubscribersPage() {
           <div className="flex items-center justify-between">
 
             <p className="text-lg font-bold text-muted">
-              Active Subscribers
+              {translations["seller.active_subscribers"] ?? "Active Subscribers"}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -327,7 +385,8 @@ export default async function SubscribersPage() {
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            Currently active subscriptions
+            {translations["seller.active_subscribers_description"] ??
+            "Currently active subscriptions"}
           </p>
 
         </div>
@@ -339,7 +398,8 @@ export default async function SubscribersPage() {
           <div className="flex items-center justify-between">
 
             <p className="text-lg font-bold text-muted">
-              Monthly Subscription Value
+              {translations["seller.monthly_subscription_value"] ??
+              "Monthly Subscription Value"}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -354,9 +414,9 @@ export default async function SubscribersPage() {
               currency,
             }).format(monthlySubscriptionValue)}
           </p>
-
           <p className="mt-1 text-xs text-muted">
-            Value of active subscriptions
+            {translations["seller.monthly_subscription_value_description"] ??
+            "Value of active subscriptions"}
           </p>
 
         </div>
@@ -372,17 +432,21 @@ export default async function SubscribersPage() {
         <div className="mb-4">
 
           <h2 className="text-xl font-semibold text-foreground">
-            Your Subscribers
+            {translations["seller.your_subscribers"] ??
+            "Your Subscribers"}
           </h2>
 
           <p className="mt-1 text-sm text-muted">
-            View and manage subscribers across your channels.
+            {translations["seller.your_subscribers_description"] ??
+            "View and manage subscribers across your channels."}
           </p>
 
         </div>
 
         <SubscribersTable
           subscribers={subscriberRows}
+          translations={translations}
+          locale={locale}
         />
 
       </section>

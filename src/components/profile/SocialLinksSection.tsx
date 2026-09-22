@@ -13,14 +13,24 @@ interface SocialLink {
   url: string;
 }
 
+interface SocialPlatform {
+  id: number;
+  name: string;
+  slug: string;
+  url_prefix: string;
+  placeholder: string | null;
+}
+
 interface SocialLinksSectionProps {
   profileId: string;
   socialLinks: SocialLink[];
+  availablePlatforms: SocialPlatform[];
 }
 
 export default function SocialLinksSection({
   profileId,
   socialLinks,
+  availablePlatforms,
 }: SocialLinksSectionProps) {
   const [open, setOpen] = useState(false);
 
@@ -38,35 +48,40 @@ export default function SocialLinksSection({
             </p>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setOpen(true)}
-          >
-            Edit
+          <Button onClick={() => setOpen(true)}>
+            Edit Social Links
           </Button>
         </div>
 
         {socialLinks.length > 0 ? (
           <div className="mt-5 overflow-hidden rounded-xl border">
-            {socialLinks.map((link, index) => (
-              <div
-                key={link.id}
-                className={`grid grid-cols-[160px_1fr] items-center gap-4 px-4 py-3 text-sm ${
-                  index !== socialLinks.length - 1
-                    ? "border-b"
-                    : ""
-                }`}
-              >
-                <span className="font-medium">
-                  {link.platform}
-                </span>
+            {/* Header */}
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] border-b px-4 py-3 text-sm font-medium text-muted-foreground">
+              <span>Platform</span>
+              <span>Profile</span>
+            </div>
 
-                <span className="truncate text-muted-foreground">
-                  {link.url}
-                </span>
-              </div>
-            ))}
+            {/* Social Links */}
+            {socialLinks.map((link) => {
+              const platform = availablePlatforms.find(
+                (item) => item.slug === link.platform
+              );
+
+              return (
+                <div
+                  key={link.id}
+                  className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center px-4 py-3 text-sm"
+                >
+                  <span className="min-w-0 font-medium">
+                    {platform?.name ?? link.platform}
+                  </span>
+
+                  <span className="min-w-0 truncate text-muted-foreground">
+                    {link.url}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="mt-5 rounded-xl border border-dashed p-5 text-center">
@@ -82,6 +97,7 @@ export default function SocialLinksSection({
         onOpenChange={setOpen}
         profileId={profileId}
         socialLinks={socialLinks}
+        availablePlatforms={availablePlatforms}
       />
     </>
   );

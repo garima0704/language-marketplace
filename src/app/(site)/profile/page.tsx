@@ -83,6 +83,16 @@ export default async function ProfilePage() {
     .order("platform");
 
   // --------------------------------------------------
+  // Social Media Platforms
+  // --------------------------------------------------
+
+  const { data: availablePlatforms } = await supabase
+    .from("social_platforms")
+    .select("id, name, slug, url_prefix, placeholder")
+    .eq("is_active", true)
+    .order("display_order");
+
+  // --------------------------------------------------
   // Seller Channels
   // --------------------------------------------------
 
@@ -106,6 +116,7 @@ export default async function ProfilePage() {
       <SocialLinksSection
         profileId={profile.id}
         socialLinks={socialLinks ?? []}
+        availablePlatforms={availablePlatforms ?? []}
       />
 
       {/* Become Seller */}

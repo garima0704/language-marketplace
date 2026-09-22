@@ -19,7 +19,7 @@ interface ProfileLanguage {
   locales?: {
     code: string;
     name: string;
-  }[] | null;
+  } | null;
 }
 
 interface LanguagesSectionProps {
@@ -52,40 +52,41 @@ export default function LanguagesSection({
             </p>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setOpen(true)}
-          >
-            Edit
+          <Button onClick={() => setOpen(true)}>
+            Edit Languages
           </Button>
         </div>
 
         {languages.length > 0 ? (
           <div className="mt-5 overflow-hidden rounded-xl border">
-            <div className="grid grid-cols-[1fr_1fr_auto] border-b px-4 py-3 text-sm font-medium text-muted-foreground">
+            {/* Header */}
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_90px] border-b px-4 py-3 text-sm font-medium text-muted-foreground">
               <span>Language</span>
               <span>Proficiency</span>
               <span className="text-right">Native</span>
             </div>
 
+            {/* Languages */}
             {languages.map((language) => (
               <div
                 key={language.id}
-                className="grid grid-cols-[1fr_1fr_auto] items-center px-4 py-3 text-sm"
+                className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_90px] items-center px-4 py-3 text-sm"
               >
-                <span className="font-medium">
-                  {language.locales?.[0]?.name ??
+                {/* Language */}
+                <span className="min-w-0 font-medium">
+                  {language.locales?.name ??
                     language.language_code}
                 </span>
 
+                {/* Proficiency */}
                 <span className="capitalize text-muted-foreground">
                   {language.proficiency}
                 </span>
 
-                <span className="text-right">
+                {/* Native */}
+                <span className="flex justify-end">
                   {language.is_native ? (
-                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
+                    <span className="inline-flex whitespace-nowrap rounded-full bg-secondary px-3 py-1 text-sm font-medium text-white">
                       Native
                     </span>
                   ) : (
@@ -116,3 +117,4 @@ export default function LanguagesSection({
     </>
   );
 }
+

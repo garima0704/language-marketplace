@@ -9,42 +9,44 @@ import { Button } from "@/components/ui/button";
 interface ReportVideoButtonProps {
   videoId: string;
   isAuthenticated: boolean;
+  translations: Record<string, string>;
 }
 
 const REPORT_REASONS = [
   {
     value: "spam",
-    label: "Spam or misleading",
+    translationKey: "report.reason_spam",
   },
   {
     value: "inappropriate",
-    label: "Inappropriate or offensive content",
+    translationKey: "report.reason_inappropriate",
   },
   {
     value: "copyright",
-    label: "Copyright violation",
+    translationKey: "report.reason_copyright",
   },
   {
     value: "harassment",
-    label: "Harassment or hateful content",
+    translationKey: "report.reason_harassment",
   },
   {
     value: "violence",
-    label: "Violence or dangerous content",
+    translationKey: "report.reason_violence",
   },
   {
     value: "misleading",
-    label: "Misleading information",
+    translationKey: "report.reason_misleading",
   },
   {
     value: "other",
-    label: "Other",
+    translationKey: "report.reason_other",
   },
 ];
 
 export default function ReportVideoButton({
   videoId,
   isAuthenticated,
+  translations,
 }: ReportVideoButtonProps) {
   const supabase = createClient();
 
@@ -63,8 +65,6 @@ export default function ReportVideoButton({
     setError(null);
     setSubmitted(false);
   };
-
-  // Check whether the current user has already reported this video when the component loads.
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -90,7 +90,10 @@ export default function ReportVideoButton({
         .maybeSingle();
 
       if (error) {
-        console.error("Failed to check report status:", error);
+        console.error(
+          "Failed to check report status:",
+          error
+        );
         return;
       }
 
@@ -106,9 +109,6 @@ export default function ReportVideoButton({
     };
   }, [videoId, isAuthenticated, supabase]);
 
-  
-  // Open report dialog.
-  
   const handleOpen = () => {
     if (!isAuthenticated) {
       window.location.href = "/login";
@@ -119,9 +119,9 @@ export default function ReportVideoButton({
     setOpen(true);
   };
 
-  // Submit report.
-
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (
+    event: React.FormEvent
+  ) => {
     event.preventDefault();
 
     if (!reason || loading) {
@@ -153,13 +153,16 @@ export default function ReportVideoButton({
         });
 
       if (insertError) {
-        console.error("Failed to submit report:", {
-          error: insertError,
-          code: insertError.code,
-          message: insertError.message,
-          details: insertError.details,
-          hint: insertError.hint,
-        });
+        console.error(
+          "Failed to submit report:",
+          {
+            error: insertError,
+            code: insertError.code,
+            message: insertError.message,
+            details: insertError.details,
+            hint: insertError.hint,
+          }
+        );
 
         if (insertError.code === "23505") {
           setAlreadyReported(true);
@@ -167,7 +170,7 @@ export default function ReportVideoButton({
         }
 
         setError(
-          insertError.message ||
+          translations["report.submit_error"] ??
             "Unable to submit your report. Please try again."
         );
 
@@ -202,15 +205,20 @@ export default function ReportVideoButton({
         disabled={loading}
         aria-label={
           alreadyReported
-            ? "Video reported"
-            : "Report video"
+            ? translations["report.reported"] ??
+              "Video reported"
+            : translations["report.report_video"] ??
+              "Report video"
         }
         title={
           isAuthenticated
             ? alreadyReported
-              ? "Reported"
-              : "Report video"
-            : "Log in to report"
+              ? translations["report.reported"] ??
+                "Reported"
+              : translations["report.report_video"] ??
+                "Report video"
+            : translations["report.login_to_report"] ??
+              "Log in to report"
         }
         className={`
           inline-flex
@@ -241,7 +249,11 @@ export default function ReportVideoButton({
         )}
 
         <span>
-          {alreadyReported ? "Reported" : "Report"}
+          {alreadyReported
+            ? translations["report.reported"] ??
+              "Reported"
+            : translations["report.report"] ??
+              "Report"}
         </span>
       </button>
 
@@ -251,7 +263,10 @@ export default function ReportVideoButton({
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
               handleClose();
             }
           }}
@@ -266,12 +281,16 @@ export default function ReportVideoButton({
                 </div>
 
                 <h2 className="mt-4 text-lg font-semibold text-foreground">
-                  Report submitted
+                  {translations[
+                    "report.submitted"
+                  ] ?? "Report submitted"}
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  Thanks for helping keep NiceConvo safe.
-                  We&apos;ll review your report.
+                  {translations[
+                    "report.submitted_description"
+                  ] ??
+                    "Thanks for helping keep NiceConvo safe. We'll review your report."}
                 </p>
 
                 <Button
@@ -279,7 +298,8 @@ export default function ReportVideoButton({
                   onClick={handleClose}
                   className="mt-6 rounded-lg"
                 >
-                  Done
+                  {translations["common.done"] ??
+                    "Done"}
                 </Button>
               </div>
             ) : alreadyReported ? (
@@ -291,12 +311,16 @@ export default function ReportVideoButton({
                 </div>
 
                 <h2 className="mt-4 text-lg font-semibold text-foreground">
-                  Already reported
+                  {translations[
+                    "report.already_reported"
+                  ] ?? "Already reported"}
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  You have already reported this video.
-                  Our team will review it.
+                  {translations[
+                    "report.already_reported_description"
+                  ] ??
+                    "You have already reported this video. Our team will review it."}
                 </p>
 
                 <Button
@@ -305,7 +329,8 @@ export default function ReportVideoButton({
                   onClick={handleClose}
                   className="mt-6 rounded-lg"
                 >
-                  Close
+                  {translations["common.close"] ??
+                    "Close"}
                 </Button>
               </div>
             ) : (
@@ -314,11 +339,16 @@ export default function ReportVideoButton({
               <>
                 <div>
                   <h2 className="text-lg font-semibold text-foreground">
-                    Report video
+                    {translations[
+                      "report.report_video"
+                    ] ?? "Report video"}
                   </h2>
 
                   <p className="mt-1 text-sm text-muted">
-                    Tell us what&apos;s wrong with this video.
+                    {translations[
+                      "report.description"
+                    ] ??
+                      "Tell us what's wrong with this video."}
                   </p>
                 </div>
 
@@ -330,35 +360,54 @@ export default function ReportVideoButton({
 
                   <div>
                     <label className="mb-2 block text-sm font-medium text-foreground">
-                      Why are you reporting this video?
+                      {translations[
+                        "report.reason_question"
+                      ] ??
+                        "Why are you reporting this video?"}
                     </label>
 
                     <div className="space-y-2">
-                      {REPORT_REASONS.map((item) => (
-                        <label
-                          key={item.value}
-                          className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 text-sm transition ${
-                            reason === item.value
-                              ? "border-foreground bg-muted-bg"
-                              : "border-border hover:bg-muted-bg"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="report-reason"
-                            value={item.value}
-                            checked={reason === item.value}
-                            onChange={(event) =>
-                              setReason(event.target.value)
-                            }
-                            className="h-4 w-4"
-                          />
+                      {REPORT_REASONS.map(
+                        (item) => (
+                          <label
+                            key={item.value}
+                            className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 text-sm transition ${
+                              reason ===
+                              item.value
+                                ? "border-foreground bg-muted-bg"
+                                : "border-border hover:bg-muted-bg"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="report-reason"
+                              value={
+                                item.value
+                              }
+                              checked={
+                                reason ===
+                                item.value
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                setReason(
+                                  event.target
+                                    .value
+                                )
+                              }
+                              className="h-4 w-4"
+                            />
 
-                          <span className="text-foreground">
-                            {item.label}
-                          </span>
-                        </label>
-                      ))}
+                            <span className="text-foreground">
+                              {translations[
+                                item.translationKey
+                              ] ??
+                                item.value}
+                            </span>
+                          </label>
+                        )
+                      )}
                     </div>
                   </div>
 
@@ -369,9 +418,16 @@ export default function ReportVideoButton({
                       htmlFor="report-description"
                       className="mb-2 block text-sm font-medium text-foreground"
                     >
-                      Additional details
+                      {translations[
+                        "report.additional_details"
+                      ] ?? "Additional details"}
+
                       <span className="ml-1 font-normal text-muted">
-                        (optional)
+                        (
+                        {translations[
+                          "common.optional"
+                        ] ?? "optional"}
+                        )
                       </span>
                     </label>
 
@@ -379,11 +435,18 @@ export default function ReportVideoButton({
                       id="report-description"
                       value={details}
                       onChange={(event) =>
-                        setDetails(event.target.value)
+                        setDetails(
+                          event.target.value
+                        )
                       }
                       rows={4}
                       maxLength={1000}
-                      placeholder="Tell us more about the issue..."
+                      placeholder={
+                        translations[
+                          "report.details_placeholder"
+                        ] ??
+                        "Tell us more about the issue..."
+                      }
                       className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-foreground"
                     />
 
@@ -410,23 +473,34 @@ export default function ReportVideoButton({
                       disabled={loading}
                       className="rounded-lg"
                     >
-                      Cancel
+                      {translations[
+                          "channel_form.cancel"
+                        ] ??
+                        "Cancel"}
                     </Button>
 
                     <Button
                       type="submit"
-                      disabled={!reason || loading}
+                      disabled={
+                        !reason || loading
+                      }
                       className="rounded-lg"
                     >
                       {loading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Submitting...
+                          {translations[
+                            "report.submitting"
+                          ] ??
+                            "Submitting..."}
                         </>
                       ) : (
                         <>
                           <Flag className="mr-2 h-4 w-4" />
-                          Submit report
+                          {translations[
+                            "report.submit"
+                          ] ??
+                            "Submit report"}
                         </>
                       )}
                     </Button>

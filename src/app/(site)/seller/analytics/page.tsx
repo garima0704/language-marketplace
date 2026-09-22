@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import {
   ArrowLeft,
   BarChart3,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "@/lib/translations";
 import AnalyticsChart from "@/components/seller/AnalyticsChart";
 import AnalyticsDateRange from "@/components/seller/AnalyticsDateRange";
 
@@ -23,8 +25,11 @@ function formatCurrency(
   }).format(amount);
 }
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("en-US").format(value);
+function formatNumber(
+  value: number,
+  locale = "en"
+) {
+  return new Intl.NumberFormat(locale).format(value);
 }
 
 function getMonthKey(date: Date) {
@@ -33,8 +38,11 @@ function getMonthKey(date: Date) {
   ).padStart(2, "0")}`;
 }
 
-function getMonthLabel(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
+function getMonthLabel(
+  date: Date,
+  locale = "en"
+) {
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
   }).format(date);
 }
@@ -53,83 +61,152 @@ export default async function SellerAnalyticsPage({
   const supabase = await createClient();
   const params = await searchParams;
 
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value || "en";
+
+  const translations = await getTranslations(
+    [
+      "seller.analytics",
+      "seller.analytics_description",
+      "seller.back_to_dashboard",
+      "seller.no_analytics",
+      "seller.no_analytics_description",
+      "seller.manage_channels",
+      "seller.total_revenue",
+      "seller.total_revenue_description",
+      "seller.subscribers",
+      "seller.active_subscribers",
+      "seller.total_views",
+      "seller.total_views_description",
+      "seller.pending_payout",
+      "seller.currently_pending",
+      "seller.revenue",
+      "seller.revenue_description",
+      "seller.content_performance",
+      "seller.most_watched_videos",
+      "seller.no_videos",
+      "seller.earnings_summary",
+      "seller.payment_activity_description",
+      "seller.gross_revenue",
+      "seller.platform_fees",
+      "seller.net_creator_earnings",
+      "seller.paid_transactions",
+      "seller.channel_performance",
+      "seller.compare_channels",
+      "seller.channel",
+      "seller.videos",
+      "seller.views",
+
+      "seller.last_7_days",
+      "seller.last_30_days",
+      "seller.last_90_days",
+      "seller.last_6_months",
+      "seller.last_year",
+      "seller.all_time",
+      "seller.custom_range",
+      "seller.to",
+      "seller.apply",
+
+      "seller.transaction",
+      "seller.transactions",
+    ],
+    locale
+  );
+
   const range = params.range || "30d";
 
   function getDateRange(
-  range: string,
-  from?: string,
-  to?: string
-) {
-  const now = new Date();
+    range: string,
+    from?: string,
+    to?: string
+  ) {
+    const today = new Date();
 
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
+    // Use today's local calendar date.
+    const end = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      23,
+      59,
+      59,
+      999
+    );
 
-  // Custom range
-  if (range === "custom" && from && to) {
-    const customStart = new Date(`${from}T00:00:00`);
-    const customEnd = new Date(`${to}T23:59:59.999`);
+    // Custom range
+    if (range === "custom" && from && to) {
+      const customStart = new Date(`${from}T00:00:00`);
+      const customEnd = new Date(`${to}T23:59:59.999`);
 
-    if (
-      !Number.isNaN(customStart.getTime()) &&
-      !Number.isNaN(customEnd.getTime()) &&
-      customStart <= customEnd
-    ) {
-      return {
-        start: customStart,
-        end: customEnd,
-      };
+      if (
+        !Number.isNaN(customStart.getTime()) &&
+        !Number.isNaN(customEnd.getTime()) &&
+        customStart <= customEnd
+      ) {
+        return {
+          start: customStart,
+          end: customEnd,
+        };
+      }
     }
+
+    const start = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      0,
+      0,
+      0,
+      0
+    );
+
+    switch (range) {
+      case "7d":
+        start.setDate(start.getDate() - 6);
+        break;
+
+      case "30d":
+        start.setDate(start.getDate() - 29);
+        break;
+
+      case "90d":
+        start.setDate(start.getDate() - 89);
+        break;
+
+      case "6m":
+        start.setMonth(start.getMonth() - 5);
+        start.setDate(1);
+        break;
+
+      case "1y":
+        start.setFullYear(start.getFullYear() - 1);
+        start.setDate(start.getDate() + 1);
+        break;
+
+      case "all":
+        return {
+          start: null,
+          end,
+        };
+
+      default:
+        start.setDate(start.getDate() - 29);
+        break;
+    }
+
+    return {
+      start,
+      end,
+    };
   }
 
-  const start = new Date(now);
-
-  switch (range) {
-    case "7d":
-      start.setDate(start.getDate() - 6);
-      break;
-
-    case "30d":
-      start.setDate(start.getDate() - 29);
-      break;
-
-    case "90d":
-      start.setDate(start.getDate() - 89);
-      break;
-
-    case "6m":
-      start.setMonth(start.getMonth() - 5);
-      start.setDate(1);
-      break;
-
-    case "1y":
-      start.setFullYear(start.getFullYear() - 1);
-      start.setDate(start.getDate() + 1);
-      break;
-
-    case "all":
-      return {
-        start: null,
-        end,
-      };
-
-    default:
-      start.setDate(start.getDate() - 29);
-  }
-
-  start.setHours(0, 0, 0, 0);
-
-  return {
-    start,
-    end,
-  };
-}
-
-const { start, end } = getDateRange(
-  range,
-  params.from,
-  params.to
-);
+  const { start, end } = getDateRange(
+    range,
+    params.from,
+    params.to
+  );
 
   // --------------------------------------------------
   // Current seller
@@ -147,14 +224,16 @@ const { start, end } = getDateRange(
   // Seller channels
   // --------------------------------------------------
 
-  const { data: channels, error: channelsError } =
-    await supabase
-      .from("channels")
-      .select(`
-        id,
-        channel_name
-      `)
-      .eq("user_id", user.id);
+  const {
+    data: channels,
+    error: channelsError,
+  } = await supabase
+    .from("channels")
+    .select(`
+      id,
+      channel_name
+    `)
+    .eq("user_id", user.id);
 
   if (channelsError) {
     console.error(
@@ -178,16 +257,16 @@ const { start, end } = getDateRange(
           className="mb-6 inline-flex items-center gap-2 text-sm text-muted transition hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
+          {translations["seller.back_to_dashboard"]}
         </Link>
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Analytics
+            {translations["seller.analytics"]}
           </h1>
 
           <p className="mt-2 text-sm text-muted">
-            Understand how your channels and videos are performing.
+            {translations["seller.analytics_description"]}
           </p>
         </div>
 
@@ -195,19 +274,18 @@ const { start, end } = getDateRange(
           <BarChart3 className="mx-auto h-10 w-10 text-muted" />
 
           <p className="mt-4 font-medium text-foreground">
-            No analytics available yet
+            {translations["seller.no_analytics"]}
           </p>
 
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
-            Create a channel and publish videos to start seeing
-            views, subscribers, and revenue analytics.
+            {translations["seller.no_analytics_description"]}
           </p>
 
           <Link
             href="/seller/channels"
             className="mt-6 inline-flex rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
           >
-            Manage Channels
+            {translations["seller.manage_channels"]}
           </Link>
         </div>
       </div>
@@ -219,41 +297,41 @@ const { start, end } = getDateRange(
   // --------------------------------------------------
 
   let paymentsQuery = supabase
-  .from("payments")
-  .select(`
-    id,
-    channel_id,
-    creator_amount,
-    gross_amount,
-    platform_fee,
-    currency,
-    payment_status,
-    paid_at,
-    created_at
-  `)
-  .in("channel_id", channelIds)
-  .order("paid_at", {
-    ascending: false,
-  });
+    .from("payments")
+    .select(`
+      id,
+      channel_id,
+      creator_amount,
+      gross_amount,
+      platform_fee,
+      currency,
+      payment_status,
+      paid_at,
+      created_at
+    `)
+    .in("channel_id", channelIds)
+    .order("paid_at", {
+      ascending: false,
+    });
 
-if (start) {
-  paymentsQuery = paymentsQuery.gte(
-    "paid_at",
-    start.toISOString()
-  );
-}
+  if (start) {
+    paymentsQuery = paymentsQuery.gte(
+      "paid_at",
+      start.toISOString()
+    );
+  }
 
-if (end) {
-  paymentsQuery = paymentsQuery.lte(
-    "paid_at",
-    end.toISOString()
-  );
-}
+  if (end) {
+    paymentsQuery = paymentsQuery.lte(
+      "paid_at",
+      end.toISOString()
+    );
+  }
 
-const {
-  data: payments,
-  error: paymentsError,
-} = await paymentsQuery;
+  const {
+    data: payments,
+    error: paymentsError,
+  } = await paymentsQuery;
 
   if (paymentsError) {
     console.error(
@@ -265,183 +343,184 @@ const {
   const paymentList = payments ?? [];
 
   const paidPayments = paymentList.filter(
-    (payment) => payment.payment_status === "paid"
+    (payment) =>
+      payment.payment_status === "paid"
   );
 
- // --------------------------------------------------
-// Videos
-// --------------------------------------------------
+  // --------------------------------------------------
+  // Videos
+  // --------------------------------------------------
 
-let videosQuery = supabase
-  .from("videos")
-  .select(`
-    id,
-    title,
-    thumbnail_url,
-    channel_id,
-    status,
-    created_at
-  `)
-  .in("channel_id", channelIds)
-  .order("created_at", {
-    ascending: false,
-  });
-
-const {
-  data: videos,
-  error: videosError,
-} = await videosQuery;
-
-if (videosError) {
-  console.error(
-    "Seller analytics videos error:",
-    videosError
-  );
-}
-
-const videoList = videos ?? [];
-
-
-// --------------------------------------------------
-// Video Views
-// --------------------------------------------------
-
-let videoViewList: {
-  id: string;
-  video_id: string;
-  watched_at: string;
-  watch_seconds: number;
-}[] = [];
-
-if (videoList.length > 0) {
-  let videoViewsQuery = supabase
-    .from("video_views")
+  const videosQuery = supabase
+    .from("videos")
     .select(`
       id,
-      video_id,
-      watched_at,
-      watch_seconds
+      title,
+      thumbnail_url,
+      channel_id,
+      status,
+      created_at
     `)
-    .in(
-      "video_id",
-      videoList.map((video) => video.id)
-    );
-
-  if (start) {
-    videoViewsQuery = videoViewsQuery.gte(
-      "watched_at",
-      start.toISOString()
-    );
-  }
-
-  if (end) {
-    videoViewsQuery = videoViewsQuery.lte(
-      "watched_at",
-      end.toISOString()
-    );
-  }
+    .in("channel_id", channelIds)
+    .order("created_at", {
+      ascending: false,
+    });
 
   const {
-    data: videoViews,
-    error: videoViewsError,
-  } = await videoViewsQuery;
+    data: videos,
+    error: videosError,
+  } = await videosQuery;
 
-  if (videoViewsError) {
+  if (videosError) {
     console.error(
-      "Seller analytics video views error:",
-      videoViewsError
+      "Seller analytics videos error:",
+      videosError
     );
   }
 
-  videoViewList = videoViews ?? [];
-}
+  const videoList = videos ?? [];
 
-// --------------------------------------------------
-// Subscriptions
-// --------------------------------------------------
+  // --------------------------------------------------
+  // Video Views
+  // --------------------------------------------------
 
-const {
-  data: subscriptions,
-  error: subscriptionsError,
-} = await supabase
-  .from("subscriptions")
-  .select(`
-    id,
-    channel_id,
-    status,
-    created_at
-  `)
-  .in("channel_id", channelIds);
+  let videoViewList: {
+    id: string;
+    video_id: string;
+    watched_at: string;
+    watch_seconds: number;
+  }[] = [];
 
-if (subscriptionsError) {
-  console.error(
-    "Seller analytics subscriptions error:",
-    subscriptionsError
-  );
-}
+  if (videoList.length > 0) {
+    let videoViewsQuery = supabase
+      .from("video_views")
+      .select(`
+        id,
+        video_id,
+        watched_at,
+        watch_seconds
+      `)
+      .in(
+        "video_id",
+        videoList.map((video) => video.id)
+      );
 
-const subscriptionList = subscriptions ?? [];
+    if (start) {
+      videoViewsQuery = videoViewsQuery.gte(
+        "watched_at",
+        start.toISOString()
+      );
+    }
 
-const activeSubscriptions = subscriptionList.filter(
-  (subscription) =>
-    subscription.status === "active"
-);
+    if (end) {
+      videoViewsQuery = videoViewsQuery.lte(
+        "watched_at",
+        end.toISOString()
+      );
+    }
+
+    const {
+      data: videoViews,
+      error: videoViewsError,
+    } = await videoViewsQuery;
+
+    if (videoViewsError) {
+      console.error(
+        "Seller analytics video views error:",
+        videoViewsError
+      );
+    }
+
+    videoViewList = videoViews ?? [];
+  }
+
+  // --------------------------------------------------
+  // Subscriptions
+  // --------------------------------------------------
+
+  const {
+    data: subscriptions,
+    error: subscriptionsError,
+  } = await supabase
+    .from("subscriptions")
+    .select(`
+      id,
+      channel_id,
+      status,
+      created_at
+    `)
+    .in("channel_id", channelIds);
+
+  if (subscriptionsError) {
+    console.error(
+      "Seller analytics subscriptions error:",
+      subscriptionsError
+    );
+  }
+
+  const subscriptionList = subscriptions ?? [];
+
+  const activeSubscriptions =
+    subscriptionList.filter(
+      (subscription) =>
+        subscription.status === "active"
+    );
 
   // --------------------------------------------------
   // Payouts
   // --------------------------------------------------
 
   let payoutsQuery = supabase
-  .from("payouts")
-  .select(`
-    id,
-    amount,
-    currency,
-    status,
-    created_at
-  `)
-  .eq("user_id", user.id);
+    .from("payouts")
+    .select(`
+      id,
+      amount,
+      currency,
+      status,
+      created_at
+    `)
+    .eq("user_id", user.id);
 
-if (start) {
-  payoutsQuery = payoutsQuery.gte(
-    "created_at",
-    start.toISOString()
-  );
-}
+  if (start) {
+    payoutsQuery = payoutsQuery.gte(
+      "created_at",
+      start.toISOString()
+    );
+  }
 
-if (end) {
-  payoutsQuery = payoutsQuery.lte(
-    "created_at",
-    end.toISOString()
-  );
-}
+  if (end) {
+    payoutsQuery = payoutsQuery.lte(
+      "created_at",
+      end.toISOString()
+    );
+  }
 
-const {
-  data: payouts,
-  error: payoutsError,
-} = await payoutsQuery;
+  const {
+    data: payouts,
+    error: payoutsError,
+  } = await payoutsQuery;
 
-if (payoutsError) {
-  console.error(
-    "Seller analytics payouts error:",
-    payoutsError
-  );
-}
+  if (payoutsError) {
+    console.error(
+      "Seller analytics payouts error:",
+      payoutsError
+    );
+  }
 
-const payoutList = payouts ?? [];
+  const payoutList = payouts ?? [];
 
   // --------------------------------------------------
-// View counts by video
-// --------------------------------------------------
+  // View counts by video
+  // --------------------------------------------------
 
-const videoViewCounts = new Map<string, number>();
+  const videoViewCounts = new Map<string, number>();
 
-videoViewList.forEach((view) => {
-  videoViewCounts.set(
-    view.video_id,
-    (videoViewCounts.get(view.video_id) ?? 0) + 1
-  );
-});
+  videoViewList.forEach((view) => {
+    videoViewCounts.set(
+      view.video_id,
+      (videoViewCounts.get(view.video_id) ?? 0) + 1
+    );
+  });
 
   // --------------------------------------------------
   // Summary
@@ -468,7 +547,10 @@ videoViewList.forEach((view) => {
   const totalViews = videoViewList.length;
 
   const pendingPayouts = payoutList
-    .filter((payout) => payout.status === "pending")
+    .filter(
+      (payout) =>
+        payout.status === "pending"
+    )
     .reduce(
       (total, payout) =>
         total + Number(payout.amount || 0),
@@ -478,255 +560,330 @@ videoViewList.forEach((view) => {
   const currency =
     paidPayments[0]?.currency || "USD";
 
+    // --------------------------------------------------
+    // Revenue chart
+    // --------------------------------------------------
+
+    function getDayKey(date: Date) {
+      return `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}-${String(
+        date.getDate()
+      ).padStart(2, "0")}`;
+    }
+
+    function getDayLabel(
+      date: Date,
+      locale = "en"
+    ) {
+      return new Intl.DateTimeFormat(locale, {
+        month: "short",
+        day: "numeric",
+      }).format(date);
+    }
+
+    function getChartData() {
+      // -----------------------------------------------
+      // All time = monthly chart
+      // -----------------------------------------------
+
+      if (!start) {
+        const today = new Date();
+
+        const months = Array.from(
+          { length: 12 },
+          (_, index) => {
+            const date = new Date(
+              today.getFullYear(),
+              today.getMonth() - (11 - index),
+              1
+            );
+
+            return {
+              key: getMonthKey(date),
+              label: getMonthLabel(date, locale),
+              revenue: 0,
+              transactions: 0,
+            };
+          }
+        );
+
+        const monthMap = new Map(
+          months.map((month) => [
+            month.key,
+            month,
+          ])
+        );
+
+        paidPayments.forEach((payment) => {
+          const paymentDate = new Date(
+            payment.paid_at ||
+              payment.created_at
+          );
+
+          const key = getMonthKey(paymentDate);
+          const month = monthMap.get(key);
+
+          if (!month) return;
+
+          month.revenue += Number(
+            payment.creator_amount || 0
+          );
+
+          month.transactions += 1;
+        });
+
+        return months;
+      }
+
+      // -----------------------------------------------
+      // Calendar-date difference
+      // -----------------------------------------------
+
+      const startYear = start.getFullYear();
+      const startMonth = start.getMonth();
+      const startDay = start.getDate();
+
+      const endYear = end.getFullYear();
+      const endMonth = end.getMonth();
+      const endDay = end.getDate();
+
+      const startCalendarDate = Date.UTC(
+        startYear,
+        startMonth,
+        startDay
+      );
+
+      const endCalendarDate = Date.UTC(
+        endYear,
+        endMonth,
+        endDay
+      );
+
+      const differenceInDays =
+        Math.round(
+          (endCalendarDate -
+            startCalendarDate) /
+            (1000 * 60 * 60 * 24)
+        ) + 1;
+
+      // -----------------------------------------------
+      // Up to 90 days = daily
+      // -----------------------------------------------
+
+      if (differenceInDays <= 90) {
+        const days = Array.from(
+          { length: differenceInDays },
+          (_, index) => {
+            const calendarDate = new Date(
+              Date.UTC(
+                startYear,
+                startMonth,
+                startDay + index
+              )
+            );
+
+            const year =
+              calendarDate.getUTCFullYear();
+
+            const month =
+              calendarDate.getUTCMonth() + 1;
+
+            const day =
+              calendarDate.getUTCDate();
+
+            const key = `${year}-${String(
+              month
+            ).padStart(2, "0")}-${String(
+              day
+            ).padStart(2, "0")}`;
+
+            const labelDate = new Date(
+              year,
+              month - 1,
+              day
+            );
+
+            return {
+              key,
+              label: getDayLabel(
+                labelDate,
+                locale
+              ),
+              revenue: 0,
+              transactions: 0,
+            };
+          }
+        );
+
+        const dayMap = new Map(
+          days.map((day) => [
+            day.key,
+            day,
+          ])
+        );
+
+        paidPayments.forEach((payment) => {
+          const paymentDate = new Date(
+            payment.paid_at ||
+              payment.created_at
+          );
+
+          const key = getDayKey(paymentDate);
+          const day = dayMap.get(key);
+
+          if (!day) return;
+
+          day.revenue += Number(
+            payment.creator_amount || 0
+          );
+
+          day.transactions += 1;
+        });
+
+        return days;
+      }
+
+      // -----------------------------------------------
+      // More than 90 days = monthly
+      // -----------------------------------------------
+
+      const months: {
+        key: string;
+        label: string;
+        revenue: number;
+        transactions: number;
+      }[] = [];
+
+      const cursor = new Date(
+        start.getFullYear(),
+        start.getMonth(),
+        1
+      );
+
+      const finalMonth = new Date(
+        end.getFullYear(),
+        end.getMonth(),
+        1
+      );
+
+      while (cursor <= finalMonth) {
+        months.push({
+          key: getMonthKey(cursor),
+          label: getMonthLabel(
+            cursor,
+            locale
+          ),
+          revenue: 0,
+          transactions: 0,
+        });
+
+        cursor.setMonth(
+          cursor.getMonth() + 1
+        );
+      }
+
+      const monthMap = new Map(
+        months.map((month) => [
+          month.key,
+          month,
+        ])
+      );
+
+      paidPayments.forEach((payment) => {
+        const paymentDate = new Date(
+          payment.paid_at ||
+            payment.created_at
+        );
+
+        const key = getMonthKey(
+          paymentDate
+        );
+
+        const month = monthMap.get(key);
+
+        if (!month) return;
+
+        month.revenue += Number(
+          payment.creator_amount || 0
+        );
+
+        month.transactions += 1;
+      });
+
+      return months;
+    }
+
+    const chartData = getChartData();
+
+
   // --------------------------------------------------
-// Revenue chart - dynamic selected period
-// --------------------------------------------------
+  // Top videos
+  // --------------------------------------------------
 
-function getDayKey(date: Date) {
-  return `${date.getFullYear()}-${String(
-    date.getMonth() + 1
-  ).padStart(2, "0")}-${String(
-    date.getDate()
-  ).padStart(2, "0")}`;
-}
-
-function getDayLabel(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-  }).format(date);
-}
-
-function getChartData() {
-  const now = new Date();
-
-  // -----------------------------------------------
-  // All time / fallback
-  // -----------------------------------------------
-
-  if (!start) {
-    const months = Array.from(
-      { length: 12 },
-      (_, index) => {
-        const date = new Date(
-          now.getFullYear(),
-          now.getMonth() - (11 - index),
-          1
-        );
-
-        return {
-          key: getMonthKey(date),
-          label: getMonthLabel(date),
-          revenue: 0,
-          transactions: 0,
-        };
-      }
-    );
-
-    const monthMap = new Map(
-      months.map((month) => [
-        month.key,
-        month,
-      ])
-    );
-
-    paidPayments.forEach((payment) => {
-      const paymentDate = new Date(
-        payment.paid_at || payment.created_at
-      );
-
-      const key = getMonthKey(paymentDate);
-      const month = monthMap.get(key);
-
-      if (!month) return;
-
-      month.revenue += Number(
-        payment.creator_amount || 0
-      );
-
-      month.transactions += 1;
-    });
-
-    return months;
-  }
-
-  const differenceInDays =
-    Math.ceil(
-      (end.getTime() - start.getTime()) /
-        (1000 * 60 * 60 * 24)
-    ) + 1;
-
-  // -----------------------------------------------
-  // Up to 90 days = daily
-  // -----------------------------------------------
-
-  if (differenceInDays <= 90) {
-    const days = Array.from(
-      { length: differenceInDays },
-      (_, index) => {
-        const date = new Date(start);
-
-        date.setDate(
-          start.getDate() + index
-        );
-
-        return {
-          key: getDayKey(date),
-          label: getDayLabel(date),
-          revenue: 0,
-          transactions: 0,
-        };
-      }
-    );
-
-    const dayMap = new Map(
-      days.map((day) => [
-        day.key,
-        day,
-      ])
-    );
-
-    paidPayments.forEach((payment) => {
-      const paymentDate = new Date(
-        payment.paid_at || payment.created_at
-      );
-
-      const key = getDayKey(paymentDate);
-      const day = dayMap.get(key);
-
-      if (!day) return;
-
-      day.revenue += Number(
-        payment.creator_amount || 0
-      );
-
-      day.transactions += 1;
-    });
-
-    return days;
-  }
-
-  // -----------------------------------------------
-  // More than 90 days = monthly
-  // -----------------------------------------------
-
-  const months: {
-    key: string;
-    label: string;
-    revenue: number;
-    transactions: number;
-  }[] = [];
-
-  const cursor = new Date(
-    start.getFullYear(),
-    start.getMonth(),
-    1
-  );
-
-  const finalMonth = new Date(
-    end.getFullYear(),
-    end.getMonth(),
-    1
-  );
-
-  while (cursor <= finalMonth) {
-    months.push({
-      key: getMonthKey(cursor),
-      label: getMonthLabel(cursor),
-      revenue: 0,
-      transactions: 0,
-    });
-
-    cursor.setMonth(
-      cursor.getMonth() + 1
-    );
-  }
-
-  const monthMap = new Map(
-    months.map((month) => [
-      month.key,
-      month,
-    ])
-  );
-
-  paidPayments.forEach((payment) => {
-    const paymentDate = new Date(
-      payment.paid_at || payment.created_at
-    );
-
-    const key = getMonthKey(paymentDate);
-    const month = monthMap.get(key);
-
-    if (!month) return;
-
-    month.revenue += Number(
-      payment.creator_amount || 0
-    );
-
-    month.transactions += 1;
-  });
-
-  return months;
-}
-
-const chartData = getChartData();
-
- // --------------------------------------------------
-// Top videos
-// --------------------------------------------------
-
-const topVideos = [...videoList]
-  .map((video) => ({
-    ...video,
-    analyticsViews:
-      videoViewCounts.get(video.id) ?? 0,
-  }))
-  .sort(
-    (a, b) =>
-      b.analyticsViews - a.analyticsViews
-  )
-  .slice(0, 5);
+  const topVideos = [...videoList]
+    .map((video) => ({
+      ...video,
+      analyticsViews:
+        videoViewCounts.get(video.id) ?? 0,
+    }))
+    .sort(
+      (a, b) =>
+        b.analyticsViews -
+        a.analyticsViews
+    )
+    .slice(0, 5);
 
   // --------------------------------------------------
   // Top channels
   // --------------------------------------------------
 
-  const channelStats = (channels ?? []).map((channel) => {
-    const channelVideos = videoList.filter(
-      (video) =>
-        video.channel_id === channel.id
-    );
+  const channelStats =
+    (channels ?? []).map((channel) => {
+      const channelVideos =
+        videoList.filter(
+          (video) =>
+            video.channel_id ===
+            channel.id
+        );
 
-    const channelPayments = paidPayments.filter(
-      (payment) =>
-        payment.channel_id === channel.id
-    );
+      const channelPayments =
+        paidPayments.filter(
+          (payment) =>
+            payment.channel_id ===
+            channel.id
+        );
 
-    const channelSubscribers =
-      activeSubscriptions.filter(
-        (subscription) =>
-          subscription.channel_id === channel.id
-      ).length;
+      const channelSubscribers =
+        activeSubscriptions.filter(
+          (subscription) =>
+            subscription.channel_id ===
+            channel.id
+        ).length;
 
-    return {
-      id: channel.id,
-      name: channel.channel_name,
-      videos: channelVideos.length,
-      views: channelVideos.reduce(
-        (total, video) =>
-          total +
-          (videoViewCounts.get(video.id) ?? 0),
-        0
-      ),
-      subscribers: channelSubscribers,
-      revenue: channelPayments.reduce(
-        (total, payment) =>
-          total +
-          Number(payment.creator_amount || 0),
-        0
-      ),
-    };
-  });
+      return {
+        id: channel.id,
+        name: channel.channel_name,
+        videos: channelVideos.length,
+        views: channelVideos.reduce(
+          (total, video) =>
+            total +
+            (videoViewCounts.get(
+              video.id
+            ) ?? 0),
+          0
+        ),
+        subscribers: channelSubscribers,
+        revenue: channelPayments.reduce(
+          (total, payment) =>
+            total +
+            Number(
+              payment.creator_amount || 0
+            ),
+          0
+        ),
+      };
+    });
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
@@ -738,16 +895,27 @@ const topVideos = [...videoList]
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Analytics
+              {translations["seller.analytics"]}
             </h1>
 
             <p className="mt-2 text-sm text-muted">
-              Track your channel performance, audience,
-              views, and earnings.
+              {translations["seller.analytics_description"]}
             </p>
           </div>
 
-          <AnalyticsDateRange />
+          <AnalyticsDateRange
+            translations={{
+              last7Days: translations["seller.last_7_days"],
+              last30Days: translations["seller.last_30_days"],
+              last90Days: translations["seller.last_90_days"],
+              last6Months: translations["seller.last_6_months"],
+              lastYear: translations["seller.last_year"],
+              allTime: translations["seller.all_time"],
+              customRange: translations["seller.custom_range"],
+              to: translations["seller.to"],
+              apply: translations["seller.apply"],
+            }}
+          />
         </div>
       </div>
 
@@ -762,7 +930,7 @@ const topVideos = [...videoList]
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-muted">
-              Total Revenue
+              {translations["seller.total_revenue"]}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -778,7 +946,7 @@ const topVideos = [...videoList]
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            Your earnings after platform fees
+            {translations["seller.total_revenue_description"]}
           </p>
         </div>
 
@@ -787,7 +955,7 @@ const topVideos = [...videoList]
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-muted">
-              Subscribers
+              {translations["seller.subscribers"]}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -797,12 +965,13 @@ const topVideos = [...videoList]
 
           <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
             {formatNumber(
-              activeSubscriptions.length
+              activeSubscriptions.length,
+              locale
             )}
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            Active subscribers
+            {translations["seller.active_subscribers"]}
           </p>
         </div>
 
@@ -811,7 +980,7 @@ const topVideos = [...videoList]
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-muted">
-              Total Views
+              {translations["seller.total_views"]}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -820,11 +989,14 @@ const topVideos = [...videoList]
           </div>
 
           <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-            {formatNumber(totalViews)}
+            {formatNumber(
+              totalViews,
+              locale
+            )}
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            Across all your videos
+            {translations["seller.total_views_description"]}
           </p>
         </div>
 
@@ -833,7 +1005,7 @@ const topVideos = [...videoList]
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-muted">
-              Pending Payout
+              {translations["seller.pending_payout"]}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -849,7 +1021,7 @@ const topVideos = [...videoList]
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            Currently pending
+            {translations["seller.currently_pending"]}
           </p>
         </div>
 
@@ -862,11 +1034,11 @@ const topVideos = [...videoList]
       <div className="mt-6 rounded-xl border border-border bg-background p-6">
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-semibold text-foreground">
-            Revenue
+            {translations["seller.revenue"]}
           </h2>
 
           <p className="text-sm text-muted">
-            Your creator earnings for the selected period.
+            {translations["seller.revenue_description"]}
           </p>
         </div>
 
@@ -874,6 +1046,8 @@ const topVideos = [...videoList]
           <AnalyticsChart
             data={chartData}
             currency={currency}
+            transactionLabel={translations["seller.transaction"]}
+            transactionsLabel={translations["seller.transactions"]}
           />
         </div>
       </div>
@@ -883,17 +1057,18 @@ const topVideos = [...videoList]
       -------------------------------------------------- */}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
+
         {/* Performance */}
 
         <div className="rounded-xl border border-border bg-background p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-foreground">
-                Content Performance
+                {translations["seller.content_performance"]}
               </h2>
 
               <p className="mt-1 text-sm text-muted">
-                Your most watched videos.
+                {translations["seller.most_watched_videos"]}
               </p>
             </div>
 
@@ -928,16 +1103,17 @@ const topVideos = [...videoList]
 
                     <p className="mt-1 text-xs text-muted">
                       {formatNumber(
-                          video.analyticsViews
-                        )}{" "}
-                        views
+                        video.analyticsViews,
+                        locale
+                      )}{" "}
+                      {translations["seller.views"]}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
               <p className="py-8 text-center text-sm text-muted">
-                No videos available yet.
+                {translations["seller.no_videos"]}
               </p>
             )}
           </div>
@@ -947,17 +1123,18 @@ const topVideos = [...videoList]
 
         <div className="rounded-xl border border-border bg-background p-6">
           <h2 className="text-lg font-semibold text-foreground">
-            Earnings Summary
+            {translations["seller.earnings_summary"]}
           </h2>
 
           <p className="mt-1 text-sm text-muted">
-            Breakdown of your payment activity.
+            {translations["seller.payment_activity_description"]}
           </p>
 
           <div className="mt-6 space-y-5">
+
             <div className="flex items-center justify-between border-b border-border pb-4">
               <span className="text-sm text-muted">
-                Gross revenue
+                {translations["seller.gross_revenue"]}
               </span>
 
               <span className="font-medium text-foreground">
@@ -970,7 +1147,7 @@ const topVideos = [...videoList]
 
             <div className="flex items-center justify-between border-b border-border pb-4">
               <span className="text-sm text-muted">
-                Platform fees
+                {translations["seller.platform_fees"]}
               </span>
 
               <span className="font-medium text-foreground">
@@ -983,7 +1160,7 @@ const topVideos = [...videoList]
 
             <div className="flex items-center justify-between border-b border-border pb-4">
               <span className="text-sm text-muted">
-                Net creator earnings
+                {translations["seller.net_creator_earnings"]}
               </span>
 
               <span className="font-semibold text-foreground">
@@ -996,15 +1173,17 @@ const topVideos = [...videoList]
 
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted">
-                Paid transactions
+                {translations["seller.paid_transactions"]}
               </span>
 
               <span className="font-medium text-foreground">
                 {formatNumber(
-                  paidPayments.length
+                  paidPayments.length,
+                  locale
                 )}
               </span>
             </div>
+
           </div>
         </div>
       </div>
@@ -1017,11 +1196,11 @@ const topVideos = [...videoList]
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-foreground">
-              Channel Performance
+              {translations["seller.channel_performance"]}
             </h2>
 
             <p className="mt-1 text-sm text-muted">
-              Compare how each of your channels is performing.
+              {translations["seller.compare_channels"]}
             </p>
           </div>
 
@@ -1029,7 +1208,7 @@ const topVideos = [...videoList]
             href="/seller/channels"
             className="text-sm font-medium text-foreground hover:underline"
           >
-            Manage channels
+            {translations["seller.manage_channels"]}
           </Link>
         </div>
 
@@ -1037,25 +1216,27 @@ const topVideos = [...videoList]
           <table className="w-full min-w-[650px]">
             <thead>
               <tr className="border-b border-border text-left">
+
                 <th className="pb-3 text-xs font-medium uppercase tracking-wide text-muted">
-                  Channel
+                  {translations["seller.channel"]}
                 </th>
 
                 <th className="pb-3 text-right text-xs font-medium uppercase tracking-wide text-muted">
-                  Videos
+                  {translations["seller.videos"]}
                 </th>
 
                 <th className="pb-3 text-right text-xs font-medium uppercase tracking-wide text-muted">
-                  Views
+                  {translations["seller.views"]}
                 </th>
 
                 <th className="pb-3 text-right text-xs font-medium uppercase tracking-wide text-muted">
-                  Subscribers
+                  {translations["seller.subscribers"]}
                 </th>
 
                 <th className="pb-3 text-right text-xs font-medium uppercase tracking-wide text-muted">
-                  Revenue
+                  {translations["seller.revenue"]}
                 </th>
+
               </tr>
             </thead>
 
@@ -1071,19 +1252,22 @@ const topVideos = [...videoList]
 
                   <td className="py-4 text-right text-sm text-secondary">
                     {formatNumber(
-                      channel.videos
+                      channel.videos,
+                      locale
                     )}
                   </td>
 
                   <td className="py-4 text-right text-sm text-secondary">
                     {formatNumber(
-                      channel.views
+                      channel.views,
+                      locale
                     )}
                   </td>
 
                   <td className="py-4 text-right text-sm text-secondary">
                     {formatNumber(
-                      channel.subscribers
+                      channel.subscribers,
+                      locale
                     )}
                   </td>
 

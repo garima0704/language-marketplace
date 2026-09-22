@@ -30,16 +30,14 @@ type Language = {
   language_code: string;
   proficiency: string;
   is_native: boolean;
-  locales: {
-    code: string;
-    name: string;
-  }[] | null;
 };
 
 type AvailableLanguage = {
   code: string;
   name: string;
 };
+
+type PayoutMethod = "stripe" | "paypal" | "bank";
 
 interface SellerOnboardingDialogProps {
   open: boolean;
@@ -52,11 +50,11 @@ interface SellerOnboardingDialogProps {
 const proficiencyOptions = [
   {
     value: "beginner",
-    label: "Basic",
+    label: "Beginner",
   },
   {
     value: "intermediate",
-    label: "Conversational",
+    label: "Intermediate",
   },
   {
     value: "advanced",
@@ -93,16 +91,42 @@ export default function SellerOnboardingDialog({
 
   const [bio, setBio] = useState(profile.bio ?? "");
 
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [payoutMethod, setPayoutMethod] =
+    useState<PayoutMethod>("stripe");
 
-  const unusedLanguages = availableLanguages.filter(
-    (language) =>
-      !languages.some(
-        (existing) =>
-          existing.language_code === language.code
-      )
-  );
+  const [paypalEmail, setPaypalEmail] =
+    useState("");
+
+  const [accountHolderName, setAccountHolderName] =
+    useState("");
+
+  const [bankName, setBankName] =
+    useState("");
+
+  const [accountNumber, setAccountNumber] =
+    useState("");
+
+  const [iban, setIban] =
+    useState("");
+
+  const [swiftCode, setSwiftCode] =
+    useState("");
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  const unusedLanguages =
+    availableLanguages.filter(
+      (language) =>
+        !languages.some(
+          (existing) =>
+            existing.language_code ===
+            language.code
+        )
+    );
 
   function resetAddLanguage() {
     setLanguageCode("");
@@ -120,8 +144,15 @@ export default function SellerOnboardingDialog({
       return;
     }
 
-    if (isNative && languages.some((language) => language.is_native)) {
-      setError("You can only have one native language.");
+    if (
+      isNative &&
+      languages.some(
+        (language) => language.is_native
+      )
+    ) {
+      setError(
+        "You can only have one native language."
+      );
       return;
     }
 
@@ -137,25 +168,22 @@ export default function SellerOnboardingDialog({
       return;
     }
 
-    const { data, error: insertError } = await supabase
-      .from("profile_languages")
-      .insert({
-        profile_id: user.id,
-        language_code: languageCode,
-        proficiency,
-        is_native: isNative,
-      })
-      .select(`
-        id,
-        language_code,
-        proficiency,
-        is_native,
-        locales (
-          code,
-          name
-        )
-      `)
-      .single();
+    const { data, error: insertError } =
+      await supabase
+        .from("profile_languages")
+        .insert({
+          profile_id: user.id,
+          language_code: languageCode,
+          proficiency,
+          is_native: isNative,
+        })
+        .select(`
+          id,
+          language_code,
+          proficiency,
+          is_native
+        `)
+        .single();
 
     if (insertError) {
       setSaving(false);
@@ -180,14 +208,17 @@ export default function SellerOnboardingDialog({
     setSaving(false);
   }
 
-  async function handleDeleteLanguage(id: number) {
+  async function handleDeleteLanguage(
+    id: number
+  ) {
     setError(null);
     setSaving(true);
 
-    const { error: deleteError } = await supabase
-      .from("profile_languages")
-      .delete()
-      .eq("id", id);
+    const { error: deleteError } =
+      await supabase
+        .from("profile_languages")
+        .delete()
+        .eq("id", id);
 
     if (deleteError) {
       setError(deleteError.message);
@@ -196,7 +227,9 @@ export default function SellerOnboardingDialog({
     }
 
     setLanguages((current) =>
-      current.filter((language) => language.id !== id)
+      current.filter(
+        (language) => language.id !== id
+      )
     );
 
     setSaving(false);
@@ -208,12 +241,13 @@ export default function SellerOnboardingDialog({
   ) {
     setError(null);
 
-    const { error: updateError } = await supabase
-      .from("profile_languages")
-      .update({
-        proficiency: newProficiency,
-      })
-      .eq("id", id);
+    const { error: updateError } =
+      await supabase
+        .from("profile_languages")
+        .update({
+          proficiency: newProficiency,
+        })
+        .eq("id", id);
 
     if (updateError) {
       setError(updateError.message);
@@ -239,17 +273,19 @@ export default function SellerOnboardingDialog({
       setError(
         "Please add a short bio so learners can understand you better."
       );
+
       return false;
     }
 
     setSaving(true);
 
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
-        bio: bio.trim(),
-      })
-      .eq("id", profile.id);
+    const { error: updateError } =
+      await supabase
+        .from("profiles")
+        .update({
+          bio: bio.trim(),
+        })
+        .eq("id", profile.id);
 
     if (updateError) {
       setError(updateError.message);
@@ -258,26 +294,114 @@ export default function SellerOnboardingDialog({
     }
 
     setSaving(false);
+
     return true;
   }
 
-  async function handleComplete() {
+  /**
+   * Stripe Connect
+   *
+   * This calls the server-side Stripe endpoint.
+   * Stripe should create/retrieve the connected
+   * account and return a Stripe Account Link URL.
+   *
+   * Do not create Stripe accounts or use the
+   * Stripe secret key in this client component.
+   */
+  async function handleStripeConnect() {
     setError(null);
     setSaving(true);
 
-    /*
-     * At this stage we are making the user a seller.
-     *
-     * Payout setup will be connected here once
-     * the payout step is implemented.
-     */
+    try {
+      const response = await fetch(
+        "/api/stripe/connect",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    const { error: creatorError } = await supabase
-      .from("profiles")
-      .update({
-        is_creator: true,
-      })
-      .eq("id", profile.id);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ||
+            "Unable to connect Stripe."
+        );
+      }
+
+      if (!result.url) {
+        throw new Error(
+          "Stripe onboarding URL was not returned."
+        );
+      }
+
+      window.location.href = result.url;
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to connect Stripe."
+      );
+
+      setSaving(false);
+    }
+  }
+
+  /**
+   * Save PayPal payout method.
+   */
+  async function handleSavePayPal() {
+    setError(null);
+
+    const email =
+      paypalEmail.trim();
+
+    if (!email) {
+      setError(
+        "Please enter your PayPal email."
+      );
+      return;
+    }
+
+    setSaving(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setSaving(false);
+      router.push("/login");
+      return;
+    }
+
+    const { error: payoutError } =
+      await supabase
+        .from("creator_payout_accounts")
+        .insert({
+          user_id: user.id,
+          provider: "paypal",
+          paypal_email: email,
+          is_default: true,
+          status: "pending",
+        });
+
+    if (payoutError) {
+      setError(payoutError.message);
+      setSaving(false);
+      return;
+    }
+
+    const { error: creatorError } =
+      await supabase
+        .from("profiles")
+        .update({
+          is_creator: true,
+        })
+        .eq("id", profile.id);
 
     if (creatorError) {
       setError(creatorError.message);
@@ -288,8 +412,107 @@ export default function SellerOnboardingDialog({
     setSaving(false);
 
     onOpenChange(false);
+
     router.push("/seller/dashboard");
     router.refresh();
+  }
+
+  /**
+   * Save bank payout method.
+   */
+  async function handleSaveBank() {
+    setError(null);
+
+    if (
+      !accountHolderName.trim() ||
+      !bankName.trim() ||
+      !accountNumber.trim()
+    ) {
+      setError(
+        "Please complete the required bank account details."
+      );
+
+      return;
+    }
+
+    setSaving(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setSaving(false);
+      router.push("/login");
+      return;
+    }
+
+    const { error: payoutError } =
+      await supabase
+        .from("creator_payout_accounts")
+        .insert({
+          user_id: user.id,
+          provider: "bank",
+          account_holder_name:
+            accountHolderName.trim(),
+          bank_name:
+            bankName.trim(),
+          account_number:
+            accountNumber.trim(),
+          iban:
+            iban.trim() || null,
+          swift_code:
+            swiftCode.trim() || null,
+          is_default: true,
+          status: "pending",
+        });
+
+    if (payoutError) {
+      setError(payoutError.message);
+      setSaving(false);
+      return;
+    }
+
+    const { error: creatorError } =
+      await supabase
+        .from("profiles")
+        .update({
+          is_creator: true,
+        })
+        .eq("id", profile.id);
+
+    if (creatorError) {
+      setError(creatorError.message);
+      setSaving(false);
+      return;
+    }
+
+    setSaving(false);
+
+    onOpenChange(false);
+
+    router.push("/seller/dashboard");
+    router.refresh();
+  }
+
+  /**
+   * Handles the action for whichever
+   * payout method the seller selected.
+   */
+  async function handleSavePayout() {
+    setError(null);
+
+    if (payoutMethod === "stripe") {
+      await handleStripeConnect();
+      return;
+    }
+
+    if (payoutMethod === "paypal") {
+      await handleSavePayPal();
+      return;
+    }
+
+    await handleSaveBank();
   }
 
   function handleClose(value: boolean) {
@@ -297,13 +520,32 @@ export default function SellerOnboardingDialog({
       setStep(1);
       setError(null);
       setShowAddLanguage(false);
+
+      setLanguageCode("");
+      setProficiency("intermediate");
+      setIsNative(false);
+
+      setPayoutMethod("stripe");
+
+      setPaypalEmail("");
+
+      setAccountHolderName("");
+      setBankName("");
+      setAccountNumber("");
+      setIban("");
+      setSwiftCode("");
+
+      setSaving(false);
     }
 
     onOpenChange(value);
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog
+      open={open}
+      onOpenChange={handleClose}
+    >
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl">
@@ -320,9 +562,18 @@ export default function SellerOnboardingDialog({
 
         <div className="mt-4 flex items-center">
           {[
-            { number: 1, label: "Languages" },
-            { number: 2, label: "Profile" },
-            { number: 3, label: "Payout" },
+            {
+              number: 1,
+              label: "Languages",
+            },
+            {
+              number: 2,
+              label: "Profile",
+            },
+            {
+              number: 3,
+              label: "Payout",
+            },
           ].map((item, index) => (
             <div
               key={item.number}
@@ -333,7 +584,7 @@ export default function SellerOnboardingDialog({
                   className={[
                     "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium",
                     step >= item.number
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-black text-white"
                       : "bg-muted text-muted-foreground",
                   ].join(" ")}
                 >
@@ -373,7 +624,7 @@ export default function SellerOnboardingDialog({
 
         {step === 1 && (
           <div className="space-y-6">
-            <div>
+            <div className="pt-2">
               <h3 className="text-lg font-semibold">
                 Languages & Proficiency
               </h3>
@@ -392,9 +643,13 @@ export default function SellerOnboardingDialog({
                     className="rounded-xl border p-4"
                   >
                     <div className="flex items-center justify-between gap-4">
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-medium">
-                          {language.locales?.[0]?.name ??
+                          {availableLanguages.find(
+                            (availableLanguage) =>
+                              availableLanguage.code ===
+                              language.language_code
+                          )?.name ??
                             language.language_code}
                         </p>
 
@@ -408,55 +663,61 @@ export default function SellerOnboardingDialog({
                               )?.label ??
                               language.proficiency}
                         </p>
+
+                        {!language.is_native && (
+                          <div className="mt-3">
+                            <select
+                              value={
+                                language.proficiency
+                              }
+                              onChange={(event) =>
+                                handleUpdateProficiency(
+                                  language.id,
+                                  event.target.value
+                                )
+                              }
+                              className="h-9 w-full rounded-md border bg-background px-3 text-sm sm:w-64"
+                            >
+                              {proficiencyOptions.map(
+                                (option) => (
+                                  <option
+                                    key={
+                                      option.value
+                                    }
+                                    value={
+                                      option.value
+                                    }
+                                  >
+                                    {option.label}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                          </div>
+                        )}
                       </div>
 
-                      {language.is_native && (
-                        <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
-                          Native
-                        </span>
-                      )}
-                    </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {language.is_native && (
+                          <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
+                            Native
+                          </span>
+                        )}
 
-                    {!language.is_native && (
-                      <div className="mt-3">
-                        <select
-                          value={language.proficiency}
-                          onChange={(event) =>
-                            handleUpdateProficiency(
-                              language.id,
-                              event.target.value
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={saving}
+                          onClick={() =>
+                            handleDeleteLanguage(
+                              language.id
                             )
                           }
-                          className="h-9 w-full rounded-md border bg-background px-3 text-sm sm:w-64"
                         >
-                          {proficiencyOptions.map(
-                            (option) => (
-                              <option
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </option>
-                            )
-                          )}
-                        </select>
+                          Remove
+                        </Button>
                       </div>
-                    )}
-
-                    <div className="mt-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={saving}
-                        onClick={() =>
-                          handleDeleteLanguage(
-                            language.id
-                          )
-                        }
-                      >
-                        Remove
-                      </Button>
                     </div>
                   </div>
                 ))}
@@ -582,7 +843,9 @@ export default function SellerOnboardingDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowAddLanguage(true)}
+                onClick={() =>
+                  setShowAddLanguage(true)
+                }
               >
                 + Add Language
               </Button>
@@ -590,11 +853,12 @@ export default function SellerOnboardingDialog({
 
             {/* Footer */}
 
-            <div className="flex justify-end border-t pt-5">
+            <div className="flex justify-end pt-2">
               <Button
                 type="button"
                 disabled={
-                  languages.length === 0 || saving
+                  languages.length === 0 ||
+                  saving
                 }
                 onClick={() => {
                   setError(null);
@@ -613,7 +877,7 @@ export default function SellerOnboardingDialog({
 
         {step === 2 && (
           <div className="space-y-6">
-            <div>
+            <div className="pt-2">
               <h3 className="text-lg font-semibold">
                 Your Profile
               </h3>
@@ -688,7 +952,7 @@ export default function SellerOnboardingDialog({
               </div>
             </div>
 
-            <div className="flex justify-between border-t pt-5">
+            <div className="flex justify-between pt-2">
               <Button
                 type="button"
                 variant="outline"
@@ -726,7 +990,7 @@ export default function SellerOnboardingDialog({
 
         {step === 3 && (
           <div className="space-y-6">
-            <div>
+            <div className="pt-2">
               <h3 className="text-lg font-semibold">
                 Payout Setup
               </h3>
@@ -737,22 +1001,298 @@ export default function SellerOnboardingDialog({
               </p>
             </div>
 
-            <div className="rounded-xl border p-6">
-              <p className="font-medium">
-                Payout setup
-              </p>
+            <div className="space-y-4">
 
-              <p className="mt-2 text-sm text-muted-foreground">
-                We'll connect your payout method here.
-                You can add your payout details before
-                publishing paid content.
-              </p>
+              {/* =================================================
+                  STRIPE
+              ================================================== */}
+
+              <div
+                className={[
+                  "rounded-xl border p-5 transition-colors",
+                  payoutMethod === "stripe"
+                    ? "border-black"
+                    : "border-border",
+                ].join(" ")}
+              >
+                <button
+                  type="button"
+                  className="w-full text-left"
+                  onClick={() => {
+                    setPayoutMethod("stripe");
+                    setError(null);
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold">
+                          Stripe
+                        </h4>
+
+                        <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
+                          Recommended
+                        </span>
+                      </div>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Receive payouts securely
+                        through Stripe.
+                      </p>
+                    </div>
+
+                    <div
+                      className={[
+                        "mt-1 h-4 w-4 shrink-0 rounded-full border",
+                        payoutMethod === "stripe"
+                          ? "border-black bg-black"
+                          : "border-muted-foreground",
+                      ].join(" ")}
+                    />
+                  </div>
+                </button>
+
+                {payoutMethod === "stripe" && (
+                  <div className="mt-5 rounded-lg bg-light-bg p-4">
+                    <p className="text-sm text-muted-foreground">
+                      Stripe will securely collect
+                      and verify your identity and
+                      payout information. Your bank
+                      details are handled by Stripe.
+                    </p>
+
+                    <Button
+                      type="button"
+                      className="mt-4"
+                      disabled={saving}
+                      onClick={
+                        handleStripeConnect
+                      }
+                    >
+                      {saving
+                        ? "Connecting..."
+                        : "Connect Stripe"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* =================================================
+                  PAYPAL
+              ================================================== */}
+
+              <div
+                className={[
+                  "rounded-xl border p-5 transition-colors",
+                  payoutMethod === "paypal"
+                    ? "border-black"
+                    : "border-border",
+                ].join(" ")}
+              >
+                <button
+                  type="button"
+                  className="w-full text-left"
+                  onClick={() => {
+                    setPayoutMethod("paypal");
+                    setError(null);
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h4 className="font-semibold">
+                        PayPal
+                      </h4>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Receive your earnings through
+                        your PayPal account.
+                      </p>
+                    </div>
+
+                    <div
+                      className={[
+                        "mt-1 h-4 w-4 shrink-0 rounded-full border",
+                        payoutMethod === "paypal"
+                          ? "border-black bg-black"
+                          : "border-muted-foreground",
+                      ].join(" ")}
+                    />
+                  </div>
+                </button>
+
+                {payoutMethod === "paypal" && (
+                  <div className="mt-5 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="paypal-email">
+                        PayPal Email
+                      </Label>
+
+                      <input
+                        id="paypal-email"
+                        type="email"
+                        value={paypalEmail}
+                        onChange={(event) =>
+                          setPaypalEmail(
+                            event.target.value
+                          )
+                        }
+                        placeholder="you@example.com"
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* =================================================
+                  BANK ACCOUNT
+              ================================================== */}
+
+              <div
+                className={[
+                  "rounded-xl border p-5 transition-colors",
+                  payoutMethod === "bank"
+                    ? "border-black"
+                    : "border-border",
+                ].join(" ")}
+              >
+                <button
+                  type="button"
+                  className="w-full text-left"
+                  onClick={() => {
+                    setPayoutMethod("bank");
+                    setError(null);
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h4 className="font-semibold">
+                        Bank Account
+                      </h4>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Receive your earnings directly
+                        into your bank account.
+                      </p>
+                    </div>
+
+                    <div
+                      className={[
+                        "mt-1 h-4 w-4 shrink-0 rounded-full border",
+                        payoutMethod === "bank"
+                          ? "border-black bg-black"
+                          : "border-muted-foreground",
+                      ].join(" ")}
+                    />
+                  </div>
+                </button>
+
+                {payoutMethod === "bank" && (
+                  <div className="mt-5 space-y-4">
+
+                    <div className="space-y-2">
+                      <Label htmlFor="account-holder-name">
+                        Account Holder Name
+                      </Label>
+
+                      <input
+                        id="account-holder-name"
+                        value={accountHolderName}
+                        onChange={(event) =>
+                          setAccountHolderName(
+                            event.target.value
+                          )
+                        }
+                        placeholder="Full name"
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bank-name">
+                        Bank Name
+                      </Label>
+
+                      <input
+                        id="bank-name"
+                        value={bankName}
+                        onChange={(event) =>
+                          setBankName(
+                            event.target.value
+                          )
+                        }
+                        placeholder="Bank name"
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="account-number">
+                        Account Number
+                      </Label>
+
+                      <input
+                        id="account-number"
+                        type="password"
+                        value={accountNumber}
+                        onChange={(event) =>
+                          setAccountNumber(
+                            event.target.value
+                          )
+                        }
+                        placeholder="Account number"
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="iban">
+                        IBAN
+                      </Label>
+
+                      <input
+                        id="iban"
+                        value={iban}
+                        onChange={(event) =>
+                          setIban(
+                            event.target.value
+                          )
+                        }
+                        placeholder="IBAN"
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="swift-code">
+                        SWIFT Code
+                      </Label>
+
+                      <input
+                        id="swift-code"
+                        value={swiftCode}
+                        onChange={(event) =>
+                          setSwiftCode(
+                            event.target.value
+                          )
+                        }
+                        placeholder="SWIFT / BIC"
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="flex justify-between border-t pt-5">
+            {/* Footer */}
+
+            <div className="flex justify-between pt-2">
               <Button
                 type="button"
                 variant="outline"
+                disabled={saving}
                 onClick={() => {
                   setError(null);
                   setStep(2);
@@ -761,15 +1301,17 @@ export default function SellerOnboardingDialog({
                 Back
               </Button>
 
-              <Button
-                type="button"
-                disabled={saving}
-                onClick={handleComplete}
-              >
-                {saving
-                  ? "Creating Seller Account..."
-                  : "Become a Seller"}
-              </Button>
+              {payoutMethod !== "stripe" && (
+                <Button
+                  type="button"
+                  disabled={saving}
+                  onClick={handleSavePayout}
+                >
+                  {saving
+                    ? "Saving..."
+                    : "Save & Continue"}
+                </Button>
+              )}
             </div>
           </div>
         )}

@@ -30,9 +30,8 @@ export default function LanguageRegionSelector({
   initialRegionId = null,
   uiTranslations,
 }: Props) {
-  const [languageCode, setLanguageCode] = useState(
-    initialLanguageCode
-  );
+  const [languageCode, setLanguageCode] =
+    useState(initialLanguageCode);
 
   const [country, setCountry] = useState("");
 
@@ -74,7 +73,7 @@ export default function LanguageRegionSelector({
     return Array.from(uniqueCountries).sort();
   }, [languageCode, languageRegions]);
 
-  const states = useMemo(() => {
+  const regions = useMemo(() => {
     if (!languageCode || !country) return [];
 
     return languageRegions
@@ -138,11 +137,11 @@ export default function LanguageRegionSelector({
 
   const stateRegionLabel =
     uiTranslations?.["video.state_region"] ??
-    "State / Region";
+    "Region";
 
   const selectStateRegionLabel =
     uiTranslations?.["video.select_state_region"] ??
-    "Select State / Region";
+    "Select Region";
 
   const selectCountryFirstLabel =
     uiTranslations?.["video.select_country_first"] ??
@@ -150,7 +149,7 @@ export default function LanguageRegionSelector({
 
   const helperText =
     uiTranslations?.["video.language_region_helper"] ??
-    "Select the language, country, and regional variety spoken in the video.";
+    "Select the language, country, and region that best represent the language variety used in the video.";
 
   return (
     <div className="space-y-5">
@@ -222,7 +221,7 @@ export default function LanguageRegionSelector({
         </select>
       </div>
 
-      {/* State / Region */}
+      {/* Region */}
       <div>
         <label className="mb-2 block text-sm font-medium text-foreground">
           {stateRegionLabel}
@@ -244,7 +243,7 @@ export default function LanguageRegionSelector({
               : selectCountryFirstLabel}
           </option>
 
-          {states.map((region) => (
+          {regions.map((region) => (
             <option
               key={region.id}
               value={region.id}

@@ -10,7 +10,9 @@ import {
   XCircle,
 } from "lucide-react";
 
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "@/lib/translations";
 
 function formatCurrency(
   amount: number,
@@ -22,24 +24,27 @@ function formatCurrency(
   }).format(amount);
 }
 
-function formatDate(dateString: string) {
-  return new Intl.DateTimeFormat("en-US", {
+function formatDate(dateString: string, locale = "en") {
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
   }).format(new Date(dateString));
 }
 
-function getStatusLabel(status: string) {
+function getStatusLabel(
+  status: string,
+  translations: Record<string, string>
+) {
   switch (status) {
     case "paid":
-      return "Paid";
+      return translations["seller.paid"];
 
     case "failed":
-      return "Failed";
+      return translations["seller.failed"];
 
     case "refunded":
-      return "Refunded";
+      return translations["seller.refunded"];
 
     default:
       return status;
@@ -48,6 +53,53 @@ function getStatusLabel(status: string) {
 
 export default async function SellerTransactionsPage() {
   const supabase = await createClient();
+
+  // --------------------------------------------------
+  // Locale
+  // --------------------------------------------------
+
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value || "en";
+
+  // --------------------------------------------------
+  // Translations
+  // --------------------------------------------------
+
+  const translations = await getTranslations(
+    [
+      // Existing seller translations
+      "seller.transactions",
+      "seller.transactions_description",
+      "seller.channel",
+      "seller.gross",
+      "seller.platform_fee",
+      "seller.you_earned",
+      "seller.date",
+      "seller.subscriber",
+
+      // New translations
+      "seller.back_to_earnings",
+      "seller.no_transactions",
+      "seller.no_transactions_description",
+      "seller.total_payment_records",
+      "seller.gross_revenue",
+      "seller.before_platform_fees",
+      "seller.fees_deducted_from_revenue",
+      "seller.after_platform_fees",
+      "seller.payment_history",
+      "seller.all_payments_associated",
+      "seller.payments_will_appear",
+      "seller.fee",
+      "seller.provider",
+      "seller.status",
+      "seller.paid",
+      "seller.failed",
+      "seller.refunded",
+    ],
+    locale
+  );
 
   // --------------------------------------------------
   // Current seller
@@ -93,27 +145,27 @@ export default async function SellerTransactionsPage() {
           className="mb-6 inline-flex items-center gap-2 text-sm text-muted transition hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Earnings
+
+          {translations["seller.back_to_earnings"]}
         </Link>
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Transactions
+            {translations["seller.transactions"]}
           </h1>
 
           <p className="mt-2 text-sm text-muted">
-            View payments received from your subscribers.
+            {translations["seller.transactions_description"]}
           </p>
         </div>
 
         <div className="rounded-xl border border-border px-6 py-12 text-center">
           <p className="font-medium text-foreground">
-            No transactions yet
+            {translations["seller.no_transactions"]}
           </p>
 
           <p className="mt-2 text-sm text-muted">
-            Create a channel and start accepting
-            subscriptions to see transactions here.
+            {translations["seller.no_transactions_description"]}
           </p>
         </div>
       </div>
@@ -215,7 +267,8 @@ export default async function SellerTransactionsPage() {
         className="mb-6 inline-flex items-center gap-2 text-sm text-muted transition hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Earnings
+
+        {translations["seller.back_to_earnings"]}
       </Link>
 
       {/* ==================================================
@@ -224,17 +277,17 @@ export default async function SellerTransactionsPage() {
 
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Transactions
+          {translations["seller.transactions"]}
         </h1>
 
         <p className="mt-2 text-sm text-muted">
-          View payments received from your subscribers.
+          {translations["seller.transactions_description"]}
         </p>
       </div>
 
       {/* ==================================================
-           SUMMARY
-          ================================================== */}
+          SUMMARY
+      ================================================== */}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
@@ -243,7 +296,7 @@ export default async function SellerTransactionsPage() {
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-muted">
-              Transactions
+              {translations["seller.transactions"]}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -256,17 +309,16 @@ export default async function SellerTransactionsPage() {
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            Total payment records
+            {translations["seller.total_payment_records"]}
           </p>
         </div>
-
 
         {/* Gross Revenue */}
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-muted">
-              Gross Revenue
+              {translations["seller.gross_revenue"]}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -279,17 +331,16 @@ export default async function SellerTransactionsPage() {
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            Before platform fees
+            {translations["seller.before_platform_fees"]}
           </p>
         </div>
-
 
         {/* Platform Fees */}
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-muted">
-              Platform Fees
+              {translations["seller.platform_fee"]}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -302,17 +353,16 @@ export default async function SellerTransactionsPage() {
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            Fees deducted from revenue
+            {translations["seller.fees_deducted_from_revenue"]}
           </p>
         </div>
-
 
         {/* Your Earnings */}
 
         <div className="rounded-xl border border-border bg-background p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-muted">
-              Your Earnings
+              {translations["seller.you_earned"]}
             </p>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
@@ -325,7 +375,7 @@ export default async function SellerTransactionsPage() {
           </p>
 
           <p className="mt-1 text-xs text-muted">
-            After platform fees
+            {translations["seller.after_platform_fees"]}
           </p>
         </div>
 
@@ -339,23 +389,22 @@ export default async function SellerTransactionsPage() {
 
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-foreground">
-            Payment History
+            {translations["seller.payment_history"]}
           </h2>
 
           <p className="mt-1 text-sm text-muted">
-            All payments associated with your channels.
+            {translations["seller.all_payments_associated"]}
           </p>
         </div>
 
         {transactionList.length === 0 ? (
           <div className="rounded-xl border border-border bg-background px-6 py-12 text-center">
             <p className="font-medium text-foreground">
-              No transactions yet
+              {translations["seller.no_transactions"]}
             </p>
 
             <p className="mt-2 text-sm text-muted">
-              Payments will appear here when subscribers
-              make purchases.
+              {translations["seller.payments_will_appear"]}
             </p>
           </div>
         ) : (
@@ -370,35 +419,35 @@ export default async function SellerTransactionsPage() {
                   <tr>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Subscriber
+                      {translations["seller.subscriber"]}
                     </th>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Channel
+                      {translations["seller.channel"]}
                     </th>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Gross
+                      {translations["seller.gross"]}
                     </th>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Fee
+                      {translations["seller.fee"]}
                     </th>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      You Earned
+                      {translations["seller.you_earned"]}
                     </th>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Provider
+                      {translations["seller.provider"]}
                     </th>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Status
+                      {translations["seller.status"]}
                     </th>
 
                     <th className="px-5 py-3 text-left font-medium text-muted">
-                      Date
+                      {translations["seller.date"]}
                     </th>
 
                   </tr>
@@ -438,7 +487,7 @@ export default async function SellerTransactionsPage() {
                               <p className="font-medium text-foreground">
                                 {buyer?.display_name ||
                                   buyer?.username ||
-                                  "Subscriber"}
+                                  translations["seller.subscriber"]}
                               </p>
 
                               {buyer?.username && (
@@ -454,7 +503,7 @@ export default async function SellerTransactionsPage() {
 
                           <td className="px-5 py-4 text-foreground">
                             {channel?.channel_name ||
-                              "Channel"}
+                              translations["seller.channel"]}
                           </td>
 
                           {/* Gross */}
@@ -506,23 +555,29 @@ export default async function SellerTransactionsPage() {
                             "paid" ? (
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-muted-bg px-2.5 py-1 text-xs font-medium text-foreground">
                                 <CheckCircle2 className="h-3.5 w-3.5" />
+
                                 {getStatusLabel(
-                                  payment.payment_status
+                                  payment.payment_status,
+                                  translations
                                 )}
                               </span>
                             ) : payment.payment_status ===
                               "refunded" ? (
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-muted-bg px-2.5 py-1 text-xs font-medium text-foreground">
                                 <RefreshCcw className="h-3.5 w-3.5" />
+
                                 {getStatusLabel(
-                                  payment.payment_status
+                                  payment.payment_status,
+                                  translations
                                 )}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-muted-bg px-2.5 py-1 text-xs font-medium text-foreground">
                                 <XCircle className="h-3.5 w-3.5" />
+
                                 {getStatusLabel(
-                                  payment.payment_status
+                                  payment.payment_status,
+                                  translations
                                 )}
                               </span>
                             )}
@@ -532,9 +587,7 @@ export default async function SellerTransactionsPage() {
                           {/* Date */}
 
                           <td className="whitespace-nowrap px-5 py-4 text-muted">
-                            {formatDate(
-                              payment.paid_at
-                            )}
+                            {formatDate(payment.paid_at || payment.created_at, locale)}
                           </td>
 
                         </tr>

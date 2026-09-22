@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "@/lib/translations";
 
 import EditVideoForm from "@/components/seller/EditVideoForm";
 
@@ -11,16 +12,42 @@ interface PageProps {
   }>;
 }
 
+type Category = {
+  id: string;
+  slug: string;
+  parent_id: string | null;
+  level: number;
+  display_order: number;
+};
+
+function getCategoryTranslationKey(
+  category: Category,
+  categories: Category[]
+) {
+  const parts: string[] = [category.slug];
+
+  let current = category;
+
+  while (current.parent_id) {
+    const parent = categories.find(
+      (item) => item.id === current.parent_id
+    );
+
+    if (!parent) break;
+
+    parts.unshift(parent.slug);
+    current = parent;
+  }
+
+  return `category.${parts.join(".")}`;
+}
+
 export default async function EditVideoPage({
   params,
 }: PageProps) {
   const { id } = await params;
 
   const supabase = await createClient();
-
-  // --------------------------------------------
-  // Check logged-in user
-  // --------------------------------------------
 
   const {
     data: { user },
@@ -29,10 +56,6 @@ export default async function EditVideoPage({
   if (!user) {
     redirect("/login");
   }
-
-  // --------------------------------------------
-  // Check creator
-  // --------------------------------------------
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -44,19 +67,19 @@ export default async function EditVideoPage({
     redirect("/");
   }
 
-  // --------------------------------------------
-  // Current locale
-  // --------------------------------------------
-
   const cookieStore = await cookies();
 
   const locale =
     cookieStore.get("niceconvo_locale")?.value ?? "en";
 
-  // --------------------------------------------
-  // Get video
-  // --------------------------------------------
-
+  /*
+   * Load the existing video.
+   *
+   * Important:
+   * This is intentionally scoped to the current seller.
+   * The Edit page must never allow a creator to edit
+   * another creator's video.
+   */
   const { data: video, error: videoError } =
     await supabase
       .from("videos")
@@ -95,29 +118,17 @@ export default async function EditVideoPage({
     notFound();
   }
 
-  // --------------------------------------------
-  // Seller channels
-  // --------------------------------------------
-
   const { data: channels } = await supabase
     .from("channels")
     .select("id, channel_name")
     .eq("user_id", user.id)
     .order("channel_name");
 
-  // --------------------------------------------
-  // Languages
-  // --------------------------------------------
-
   const { data: languages } = await supabase
     .from("locales")
     .select("code, name")
     .eq("is_active", true)
     .order("display_order");
-
-  // --------------------------------------------
-  // Language regions
-  // --------------------------------------------
 
   const { data: languageRegions } =
     await supabase
@@ -128,10 +139,6 @@ export default async function EditVideoPage({
       .order("language_code")
       .order("sort_order");
 
-  // --------------------------------------------
-  // Categories
-  // --------------------------------------------
-
   const { data: categories } = await supabase
     .from("categories")
     .select(
@@ -141,42 +148,200 @@ export default async function EditVideoPage({
     .order("level")
     .order("display_order");
 
-  // --------------------------------------------
-  // Category translations
-  // --------------------------------------------
+  const categoryList: Category[] = categories ?? [];
 
-  const categoryIds =
-    categories?.map((category) => category.id) ?? [];
+  /*
+   * Category translations now come from the single
+   * translations table.
+   */
+  const categoryTranslationKeys =
+    categoryList.map((category) =>
+      getCategoryTranslationKey(
+        category,
+        categoryList
+      )
+    );
 
-  const { data: categoryTranslations } =
-    categoryIds.length > 0
-      ? await supabase
-          .from("category_translations")
-          .select("category_id, locale_code, name")
-          .in("category_id", categoryIds)
-          .eq("locale_code", locale)
-      : { data: [] };
+  const translationKeys = [
+  // Steps
+  "video.step_video",
+  "video.step_details",
+  "video.step_language",
+  "video.step_learning",
+  "video.step_category_access",
+
+  // Edit Video
+  "video.edit_title",
+  "video.edit_description",
+  "video.current_video",
+  "video.current_video_uploaded",
+  "video.replace_video_description",
+  "video.replace_video",
+  "video.new_video_selected",
+  "video.leave_video_empty",
+  "video.thumbnail_preview_alt",
+  "video.thumbnail_format",
+
+  // Video
+  "video.upload_video",
+  "video.drag_drop_video",
+  "video.choose_file",
+  "video.choose_video",
+  "video.thumbnail",
+  "video.change_thumbnail",
+  "video.thumbnail_auto_generated",
+  "video.thumbnail_generation_error",
+  "video.no_file_chosen",
+
+  // Details
+  "video.details",
+  "video.title",
+  "video.enter_title",
+  "video.description",
+  "video.describe_learning",
+  "video.channel",
+  "video.select_channel",
+
+  // Language
+  "video.native_speaker",
+
+  // Learning
+  "video.learning_details",
+  "video.level",
+  "video.select_level",
+  "level.beginner",
+  "level.intermediate",
+  "level.advanced",
+  "video.captions_original",
+  "video.subtitles_second_language",
+  "video.no_subtitles",
+  "video.explains_idioms",
+  "video.explains_technical_lingo",
+  "video.profanity",
+  "video.ai_voice",
+
+  // Category / Access
+  "video.category",
+  "video.access",
+  "video.subscribers_only",
+  "video.free_preview",
+
+  // Common
+  "common.yes",
+  "common.no",
+  "common.cancel",
+  "common.yes_delete",
+  "common.previous",
+  "common.next",
+
+  // Save / publish
+  "video.saving",
+  "video.save_draft",
+  "video.publishing",
+  "video.publish",
+  "video.save_changes",
+  "video.updated_success",
+  "video.replaced_success",
+  "video.save_error",
+
+  // Upload / file errors
+  "video.invalid_video_type",
+  "video.video_size_error",
+  "video.thumbnail_type_error",
+  "video.thumbnail_size_error",
+  "video.uploading_video",
+
+  // Delete
+  "video.danger_zone",
+  "video.delete_description",
+  "video.delete_video",
+  "video.delete_confirmation",
+  "video.delete_warning",
+  "video.deleting",
+  "video.deleted_success",
+  "video.delete_error",
+
+  // Validation
+  "video.select_video",
+  "video.enter_title_error",
+  "video.select_channel_error",
+  "video.select_language",
+  "video.select_region_error",
+  "video.select_level_error",
+  "video.select_category_error",
+  "video.login_publish",
+  "video.published_success",
+  "video.login_draft",
+  "video.draft_success",
+
+  // LanguageRegionSelector
+  "video.language_of_video",
+  "video.select_language_placeholder",
+  "video.country",
+  "video.select_country",
+  "video.select_language_first",
+  "video.state_region",
+  "video.select_state_region",
+  "video.select_country_first",
+  "video.language_region_helper",
+
+  // CategorySelector
+  "category.language",
+  "category.select_language",
+  "category.category",
+  "category.select_category",
+  "category.topic",
+  "category.select_topic",
+  "category.subtopic",
+  "category.select_subtopic",
+  "category.helper",
+
+  // Language names
+  "language.ar",
+  "language.zh",
+  "language.en",
+  "language.fr",
+  "language.de",
+  "language.it",
+  "language.pt",
+  "language.es",
+
+  // Category names
+  ...categoryTranslationKeys,
+];
+
+  const translations = await getTranslations(
+    translationKeys,
+    locale
+  );
+
+  const localizedLanguages = (languages ?? []).map((language) => ({
+    code: language.code,
+    name:
+      translations[`language.${language.code}`] ||
+      language.name,
+  }));
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-semibold">
-          Edit Video
+          {translations["video.edit_title"] ?? "Edit Video"}
         </h1>
 
         <p className="mt-2 text-muted-foreground">
-          Update your video details and publishing
-          settings.
+          {translations["video.edit_description"] ??
+            "Update your video details and publishing settings."}
         </p>
       </div>
 
       <EditVideoForm
         video={video}
         channels={channels ?? []}
-        languages={languages ?? []}
+        languages={localizedLanguages}
         languageRegions={languageRegions ?? []}
-        categories={categories ?? []}
-        categoryTranslations={categoryTranslations ?? []}
+        categories={categoryList}
+        translations={translations}
         locale={locale}
       />
     </div>

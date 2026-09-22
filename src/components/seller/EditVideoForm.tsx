@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,12 +42,7 @@ type Category = {
   parent_id: string | null;
   level: number;
   display_order: number;
-};
-
-type CategoryTranslation = {
-  category_id: string;
-  locale_code: string;
-  name: string;
+  slug: string;
 };
 
 type Video = {
@@ -78,32 +74,9 @@ type Props = {
   languages: Language[];
   languageRegions: LanguageRegion[];
   categories: Category[];
-  categoryTranslations: CategoryTranslation[];
+  translations: Record<string, string>;
   locale: string;
 };
-
-const steps = [
-  {
-    number: 1,
-    title: "Video",
-  },
-  {
-    number: 2,
-    title: "Details",
-  },
-  {
-    number: 3,
-    title: "Language",
-  },
-  {
-    number: 4,
-    title: "Learning",
-  },
-  {
-    number: 5,
-    title: "Category & Access",
-  },
-];
 
 export default function EditVideoForm({
   video,
@@ -111,10 +84,51 @@ export default function EditVideoForm({
   languages,
   languageRegions,
   categories,
-  categoryTranslations,
+  translations,
+  locale,
 }: Props) {
   const router = useRouter();
   const supabase = createClient();
+
+  void locale;
+
+  // --------------------------------------------------
+  // Steps
+  // Same translation approach as NewVideoForm
+  // --------------------------------------------------
+
+  const steps = [
+    {
+      number: 1,
+      title:
+        translations["video.step_video"] ??
+        "Video",
+    },
+    {
+      number: 2,
+      title:
+        translations["video.step_details"] ??
+        "Details",
+    },
+    {
+      number: 3,
+      title:
+        translations["video.step_language"] ??
+        "Language",
+    },
+    {
+      number: 4,
+      title:
+        translations["video.step_learning"] ??
+        "Learning",
+    },
+    {
+      number: 5,
+      title:
+        translations["video.step_category_access"] ??
+        "Category & Access",
+    },
+  ];
 
   // --------------------------------------------------
   // Step
@@ -128,6 +142,8 @@ export default function EditVideoForm({
 
   const [videoFile, setVideoFile] =
     useState<File | null>(null);
+
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const [videoUploading, setVideoUploading] =
     useState(false);
@@ -170,10 +186,12 @@ export default function EditVideoForm({
   const [captionsOriginal, setCaptionsOriginal] =
     useState(video.captions_original);
 
-  const [subtitleLanguageCode, setSubtitleLanguageCode] =
-    useState(
-      video.subtitle_language_code ?? ""
-    );
+  const [
+    subtitleLanguageCode,
+    setSubtitleLanguageCode,
+  ] = useState(
+    video.subtitle_language_code ?? ""
+  );
 
   const [explainsIdioms, setExplainsIdioms] =
     useState(video.explains_idioms);
@@ -208,8 +226,10 @@ export default function EditVideoForm({
   const [deleting, setDeleting] =
     useState(false);
 
-  const [showDeleteConfirm, setShowDeleteConfirm] =
-    useState(false);
+  const [
+    showDeleteConfirm,
+    setShowDeleteConfirm,
+  ] = useState(false);
 
   const [error, setError] =
     useState("");
@@ -274,16 +294,13 @@ export default function EditVideoForm({
 
         videoElement.onloadedmetadata =
           () => {
-            const targetTime =
-              Math.max(
-                0,
-                Math.min(
-                  videoElement.duration *
-                    0.1,
-                  videoElement.duration -
-                    0.1
-                )
-              );
+            const targetTime = Math.max(
+              0,
+              Math.min(
+                videoElement.duration * 0.1,
+                videoElement.duration - 0.1
+              )
+            );
 
             videoElement.currentTime =
               targetTime;
@@ -327,19 +344,16 @@ export default function EditVideoForm({
                       "Could not generate thumbnail."
                     )
                   );
-
                   return;
                 }
 
                 const thumbnail =
                   new File(
                     [blob],
-                    `${
-                      file.name.replace(
-                        /\.[^/.]+$/,
-                        ""
-                      )
-                    }-thumbnail.jpg`,
+                    `${file.name.replace(
+                      /\.[^/.]+$/,
+                      ""
+                    )}-thumbnail.jpg`,
                     {
                       type: "image/jpeg",
                     }
@@ -407,7 +421,10 @@ export default function EditVideoForm({
       )
     ) {
       setError(
-        "Please select an MP4, WebM, or MOV video."
+        translations[
+          "video.invalid_video_type"
+        ] ??
+          "Please select an MP4, WebM, or MOV video."
       );
 
       event.target.value = "";
@@ -421,7 +438,10 @@ export default function EditVideoForm({
       2 * 1024 * 1024 * 1024
     ) {
       setError(
-        "Video size must be 2 GB or less."
+        translations[
+          "video.video_size_error"
+        ] ??
+          "Video size must be 2 GB or less."
       );
 
       event.target.value = "";
@@ -461,7 +481,10 @@ export default function EditVideoForm({
       );
 
       setError(
-        "Could not generate video thumbnail."
+        translations[
+          "video.thumbnail_generation_error"
+        ] ??
+          "Could not generate video thumbnail."
       );
     }
   }
@@ -490,7 +513,10 @@ export default function EditVideoForm({
       )
     ) {
       setError(
-        "Please upload a JPG, PNG, or WEBP image."
+        translations[
+          "video.thumbnail_type_error"
+        ] ??
+          "Please upload a JPG, PNG, or WEBP image."
       );
 
       event.target.value = "";
@@ -503,7 +529,10 @@ export default function EditVideoForm({
       5 * 1024 * 1024
     ) {
       setError(
-        "Thumbnail size must be 5 MB or less."
+        translations[
+          "video.thumbnail_size_error"
+        ] ??
+          "Thumbnail size must be 5 MB or less."
       );
 
       event.target.value = "";
@@ -534,7 +563,9 @@ export default function EditVideoForm({
   // Save changes
   // --------------------------------------------------
 
-  async function handleSave(shouldPublish = false) {
+  async function handleSave(
+    shouldPublish = false
+  ) {
     if (saving || deleting) {
       return;
     }
@@ -557,7 +588,10 @@ export default function EditVideoForm({
 
       if (!title.trim()) {
         setError(
-          "Video title is required."
+          translations[
+            "video.enter_title_error"
+          ] ??
+            "Video title is required."
         );
 
         return;
@@ -565,7 +599,10 @@ export default function EditVideoForm({
 
       if (!channelId) {
         setError(
-          "Please select a channel."
+          translations[
+            "video.select_channel_error"
+          ] ??
+            "Please select a channel."
         );
 
         return;
@@ -573,7 +610,10 @@ export default function EditVideoForm({
 
       if (!level) {
         setError(
-          "Please select a level."
+          translations[
+            "video.select_level_error"
+          ] ??
+            "Please select a level."
         );
 
         return;
@@ -604,7 +644,10 @@ export default function EditVideoForm({
 
       if (!languageCode) {
         setError(
-          "Please select a language."
+          translations[
+            "video.select_language"
+          ] ??
+            "Please select a language."
         );
 
         return;
@@ -612,7 +655,10 @@ export default function EditVideoForm({
 
       if (!languageRegionId) {
         setError(
-          "Please select a language region."
+          translations[
+            "video.select_region_error"
+          ] ??
+            "Please select a language region."
         );
 
         return;
@@ -620,7 +666,10 @@ export default function EditVideoForm({
 
       if (!categoryId) {
         setError(
-          "Please select a category."
+          translations[
+            "video.select_category_error"
+          ] ??
+            "Please select a category."
         );
 
         return;
@@ -665,19 +714,20 @@ export default function EditVideoForm({
 
         const {
           error: videoUploadError,
-        } = await supabase.storage
-          .from("videos")
-          .upload(
-            newVideoPath,
-            videoFile,
-            {
-              cacheControl: "3600",
-              upsert: false,
-              contentType:
-                videoFile.type ||
-                "video/mp4",
-            }
-          );
+        } =
+          await supabase.storage
+            .from("videos")
+            .upload(
+              newVideoPath,
+              videoFile,
+              {
+                cacheControl: "3600",
+                upsert: false,
+                contentType:
+                  videoFile.type ||
+                  "video/mp4",
+              }
+            );
 
         if (videoUploadError) {
           throw new Error(
@@ -704,20 +754,24 @@ export default function EditVideoForm({
           `${video.id}/${thumbnailFileName}`;
 
         const {
-          error: thumbnailUploadError,
-        } = await supabase.storage
-          .from("video-thumbnails")
-          .upload(
-            thumbnailPath,
-            thumbnailFile,
-            {
-              cacheControl: "3600",
-              upsert: false,
-              contentType:
-                thumbnailFile.type ||
-                "image/jpeg",
-            }
-          );
+          error:
+            thumbnailUploadError,
+        } =
+          await supabase.storage
+            .from(
+              "video-thumbnails"
+            )
+            .upload(
+              thumbnailPath,
+              thumbnailFile,
+              {
+                cacheControl: "3600",
+                upsert: false,
+                contentType:
+                  thumbnailFile.type ||
+                  "image/jpeg",
+              }
+            );
 
         if (
           thumbnailUploadError
@@ -732,11 +786,14 @@ export default function EditVideoForm({
 
         const {
           data: publicUrlData,
-        } = supabase.storage
-          .from("video-thumbnails")
-          .getPublicUrl(
-            thumbnailPath
-          );
+        } =
+          supabase.storage
+            .from(
+              "video-thumbnails"
+            )
+            .getPublicUrl(
+              thumbnailPath
+            );
 
         newThumbnailUrl =
           publicUrlData.publicUrl;
@@ -752,64 +809,45 @@ export default function EditVideoForm({
         .from("videos")
         .update({
           channel_id: channelId,
-
           category_id: categoryId,
-
           title: title.trim(),
-
           description:
             description.trim() ||
             null,
-
           language_code:
             languageCode,
-
           language_region_id:
             Number(
               languageRegionId
             ),
-
           is_native_speaker:
             isNativeSpeaker,
-
           level,
-
           captions_original:
             captionsOriginal,
-
           subtitle_language_code:
             subtitleLanguageCode ||
             null,
-
           explains_idioms:
             explainsIdioms,
-
           explains_technical_lingo:
             explainsTechnicalLingo,
-
           profanity,
-
           ai_voice: aiVoice,
-
           access_type:
             accessType,
-
           video_id:
             newVideoPath,
-
           video_provider:
             videoFile
               ? "supabase"
               : video.video_provider,
-
           thumbnail_url:
             newThumbnailUrl,
-
           status:
             shouldPublish
               ? "published"
               : video.status,
-
           published_at:
             shouldPublish
               ? new Date().toISOString()
@@ -836,11 +874,12 @@ export default function EditVideoForm({
         const {
           error:
             oldVideoDeleteError,
-        } = await supabase.storage
-          .from("videos")
-          .remove([
-            oldVideoPath,
-          ]);
+        } =
+          await supabase.storage
+            .from("videos")
+            .remove([
+              oldVideoPath,
+            ]);
 
         if (
           oldVideoDeleteError
@@ -862,9 +901,12 @@ export default function EditVideoForm({
           data: thumbnailFiles,
           error:
             thumbnailListError,
-        } = await supabase.storage
-          .from("video-thumbnails")
-          .list(video.id);
+        } =
+          await supabase.storage
+            .from(
+              "video-thumbnails"
+            )
+            .list(video.id);
 
         if (
           thumbnailListError
@@ -925,13 +967,24 @@ export default function EditVideoForm({
 
       alert(
         shouldPublish
-          ? "Video published successfully!"
+          ? translations[
+              "video.published_success"
+            ] ??
+              "Video published successfully!"
           : videoFile
-            ? "Video replaced and updated successfully."
-            : "Video updated successfully."
+            ? translations[
+                "video.replaced_success"
+              ] ??
+              "Video replaced and updated successfully."
+            : translations[
+                "video.updated_success"
+              ] ??
+              "Video updated successfully."
       );
 
-      router.push("/seller/videos");
+      router.push(
+        "/seller/videos"
+      );
 
       router.refresh();
     } catch (err) {
@@ -948,11 +1001,12 @@ export default function EditVideoForm({
         const {
           error:
             rollbackVideoError,
-        } = await supabase.storage
-          .from("videos")
-          .remove([
-            uploadedVideoPath,
-          ]);
+        } =
+          await supabase.storage
+            .from("videos")
+            .remove([
+              uploadedVideoPath,
+            ]);
 
         if (
           rollbackVideoError
@@ -974,11 +1028,14 @@ export default function EditVideoForm({
         const {
           error:
             rollbackThumbnailError,
-        } = await supabase.storage
-          .from("video-thumbnails")
-          .remove([
-            uploadedThumbnailPath,
-          ]);
+        } =
+          await supabase.storage
+            .from(
+              "video-thumbnails"
+            )
+            .remove([
+              uploadedThumbnailPath,
+            ]);
 
         if (
           rollbackThumbnailError
@@ -1023,9 +1080,12 @@ export default function EditVideoForm({
         data: thumbnailFiles,
         error:
           thumbnailListError,
-      } = await supabase.storage
-        .from("video-thumbnails")
-        .list(video.id);
+      } =
+        await supabase.storage
+          .from(
+            "video-thumbnails"
+          )
+          .list(video.id);
 
       if (thumbnailListError) {
         throw new Error(
@@ -1046,11 +1106,14 @@ export default function EditVideoForm({
         const {
           error:
             thumbnailDeleteError,
-        } = await supabase.storage
-          .from("video-thumbnails")
-          .remove(
-            thumbnailPaths
-          );
+        } =
+          await supabase.storage
+            .from(
+              "video-thumbnails"
+            )
+            .remove(
+              thumbnailPaths
+            );
 
         if (
           thumbnailDeleteError
@@ -1073,11 +1136,12 @@ export default function EditVideoForm({
         const {
           error:
             videoFileDeleteError,
-        } = await supabase.storage
-          .from("videos")
-          .remove([
-            video.video_id,
-          ]);
+        } =
+          await supabase.storage
+            .from("videos")
+            .remove([
+              video.video_id,
+            ]);
 
         if (
           videoFileDeleteError
@@ -1106,7 +1170,10 @@ export default function EditVideoForm({
       }
 
       alert(
-        "Video deleted successfully."
+        translations[
+          "video.deleted_success"
+        ] ??
+          "Video deleted successfully."
       );
 
       router.push(
@@ -1132,7 +1199,6 @@ export default function EditVideoForm({
 
   return (
     <div className="max-w-4xl space-y-8">
-
       {/* ==================================================
           STEPPER
       ================================================== */}
@@ -1163,6 +1229,7 @@ export default function EditVideoForm({
                         setCurrentStep(
                           step.number
                         );
+
                         setError("");
                       }
                     }}
@@ -1174,11 +1241,10 @@ export default function EditVideoForm({
                   >
                     <span
                       className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-medium ${
-                        isActive
+                        isActive ||
+                        isCompleted
                           ? "border-primary bg-primary text-white"
-                          : isCompleted
-                            ? "border-primary bg-primary text-white"
-                            : "border-muted-foreground/30 text-muted-foreground"
+                          : "border-muted-foreground/30 text-muted-foreground"
                       }`}
                     >
                       {isCompleted
@@ -1230,29 +1296,35 @@ export default function EditVideoForm({
         <Card>
           <CardHeader>
             <CardTitle>
-              Video
+              {translations[
+                "video.upload_video"
+              ] ?? "Video"}
             </CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-6">
-
             {/* Current Video */}
 
             <div>
               <p className="mb-3 text-sm font-medium">
-                Current Video
+                {translations[
+                  "video.current_video"
+                ] ?? "Current Video"}
               </p>
 
               <div className="rounded-xl border border-border bg-muted-bg p-4">
                 <p className="text-sm text-foreground">
-                  The current video file is
-                  already uploaded.
+                  {translations[
+                    "video.current_video_uploaded"
+                  ] ??
+                    "The current video file is already uploaded."}
                 </p>
 
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Select a new video below
-                  if you want to replace
-                  the current video.
+                  {translations[
+                    "video.replace_video_description"
+                  ] ??
+                    "Select a new video below if you want to replace the current video."}
                 </p>
               </div>
             </div>
@@ -1261,25 +1333,43 @@ export default function EditVideoForm({
 
             <div className="space-y-3">
               <label className="block text-sm font-medium">
-                Replace Video
+                {translations[
+                  "video.replace_video"
+                ] ?? "Replace Video"}
               </label>
 
-              <Input
-                type="file"
-                accept="video/mp4,video/webm,video/quicktime"
-                onChange={
-                  handleVideoChange
-                }
-                disabled={
-                  saving ||
-                  deleting
-                }
-              />
+              <div className="mt-4">
+  <label
+    htmlFor="video-upload"
+    className="inline-flex cursor-pointer items-center rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted-bg"
+  >
+    {translations["video.choose_video"] ?? "Choose Video"}
+  </label>
+
+  <input
+    ref={videoInputRef}
+    id="video-upload"
+    type="file"
+    accept="video/mp4,video/webm,video/quicktime"
+    className="sr-only"
+    onChange={handleVideoChange}
+    disabled={saving || deleting}
+  />
+
+  {videoFile && (
+    <p className="mt-3 text-sm text-muted-foreground">
+      {videoFile.name}
+    </p>
+  )}
+</div>
 
               {videoFile && (
                 <div className="rounded-lg border border-border bg-muted-bg p-3">
                   <p className="text-sm font-medium">
-                    New video selected
+                    {translations[
+                      "video.new_video_selected"
+                    ] ??
+                      "New video selected"}
                   </p>
 
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -1290,18 +1380,17 @@ export default function EditVideoForm({
                     {(
                       videoFile.size /
                       (1024 * 1024)
-                    ).toFixed(
-                      2
-                    )}{" "}
+                    ).toFixed(2)}{" "}
                     MB
                   </p>
                 </div>
               )}
 
               <p className="text-xs text-muted-foreground">
-                Leave this empty if you
-                do not want to replace
-                the current video.
+                {translations[
+                  "video.leave_video_empty"
+                ] ??
+                  "Leave this empty if you do not want to replace the current video."}
               </p>
             </div>
 
@@ -1310,12 +1399,17 @@ export default function EditVideoForm({
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm font-medium">
-                  Thumbnail
+                  {translations[
+                    "video.thumbnail"
+                  ] ?? "Thumbnail"}
                 </p>
 
                 {thumbnailPreview && (
                   <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
-                    Change Thumbnail
+                    {translations[
+                      "video.change_thumbnail"
+                    ] ??
+                      "Change Thumbnail"}
 
                     <input
                       type="file"
@@ -1339,7 +1433,12 @@ export default function EditVideoForm({
                     src={
                       thumbnailPreview
                     }
-                    alt="Video thumbnail preview"
+                    alt={
+                      translations[
+                        "video.thumbnail_preview_alt"
+                      ] ??
+                      "Video thumbnail preview"
+                    }
                     className="aspect-video w-full object-cover"
                   />
                 </div>
@@ -1360,17 +1459,18 @@ export default function EditVideoForm({
               )}
 
               <p className="mt-2 text-xs text-muted-foreground">
-                JPG, PNG or WEBP.
-                Maximum 5 MB.
+                {translations[
+                  "video.thumbnail_format"
+                ] ??
+                  "JPG, PNG or WEBP. Maximum 5 MB."}
               </p>
 
               {videoFile && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  A thumbnail was
-                  automatically generated
-                  from the new video. You
-                  can change it if you
-                  prefer.
+                  {translations[
+                    "video.thumbnail_auto_generated"
+                  ] ??
+                    "A thumbnail was automatically generated from the new video. You can change it if you prefer."}
                 </p>
               )}
             </div>
@@ -1392,17 +1492,20 @@ export default function EditVideoForm({
         <Card>
           <CardHeader>
             <CardTitle>
-              Video Details
+              {translations[
+                "video.details"
+              ] ?? "Video Details"}
             </CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-5">
-
             {/* Title */}
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Title
+                {translations[
+                  "video.title"
+                ] ?? "Title"}
               </label>
 
               <Input
@@ -1412,7 +1515,12 @@ export default function EditVideoForm({
                     e.target.value
                   )
                 }
-                placeholder="Enter video title"
+                placeholder={
+                  translations[
+                    "video.enter_title"
+                  ] ??
+                  "Enter video title"
+                }
                 disabled={
                   saving ||
                   deleting
@@ -1424,7 +1532,9 @@ export default function EditVideoForm({
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Description
+                {translations[
+                  "video.description"
+                ] ?? "Description"}
               </label>
 
               <Textarea
@@ -1435,7 +1545,12 @@ export default function EditVideoForm({
                   )
                 }
                 rows={6}
-                placeholder="Describe what learners will learn in this video"
+                placeholder={
+                  translations[
+                    "video.describe_learning"
+                  ] ??
+                  "Describe what learners will learn in this video"
+                }
                 disabled={
                   saving ||
                   deleting
@@ -1447,7 +1562,9 @@ export default function EditVideoForm({
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Channel
+                {translations[
+                  "video.channel"
+                ] ?? "Channel"}
               </label>
 
               <select
@@ -1464,7 +1581,10 @@ export default function EditVideoForm({
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
               >
                 <option value="">
-                  Select Channel
+                  {translations[
+                    "video.select_channel"
+                  ] ??
+                    "Select Channel"}
                 </option>
 
                 {channels.map(
@@ -1503,12 +1623,13 @@ export default function EditVideoForm({
         <Card>
           <CardHeader>
             <CardTitle>
-              Language
+              {translations[
+                "video.step_language"
+              ] ?? "Language"}
             </CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-6">
-
             <LanguageRegionSelector
               languages={
                 languages
@@ -1522,13 +1643,19 @@ export default function EditVideoForm({
               initialRegionId={
                 video.language_region_id
               }
+              uiTranslations={
+                translations
+              }
             />
 
             {/* Native Speaker */}
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Native Speaker
+                {translations[
+                  "video.native_speaker"
+                ] ??
+                  "Native Speaker"}
               </label>
 
               <div className="flex gap-6">
@@ -1550,7 +1677,9 @@ export default function EditVideoForm({
                     className="h-4 w-4 accent-primary"
                   />
 
-                  Yes
+                  {translations[
+                    "common.yes"
+                  ] ?? "Yes"}
                 </label>
 
                 <label className="flex items-center gap-2">
@@ -1571,7 +1700,9 @@ export default function EditVideoForm({
                     className="h-4 w-4 accent-primary"
                   />
 
-                  No
+                  {translations[
+                    "common.no"
+                  ] ?? "No"}
                 </label>
               </div>
             </div>
@@ -1593,17 +1724,21 @@ export default function EditVideoForm({
         <Card>
           <CardHeader>
             <CardTitle>
-              Learning Details
+              {translations[
+                "video.learning_details"
+              ] ??
+                "Learning Details"}
             </CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-6">
-
             {/* Level */}
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Level
+                {translations[
+                  "video.level"
+                ] ?? "Level"}
               </label>
 
               <select
@@ -1620,19 +1755,29 @@ export default function EditVideoForm({
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
               >
                 <option value="">
-                  Select Level
+                  {translations[
+                    "video.select_level"
+                  ] ??
+                    "Select Level"}
                 </option>
 
                 <option value="beginner">
-                  Beginner
+                  {translations[
+                    "level.beginner"
+                  ] ?? "Beginner"}
                 </option>
 
                 <option value="intermediate">
-                  Intermediate
+                  {translations[
+                    "level.intermediate"
+                  ] ??
+                    "Intermediate"}
                 </option>
 
                 <option value="advanced">
-                  Advanced
+                  {translations[
+                    "level.advanced"
+                  ] ?? "Advanced"}
                 </option>
               </select>
             </div>
@@ -1640,7 +1785,12 @@ export default function EditVideoForm({
             {/* Captions */}
 
             <RadioSetting
-              label="Captions for Original Language"
+              label={
+                translations[
+                  "video.captions_original"
+                ] ??
+                "Captions for Original Language"
+              }
               value={
                 captionsOriginal
               }
@@ -1651,13 +1801,19 @@ export default function EditVideoForm({
                 saving ||
                 deleting
               }
+              translations={
+                translations
+              }
             />
 
             {/* Subtitles */}
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Subtitles for Second Language
+                {translations[
+                  "video.subtitles_second_language"
+                ] ??
+                  "Subtitles for Second Language"}
               </label>
 
               <select
@@ -1676,7 +1832,10 @@ export default function EditVideoForm({
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
               >
                 <option value="">
-                  No subtitles
+                  {translations[
+                    "video.no_subtitles"
+                  ] ??
+                    "No subtitles"}
                 </option>
 
                 {languages.map(
@@ -1701,7 +1860,12 @@ export default function EditVideoForm({
             {/* Idioms */}
 
             <RadioSetting
-              label="Explains Original Language Idioms"
+              label={
+                translations[
+                  "video.explains_idioms"
+                ] ??
+                "Explains Original Language Idioms"
+              }
               value={
                 explainsIdioms
               }
@@ -1712,12 +1876,20 @@ export default function EditVideoForm({
                 saving ||
                 deleting
               }
+              translations={
+                translations
+              }
             />
 
             {/* Technical Lingo */}
 
             <RadioSetting
-              label="Explains Technical Lingo"
+              label={
+                translations[
+                  "video.explains_technical_lingo"
+                ] ??
+                "Explains Technical Lingo"
+              }
               value={
                 explainsTechnicalLingo
               }
@@ -1728,15 +1900,20 @@ export default function EditVideoForm({
                 saving ||
                 deleting
               }
+              translations={
+                translations
+              }
             />
 
             {/* Profanity */}
 
             <RadioSetting
-              label="Profanity"
-              value={
-                profanity
+              label={
+                translations[
+                  "video.profanity"
+                ] ?? "Profanity"
               }
+              value={profanity}
               onChange={
                 setProfanity
               }
@@ -1744,21 +1921,29 @@ export default function EditVideoForm({
                 saving ||
                 deleting
               }
+              translations={
+                translations
+              }
             />
 
             {/* AI Voice */}
 
             <RadioSetting
-              label="AI Voice"
-              value={
-                aiVoice
+              label={
+                translations[
+                  "video.ai_voice"
+                ] ?? "AI Voice"
               }
+              value={aiVoice}
               onChange={
                 setAiVoice
               }
               disabled={
                 saving ||
                 deleting
+              }
+              translations={
+                translations
               }
             />
           </CardContent>
@@ -1777,29 +1962,40 @@ export default function EditVideoForm({
         }
       >
         <div className="space-y-6">
-
           {/* Category */}
 
           <Card>
             <CardHeader>
               <CardTitle>
-                Category
+                {translations[
+                  "video.category"
+                ] ?? "Category"}
               </CardTitle>
             </CardHeader>
 
             <CardContent>
               <CategorySelector
+                languages={
+                  languages
+                }
                 categories={
                   categories
                 }
                 translations={
-                  categoryTranslations
+                  translations
                 }
-                localeCode="en"
+                initialLanguageCode={
+                  video.language_code
+                }
                 initialCategoryId={
                   video.category_id ??
                   ""
                 }
+                onLanguageChange={(
+                  languageCode
+                ) => {
+                  void languageCode;
+                }}
               />
             </CardContent>
           </Card>
@@ -1809,13 +2005,14 @@ export default function EditVideoForm({
           <Card>
             <CardHeader>
               <CardTitle>
-                Access
+                {translations[
+                  "video.access"
+                ] ?? "Access"}
               </CardTitle>
             </CardHeader>
 
             <CardContent>
               <div className="space-y-3">
-
                 <label className="flex items-center gap-3">
                   <input
                     type="radio"
@@ -1834,7 +2031,10 @@ export default function EditVideoForm({
                     }
                   />
 
-                  Subscribers Only
+                  {translations[
+                    "video.subscribers_only"
+                  ] ??
+                    "Subscribers Only"}
                 </label>
 
                 <label className="flex items-center gap-3">
@@ -1855,9 +2055,11 @@ export default function EditVideoForm({
                     }
                   />
 
-                  Free Preview
+                  {translations[
+                    "video.free_preview"
+                  ] ??
+                    "Free Preview"}
                 </label>
-
               </div>
             </CardContent>
           </Card>
@@ -1879,7 +2081,6 @@ export default function EditVideoForm({
       ================================================== */}
 
       <div className="flex items-center justify-between pt-6">
-
         <div>
           {currentStep > 1 && (
             <Button
@@ -1893,15 +2094,17 @@ export default function EditVideoForm({
                 previousStep
               }
             >
-              ← Previous
+              ←{" "}
+              {translations[
+                "common.previous"
+              ] ?? "Previous"}
             </Button>
           )}
         </div>
 
         <div className="flex gap-3">
-
           {currentStep <
-            steps.length ? (
+          steps.length ? (
             <Button
               type="button"
               disabled={
@@ -1912,14 +2115,19 @@ export default function EditVideoForm({
                 nextStep
               }
             >
-              Next →
+              {translations[
+                "common.next"
+              ] ?? "Next"}{" "}
+              →
             </Button>
           ) : (
             <div className="flex gap-3">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => handleSave(false)}
+                onClick={() =>
+                  handleSave(false)
+                }
                 disabled={
                   saving ||
                   videoUploading ||
@@ -1927,16 +2135,28 @@ export default function EditVideoForm({
                 }
               >
                 {videoUploading
-                  ? "Uploading Video..."
+                  ? translations[
+                      "video.uploading_video"
+                    ] ??
+                    "Uploading Video..."
                   : saving
-                    ? "Saving..."
-                    : "Save Changes"}
+                    ? translations[
+                        "video.saving"
+                      ] ??
+                      "Saving..."
+                    : translations[
+                        "video.save_changes"
+                      ] ??
+                      "Save Changes"}
               </Button>
 
-              {video.status === "draft" && (
+              {video.status ===
+                "draft" && (
                 <Button
                   type="button"
-                  onClick={() => handleSave(true)}
+                  onClick={() =>
+                    handleSave(true)
+                  }
                   disabled={
                     saving ||
                     videoUploading ||
@@ -1944,13 +2164,18 @@ export default function EditVideoForm({
                   }
                 >
                   {saving
-                    ? "Publishing..."
-                    : "Publish Video"}
+                    ? translations[
+                        "video.publishing"
+                      ] ??
+                      "Publishing..."
+                    : translations[
+                        "video.publish"
+                      ] ??
+                      "Publish"}
                 </Button>
               )}
             </div>
           )}
-
         </div>
       </div>
 
@@ -1959,15 +2184,18 @@ export default function EditVideoForm({
       ================================================== */}
 
       <div className="rounded-2xl border border-red-200 bg-background p-8 shadow-sm">
-
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-red-700">
-            Danger Zone
+            {translations[
+              "video.danger_zone"
+            ] ?? "Danger Zone"}
           </h2>
 
           <p className="mt-1 text-sm text-muted">
-            Permanently remove this
-            video from your channel.
+            {translations[
+              "video.delete_description"
+            ] ??
+              "Permanently remove this video from your channel."}
           </p>
         </div>
 
@@ -1986,27 +2214,34 @@ export default function EditVideoForm({
             }
             className="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
           >
-            Delete Video
+            {translations[
+              "video.delete_video"
+            ] ?? "Delete Video"}
           </Button>
         ) : (
           <div className="space-y-4 rounded-xl border border-red-200 bg-red-50 p-5">
-
             <div>
               <p className="font-semibold text-red-900">
-                Delete "{video.title}"?
+                {(
+                  translations[
+                    "video.delete_confirmation"
+                  ] ??
+                    'Delete "{title}"?'
+                ).replace(
+                  "{title}",
+                  video.title
+                )}
               </p>
 
               <p className="mt-1 text-sm text-red-700">
-                This action cannot be
-                undone. The video,
-                thumbnail, and video
-                record will be
-                permanently deleted.
+                {translations[
+                  "video.delete_warning"
+                ] ??
+                  "This action cannot be undone. The video, thumbnail, and video record will be permanently deleted."}
               </p>
             </div>
 
             <div className="flex gap-3">
-
               <Button
                 type="button"
                 variant="destructive"
@@ -2019,8 +2254,14 @@ export default function EditVideoForm({
                 className="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
               >
                 {deleting
-                  ? "Deleting..."
-                  : "Yes, Delete"}
+                  ? translations[
+                      "video.deleting"
+                    ] ??
+                    "Deleting..."
+                  : translations[
+                      "video.yes_delete"
+                    ] ??
+                    "Yes, Delete"}
               </Button>
 
               <Button
@@ -2035,9 +2276,10 @@ export default function EditVideoForm({
                   )
                 }
               >
-                Cancel
+                {translations[
+                  "common.cancel"
+                ] ?? "Cancel"}
               </Button>
-
             </div>
           </div>
         )}
@@ -2055,6 +2297,7 @@ function RadioSetting({
   value,
   onChange,
   disabled,
+  translations,
 }: {
   label: string;
   value: boolean;
@@ -2062,6 +2305,10 @@ function RadioSetting({
     value: boolean
   ) => void;
   disabled?: boolean;
+  translations: Record<
+    string,
+    string
+  >;
 }) {
   return (
     <div>
@@ -2070,7 +2317,6 @@ function RadioSetting({
       </label>
 
       <div className="flex gap-6">
-
         <label className="flex items-center gap-2">
           <input
             type="radio"
@@ -2082,7 +2328,9 @@ function RadioSetting({
             className="h-4 w-4 accent-primary"
           />
 
-          Yes
+          {translations[
+            "common.yes"
+          ] ?? "Yes"}
         </label>
 
         <label className="flex items-center gap-2">
@@ -2096,9 +2344,10 @@ function RadioSetting({
             className="h-4 w-4 accent-primary"
           />
 
-          No
+          {translations[
+            "common.no"
+          ] ?? "No"}
         </label>
-
       </div>
     </div>
   );
