@@ -2,7 +2,7 @@
 
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   ChevronDown,
@@ -38,7 +38,10 @@ type Profile = {
 export default function UserMenu({
   user,
 }: UserMenuProps) {
-  const supabase = createClient();
+  const supabase = useMemo(
+    () => createClient(),
+    []
+  );
 
   const [profile, setProfile] =
     useState<Profile | null>(null);
@@ -48,6 +51,10 @@ export default function UserMenu({
 
   const [unreadCount, setUnreadCount] =
     useState(0);
+
+  /* =====================================================
+     LOAD PROFILE
+  ===================================================== */
 
   useEffect(() => {
     let mounted = true;
@@ -83,6 +90,10 @@ export default function UserMenu({
     };
   }, [supabase, user.id]);
 
+  /* =====================================================
+     LOAD UNREAD NOTIFICATION COUNT
+  ===================================================== */
+
   useEffect(() => {
     let mounted = true;
 
@@ -113,6 +124,49 @@ export default function UserMenu({
 
     return () => {
       mounted = false;
+    };
+  }, [supabase, user.id]);
+
+  /* =====================================================
+     REALTIME NOTIFICATION UPDATES
+  ===================================================== */
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`notifications-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async () => {
+          const { count, error } = await supabase
+            .from("notifications")
+            .select("id", {
+              count: "exact",
+              head: true,
+            })
+            .eq("user_id", user.id)
+            .eq("is_read", false);
+
+          if (error) {
+            console.error(
+              "Failed to refresh notification count:",
+              error
+            );
+            return;
+          }
+
+          setUnreadCount(count ?? 0);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
   }, [supabase, user.id]);
 
@@ -212,8 +266,6 @@ export default function UserMenu({
             focus:outline-none
           "
         >
-          {/* Avatar */}
-
           <div
             className="
               flex
@@ -247,10 +299,6 @@ export default function UserMenu({
           />
         </DropdownMenuTrigger>
 
-        {/* =================================================
-            DROPDOWN
-        ================================================== */}
-
         <DropdownMenuContent
           align="end"
           className="
@@ -263,15 +311,9 @@ export default function UserMenu({
             shadow-lg
           "
         >
-          {/* =================================================
-              USER INFORMATION
-          ================================================== */}
-
           <DropdownMenuGroup>
             <DropdownMenuLabel className="px-3 py-3">
               <div className="flex items-center gap-3">
-                {/* Avatar */}
-
                 <div
                   className="
                     flex
@@ -298,8 +340,6 @@ export default function UserMenu({
                   )}
                 </div>
 
-                {/* Name */}
-
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-foreground">
                     {loadingProfile
@@ -319,10 +359,6 @@ export default function UserMenu({
 
           <DropdownMenuSeparator className="bg-border" />
 
-          {/* =================================================
-              MY PROFILE
-          ================================================== */}
-
           <DropdownMenuItem
             className="
               h-11
@@ -339,10 +375,6 @@ export default function UserMenu({
             <UserIcon className="size-4" />
             My Profile
           </DropdownMenuItem>
-
-          {/* =================================================
-              SETTINGS
-          ================================================== */}
 
           <DropdownMenuItem
             className="
@@ -362,10 +394,6 @@ export default function UserMenu({
           </DropdownMenuItem>
 
           <DropdownMenuSeparator className="bg-border" />
-
-          {/* =================================================
-              SIGN OUT
-          ================================================== */}
 
           <form action={signOut}>
             <button

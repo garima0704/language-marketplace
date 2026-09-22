@@ -326,6 +326,22 @@ export default function VideoComments({
         return;
       }
 
+      // Create notification for the video owner
+      const { error: notificationError } = await supabase.rpc(
+        "create_comment_notification",
+        {
+          p_video_id: videoId,
+          p_commenter_id: user.id,
+        }
+      );
+
+      if (notificationError) {
+        console.error(
+          "Failed to create comment notification:",
+          notificationError
+        );
+      }
+
       const newComment: Comment = {
         ...(data as Omit<
           Comment,
