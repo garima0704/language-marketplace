@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { getCategoryLabels } from "@/lib/categories";
 import { getTranslations } from "@/lib/translations";
+import { getBrowseLanguages } from "@/lib/languages";
 
 import CategoryPills from "@/components/CategoryPills";
 import VideoSection from "@/components/VideoSection";
@@ -151,7 +152,8 @@ export default async function CategoryVideos({
     const categoryLabels =
       await getCategoryLabels(
         [category.id],
-        locale
+        locale,
+        false
       );
 
     currentCategoryName =
@@ -303,34 +305,13 @@ export default async function CategoryVideos({
     ];
   }
 
-  // ==================================================
+    // ==================================================
   // 7. Find category + descendants
   // ==================================================
 
-  const categoryIds =
-    new Set<string>();
+  const categoryIds = new Set<string>();
 
-  if (!category) {
-    const {
-      data: rootCategories,
-      error: rootError,
-    } = await supabase
-      .from("categories")
-      .select("id")
-      .is("parent_id", null)
-      .eq("is_active", true);
-
-    if (rootError) {
-      console.error(
-        "Root category IDs error:",
-        rootError
-      );
-    }
-
-    for (const root of rootCategories ?? []) {
-      categoryIds.add(root.id);
-    }
-  } else {
+  if (category) {
     categoryIds.add(category.id);
 
     let currentIds = [category.id];
@@ -342,10 +323,7 @@ export default async function CategoryVideos({
       } = await supabase
         .from("categories")
         .select("id")
-        .in(
-          "parent_id",
-          currentIds
-        )
+        .in("parent_id", currentIds)
         .eq("is_active", true);
 
       if (descendantsError) {
@@ -364,18 +342,9 @@ export default async function CategoryVideos({
       const newIds: string[] = [];
 
       for (const descendant of descendants) {
-        if (
-          !categoryIds.has(
-            descendant.id
-          )
-        ) {
-          categoryIds.add(
-            descendant.id
-          );
-
-          newIds.push(
-            descendant.id
-          );
+        if (!categoryIds.has(descendant.id)) {
+          categoryIds.add(descendant.id);
+          newIds.push(descendant.id);
         }
       }
 
@@ -393,82 +362,117 @@ export default async function CategoryVideos({
 
   let videos: any[] = [];
 
-  if (categoryIds.size > 0) {
-    const {
-      data,
-      error: videosError,
-    } = await supabase
-      .from("videos")
-      .select(
-        `
+  let videosQuery = supabase
+    .from("videos")
+    .select(
+      `
+        id,
+        slug,
+        title,
+        thumbnail_url,
+        level,
+        access_type,
+        view_count,
+        created_at,
+        published_at,
+        category_id,
+        language_code,
+
+        channels (
+          id,
+          channel_name,
+          slug,
+          logo_url,
+          user_id,
+
+          profiles (
+            id,
+            is_creator
+          )
+        ),
+
+        categories (
           id,
           slug,
-          title,
-          thumbnail_url,
-          level,
-          access_type,
-          view_count,
-          created_at,
-          published_at,
-          category_id,
-          language_code,
+          parent_id,
+          level
+        )
+      `
+    )
+    .eq("language_code", languageCode)
+    .eq("status", "published");
 
-          channels (
-            id,
-            channel_name,
-            slug,
-            logo_url,
-            user_id,
-
-            profiles (
-              id,
-              is_creator
-            )
-          ),
-
-          categories (
-            id,
-            slug,
-            parent_id,
-            level
-          )
-        `
-      )
-      .eq(
-        "language_code",
-        languageCode
-      )
-      .eq(
-        "status",
-        "published"
-      )
-      .in(
-        "category_id",
-        Array.from(categoryIds)
-      )
-      .order(
-        "published_at",
-        {
-          ascending: false,
-          nullsFirst: false,
-        }
-      );
-
-    if (videosError) {
-      console.error(
-        "Category videos error:",
-        videosError
-      );
-    }
-
-    videos = data ?? [];
+  // Only filter by category when the URL
+  // actually contains a category.
+  //
+  // /videos/es
+  // → all published Spanish videos
+  //
+  // /videos/es/specific-topics
+  // → specific-topics + descendants
+  if (categoryIds.size > 0) {
+    videosQuery = videosQuery.in(
+      "category_id",
+      Array.from(categoryIds)
+    );
   }
 
+  const {
+    data,
+    error: videosError,
+  } = await videosQuery.order(
+    "published_at",
+    {
+      ascending: false,
+      nullsFirst: false,
+    }
+  );
+
+  if (videosError) {
+    console.error(
+      "Category videos error:",
+      videosError
+    );
+  }
+
+  videos = data ?? [];
+
   // ==================================================
-  // 9. Build translated category labels
+  // 9. Build translated video labels
+  //
+  // Video card should show:
+  //
+  // Spanish - Storytelling/Jokes
+  //
+  // NOT:
+  //
+  // Spanish - Specific Topics - Storytelling/Jokes
   // ==================================================
 
   let formattedVideos = videos;
+
+  // --------------------------------------------------
+  // Language labels
+  // --------------------------------------------------
+
+  const browseLanguages =
+    await getBrowseLanguages(locale);
+
+  const languageLabels: Record<
+    string,
+    string
+  > = Object.fromEntries(
+    browseLanguages.map(
+      (item) => [
+        item.code,
+        item.name,
+      ]
+    )
+  );
+
+  // --------------------------------------------------
+  // Category labels
+  // --------------------------------------------------
 
   const videoCategoryIds = [
     ...new Set(
@@ -484,110 +488,50 @@ export default async function CategoryVideos({
     ),
   ];
 
+  let categoryLabels: Record<
+    string,
+    string
+  > = {};
+
   if (
     videoCategoryIds.length > 0
   ) {
-    const allCategoryIds =
-      new Set<string>(
-        videoCategoryIds
-      );
-
-    let currentIds =
-      videoCategoryIds;
-
-    while (
-      currentIds.length > 0
-    ) {
-      const {
-        data: parents,
-        error: parentsError,
-      } = await supabase
-        .from("categories")
-        .select(
-          "id, parent_id, slug, level"
-        )
-        .in(
-          "id",
-          currentIds
-        );
-
-      if (parentsError) {
-        console.error(
-          "Category parents error:",
-          parentsError
-        );
-
-        break;
-      }
-
-      if (!parents?.length) {
-        break;
-      }
-
-      const parentIds =
-        parents
-          .map(
-            (item) =>
-              item.parent_id
-          )
-          .filter(
-            (
-              id
-            ): id is string =>
-              Boolean(id) &&
-              !allCategoryIds.has(id)
-          );
-
-      if (
-        parentIds.length === 0
-      ) {
-        break;
-      }
-
-      parentIds.forEach(
-        (id) =>
-          allCategoryIds.add(id)
-      );
-
-      currentIds = [
-        ...new Set(parentIds),
-      ];
-    }
-
-    const categoryLabels =
+    categoryLabels =
       await getCategoryLabels(
-        Array.from(
-          allCategoryIds
-        ),
-        locale
-      );
-
-    formattedVideos =
-      formattedVideos.map(
-        (video) => ({
-          ...video,
-
-          category_label:
-            video.category_id
-              ? categoryLabels[
-                  video.category_id
-                ] ??
-                formatText(
-                  video.categories?.[0]
-                    ?.slug
-                )
-              : "",
-        })
-      );
-  } else {
-    formattedVideos =
-      formattedVideos.map(
-        (video) => ({
-          ...video,
-          category_label: "",
-        })
+        videoCategoryIds,
+        locale,
+        false
       );
   }
+
+  // --------------------------------------------------
+  // Add labels to videos
+  // --------------------------------------------------
+
+  formattedVideos =
+    formattedVideos.map(
+      (video) => ({
+        ...video,
+
+        language_label:
+          languageLabels[
+            video.language_code
+          ] ??
+          video.language_code ??
+          "",
+
+        category_label:
+          video.category_id
+            ? categoryLabels[
+                video.category_id
+              ] ??
+              formatText(
+                video.categories?.[0]
+                  ?.slug
+              )
+            : "",
+      })
+    );
 
   // ==================================================
   // 10. Breadcrumb

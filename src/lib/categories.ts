@@ -56,7 +56,7 @@ export async function getCategoryLabels(
      Build category map
   ------------------------------------------------------- */
 
-  const categoryMap = new Map(
+  const categoryMap = new Map<string, Category>(
     categories.map((category) => [
       category.id,
       category as Category,
@@ -65,6 +65,17 @@ export async function getCategoryLabels(
 
   /* -------------------------------------------------------
      Build hierarchical translation keys
+     
+     Example:
+     
+     specific-topics
+       → category.specific-topics
+
+     storytelling
+       → category.specific-topics.storytelling
+
+     jokes
+       → category.specific-topics.storytelling.jokes
   ------------------------------------------------------- */
 
   const categoryKeyMap = new Map<string, string>();
@@ -73,7 +84,9 @@ export async function getCategoryLabels(
     category: Category
   ): string {
     const parts: string[] = [];
-    let current: Category | undefined = category;
+
+    let current: Category | undefined =
+      category;
 
     while (current) {
       parts.unshift(current.slug);
@@ -123,7 +136,8 @@ export async function getCategoryLabels(
   const labels: Record<string, string> = {};
 
   for (const categoryId of validCategoryIds) {
-    const current = categoryMap.get(categoryId);
+    const current =
+      categoryMap.get(categoryId);
 
     if (!current) {
       continue;
@@ -136,9 +150,8 @@ export async function getCategoryLabels(
     let root = current;
 
     while (root.parent_id) {
-      const parent = categoryMap.get(
-        root.parent_id
-      );
+      const parent =
+        categoryMap.get(root.parent_id);
 
       if (!parent) {
         break;
@@ -151,7 +164,9 @@ export async function getCategoryLabels(
        Translation keys
     --------------------------------------------------- */
 
-    const rootKey = categoryKeyMap.get(root.id);
+    const rootKey =
+      categoryKeyMap.get(root.id);
+
     const currentKey =
       categoryKeyMap.get(current.id);
 
@@ -160,23 +175,36 @@ export async function getCategoryLabels(
     --------------------------------------------------- */
 
     const rootName =
-      (rootKey && translations[rootKey]) ??
+      (rootKey &&
+        translations[rootKey]) ??
       formatCategorySlug(root.slug);
 
     /* ---------------------------------------------------
-       Current category name
+       Current / END category name
     --------------------------------------------------- */
 
     const currentName =
-      (currentKey && translations[currentKey]) ??
+      (currentKey &&
+        translations[currentKey]) ??
       formatCategorySlug(current.slug);
 
     /* ---------------------------------------------------
        Final label
+       
+       For video cards:
+       
+       includeParent = false
+       
+       Result:
+       Storytelling/Jokes
+       
+       NOT:
+       Specific Topics - Storytelling/Jokes
     --------------------------------------------------- */
 
     labels[categoryId] =
-      includeParent && root.id !== current.id
+      includeParent &&
+      root.id !== current.id
         ? `${rootName} - ${currentName}`
         : currentName;
   }
@@ -186,6 +214,9 @@ export async function getCategoryLabels(
 
 /**
  * Get a single category label.
+ *
+ * For videos we only want the END / selected
+ * category, not its parent hierarchy.
  */
 export async function getCategoryLabel(
   categoryId: string | null | undefined,
@@ -195,10 +226,12 @@ export async function getCategoryLabel(
     return "";
   }
 
-  const labels = await getCategoryLabels(
-    [categoryId],
-    locale
-  );
+  const labels =
+    await getCategoryLabels(
+      [categoryId],
+      locale,
+      false
+    );
 
   return labels[categoryId] ?? "";
 }

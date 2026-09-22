@@ -7,6 +7,7 @@ import ChannelHeader from "@/components/channels/ChannelHeader";
 import VideoCard from "@/components/VideoCard";
 import { getCategoryLabels } from "@/lib/categories";
 import { getTranslations } from "@/lib/translations";
+import { getBrowseLanguages } from "@/lib/languages";
 
 interface ChannelPageProps {
   params: Promise<{
@@ -51,6 +52,7 @@ export default async function ChannelPage({
       "video.free",
       "video.subscribers_only",
       "video.manage",
+      "video.view",
 
       // Video levels
       "level.beginner",
@@ -134,6 +136,21 @@ export default async function ChannelPage({
   let channelVideos = videos ?? [];
 
   /* =======================================================
+     LANGUAGE LABELS
+  ======================================================== */
+
+  const browseLanguages =
+    await getBrowseLanguages(locale);
+
+  const languageLabels: Record<string, string> =
+    Object.fromEntries(
+      browseLanguages.map((language) => [
+        language.code,
+        language.name,
+      ])
+    );
+
+  /* =======================================================
      CATEGORY LABELS
   ======================================================== */
 
@@ -141,12 +158,24 @@ export default async function ChannelPage({
     await getCategoryLabels(
       channelVideos.map(
         (video) => video.category_id
-      )
+      ),
+      locale,
+      false
     );
+
+  /* =======================================================
+     FORMAT VIDEO LABELS
+  ======================================================== */
 
   channelVideos = channelVideos.map(
     (video) => ({
       ...video,
+
+      language_label:
+        languageLabels[video.language_code] ??
+        video.language_code ??
+        "",
+
       category_label:
         video.category_id
           ? categoryLabels[
@@ -184,9 +213,11 @@ export default async function ChannelPage({
           created_by:
             translations["channel.created_by"] ??
             "Created by:",
+
           subscribed:
             translations["channel.subscribed"] ??
             "Subscribed",
+
           subscribe:
             translations["channel.subscribe"] ??
             "Subscribe",
@@ -229,50 +260,70 @@ export default async function ChannelPage({
                 createdAt={video.created_at}
                 level={video.level}
                 accessType={video.access_type}
-                categoryLabel={video.category_label}
+
+                languageLabel={
+                  video.language_label
+                }
+
+                categoryLabel={
+                  video.category_label
+                }
+
                 locale={locale}
+
                 translations={{
                   noThumbnail:
                     translations["video.no_thumbnail"] ??
                     "No thumbnail available",
+
                   views:
                     translations["video.views"] ??
                     "views",
+
                   published:
                     translations["video.published"] ??
                     "Published",
+
                   draft:
                     translations["video.draft"] ??
                     "Draft",
+
                   free:
                     translations["video.free"] ??
                     "Free",
+
                   subscribersOnly:
                     translations["video.subscribers_only"] ??
                     "Subscribers only",
+
                   manage:
                     translations["video.manage"] ??
                     "Manage",
-                  view: 
-                    translations["video.view"] ?? 
+
+                  view:
+                    translations["video.view"] ??
                     "View",
                 }}
+
                 levelTranslations={{
                   beginner:
                     translations["level.beginner"] ??
                     "Beginner",
+
                   intermediate:
                     translations["level.intermediate"] ??
                     "Intermediate",
+
                   advanced:
                     translations["level.advanced"] ??
                     "Advanced",
+
                   fluent:
                     translations["level.fluent"] ??
                     "Fluent",
                 }}
               />
-            ))}      
+            ))}
           </div>
         )}
 

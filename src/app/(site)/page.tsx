@@ -37,11 +37,9 @@ export default async function HomePage() {
   // --------------------------------------------------
   // Browse languages
   //
-  // IMPORTANT:
-  // Languages come from `locales`, not `categories`.
-  //
-  // The selected UI locale only controls the
-  // language names displayed in the pills.
+  // Languages come from `locales`.
+  // The selected UI locale controls the translated
+  // language names displayed to the user.
   // --------------------------------------------------
 
   const languages =
@@ -62,6 +60,7 @@ export default async function HomePage() {
     created_at,
     published_at,
     category_id,
+    language_code,
 
     channels (
       id,
@@ -138,7 +137,23 @@ export default async function HomePage() {
   }
 
   // --------------------------------------------------
-  // Add translated category labels
+  // Helper for translated language name
+  // --------------------------------------------------
+
+  function getLanguageLabel(
+    languageCode: string | null
+  ) {
+    if (!languageCode) return undefined;
+
+    const language = languages.find(
+      (item) => item.code === languageCode
+    );
+
+    return language?.name ?? languageCode;
+  }
+
+  // --------------------------------------------------
+  // Add translated language + category labels
   // --------------------------------------------------
 
   const formattedTrendingVideos =
@@ -146,6 +161,12 @@ export default async function HomePage() {
       (trendingVideos ?? []).map(
         async (video) => ({
           ...video,
+
+          language_label:
+            getLanguageLabel(
+              video.language_code
+            ),
+
           category_label:
             await getCategoryLabel(
               video.category_id,
@@ -160,6 +181,12 @@ export default async function HomePage() {
       (latestVideos ?? []).map(
         async (video) => ({
           ...video,
+
+          language_label:
+            getLanguageLabel(
+              video.language_code
+            ),
+
           category_label:
             await getCategoryLabel(
               video.category_id,

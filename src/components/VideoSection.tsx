@@ -27,7 +27,10 @@ interface Video {
   created_at: string;
   published_at: string | null;
   status?: string;
+
   channels: Channel | Channel[] | null;
+
+  language_label?: string;
   category_label?: string;
 }
 
@@ -79,49 +82,60 @@ export default async function VideoSection({
 
   const videoTranslations = {
     noThumbnail:
-      translations["video.no_thumbnail"] ?? "No thumbnail",
+      translations["video.no_thumbnail"] ??
+      "No thumbnail",
 
     views:
-      translations["video.views"] ?? "views",
+      translations["video.views"] ??
+      "views",
 
     published:
-      translations["video.published"] ?? "Published",
+      translations["video.published"] ??
+      "Published",
 
     draft:
-      translations["video.draft"] ?? "Draft",
+      translations["video.draft"] ??
+      "Draft",
 
     free:
-      translations["video.free"] ?? "Free",
+      translations["video.free"] ??
+      "Free",
 
     subscribersOnly:
       translations["video.subscribers_only"] ??
       "Subscribers only",
 
     manage:
-      translations["video.manage"] ?? "Manage",
+      translations["video.manage"] ??
+      "Manage",
 
     view:
-    translations["video.view"] ?? "View",
+      translations["video.view"] ??
+      "View",
   };
 
   const levelTranslations = {
     beginner:
-      translations["level.beginner"] ?? "Beginner",
+      translations["level.beginner"] ??
+      "Beginner",
 
     intermediate:
       translations["level.intermediate"] ??
       "Intermediate",
 
     advanced:
-      translations["level.advanced"] ?? "Advanced",
+      translations["level.advanced"] ??
+      "Advanced",
 
     fluent:
-      translations["level.fluent"] ?? "Fluent",
+      translations["level.fluent"] ??
+      "Fluent",
   };
 
   const homeTranslations = {
     viewAll:
-      translations["home.view_all"] ?? "View All",
+      translations["home.view_all"] ??
+      "View All",
 
     noVideos:
       translations["home.no_videos"] ??
@@ -162,9 +176,14 @@ export default async function VideoSection({
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {videos.map((video) => {
-            const channel = Array.isArray(video.channels)
+            const channel = Array.isArray(
+              video.channels
+            )
               ? video.channels[0]
               : video.channels;
+
+            const languageLabel =
+              video.language_label || "";
 
             const categoryLabel =
               video.category_label || "";
@@ -175,22 +194,45 @@ export default async function VideoSection({
                 id={video.id}
                 slug={video.slug}
                 title={video.title}
-                thumbnail={video.thumbnail_url || ""}
-                channelName={channel?.channel_name || ""}
-                channelSlug={channel?.slug || ""}
-                channelLogo={channel?.logo_url || ""}
-                views={video.view_count ?? 0}
-                createdAt={video.created_at}
+                thumbnail={
+                  video.thumbnail_url || ""
+                }
+                channelName={
+                  channel?.channel_name || ""
+                }
+                channelSlug={
+                  channel?.slug || ""
+                }
+                channelLogo={
+                  channel?.logo_url || ""
+                }
+                views={
+                  video.view_count ?? 0
+                }
+                createdAt={
+                  video.created_at
+                }
                 level={video.level}
-                accessType={video.access_type}
-                categoryLabel={categoryLabel}
+                accessType={
+                  video.access_type
+                }
+                languageLabel={
+                  languageLabel
+                }
+                categoryLabel={
+                  categoryLabel
+                }
                 status={video.status}
                 showStatus={showStatus}
                 showManage={showManage}
                 showView={showView}
                 locale={locale}
-                translations={videoTranslations}
-                levelTranslations={levelTranslations}
+                translations={
+                  videoTranslations
+                }
+                levelTranslations={
+                  levelTranslations
+                }
               />
             );
           })}

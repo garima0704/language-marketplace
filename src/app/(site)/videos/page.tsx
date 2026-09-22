@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { getCategoryLabels } from "@/lib/categories";
 import { getTranslations } from "@/lib/translations";
+import { getBrowseLanguages } from "@/lib/languages";
 
 import CategoryPills from "@/components/CategoryPills";
 import VideoSection from "@/components/VideoSection";
@@ -37,46 +38,15 @@ export default async function VideosPage() {
   );
 
   // --------------------------------------------------
-  // Top-level language categories
+  // Browse languages
+  //
+  // Languages come from `locales`, not categories.
+  // The selected UI locale controls how their names
+  // are displayed.
   // --------------------------------------------------
 
-  const {
-    data: languageCategories,
-    error: languagesError,
-  } = await supabase
-    .from("categories")
-    .select(`
-      id,
-      slug,
-      display_order
-    `)
-    .is("parent_id", null)
-    .eq("is_active", true)
-    .order("display_order");
-
-  if (languagesError) {
-    console.error(
-      "Failed to load video categories:",
-      languagesError
-    );
-  }
-
-  // --------------------------------------------------
-  // Language category labels
-  // --------------------------------------------------
-
-  const languageCategoryIds =
-    languageCategories?.map(
-      (category) => category.id
-    ) ?? [];
-
-  const languageLabels =
-    languageCategoryIds.length > 0
-      ? await getCategoryLabels(
-          languageCategoryIds,
-          locale
-        )
-      : {};
+  const languages =
+    await getBrowseLanguages(locale);
 
   // --------------------------------------------------
   // Language pills
@@ -90,15 +60,11 @@ export default async function VideosPage() {
         translations["videos.all"] ?? "All",
     },
 
-    ...(languageCategories ?? []).map(
-      (language) => ({
-        id: language.id,
-        slug: language.slug,
-        name:
-          languageLabels[language.id] ??
-          language.slug,
-      })
-    ),
+    ...languages.map((language) => ({
+      id: language.code,
+      slug: language.code,
+      name: language.name,
+    })),
   ];
 
   // --------------------------------------------------
@@ -121,6 +87,7 @@ export default async function VideosPage() {
       created_at,
       published_at,
       category_id,
+      language_code,
 
       channels (
         id,
@@ -151,9 +118,19 @@ export default async function VideosPage() {
   }
 
   // --------------------------------------------------
-  // Build category labels
-  // First level + last level
-  // Example: English - Business
+  // Build video labels
+  //
+  // Language:
+  // videos.language_code
+  //
+  // Category:
+  // ONLY the selected/end category.
+  //
+  // Example:
+  // Spanish - Storytelling/Jokes
+  //
+  // NOT:
+  // Spanish - Specific Topics - Storytelling/Jokes
   // --------------------------------------------------
 
   let formattedVideos = videos ?? [];
@@ -168,32 +145,48 @@ export default async function VideosPage() {
     ),
   ];
 
+  let categoryLabels: Record<
+    string,
+    string
+  > = {};
+
   if (categoryIds.length > 0) {
-    const categoryLabels =
+    categoryLabels =
       await getCategoryLabels(
         categoryIds,
-        locale
+        locale,
+        false
+      );
+  }
+
+  // --------------------------------------------------
+  // Format videos
+  // --------------------------------------------------
+
+  formattedVideos = formattedVideos.map(
+    (video) => {
+      const language = languages.find(
+        (item) =>
+          item.code === video.language_code
       );
 
-    formattedVideos = formattedVideos.map(
-      (video) => ({
+      return {
         ...video,
+
+        language_label:
+          language?.name ??
+          video.language_code ??
+          "",
+
         category_label:
           video.category_id
             ? categoryLabels[
                 video.category_id
               ] ?? ""
             : "",
-      })
-    );
-  } else {
-    formattedVideos = formattedVideos.map(
-      (video) => ({
-        ...video,
-        category_label: "",
-      })
-    );
-  }
+      };
+    }
+  );
 
   return (
     <div className="px-6 py-6">
@@ -204,13 +197,15 @@ export default async function VideosPage() {
             href="/"
             className="transition hover:text-gray-900"
           >
-            {translations["videos.home"] ?? "Home"}
+            {translations["videos.home"] ??
+              "Home"}
           </Link>
 
           <span>/</span>
 
           <span className="font-medium text-foreground">
-            {translations["videos.title"] ?? "Videos"}
+            {translations["videos.title"] ??
+              "Videos"}
           </span>
         </nav>
 

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { getCategoryLabels } from "@/lib/categories";
 import { getTranslations } from "@/lib/translations";
+import { getBrowseLanguages } from "@/lib/languages";
 
 import CategoryVideos from "@/components/videos/CategoryVideos";
 import VideoDetail from "@/components/videos/VideoDetail";
@@ -396,6 +397,9 @@ export default async function VideosSlugPage({
 
       // ------------------------------------------------
       // Get translated category labels
+      //
+      // Keep includeParent=true here because this
+      // page needs the complete breadcrumb hierarchy.
       // ------------------------------------------------
 
       const labels =
@@ -509,7 +513,8 @@ export default async function VideosSlugPage({
         if (locationParts.length > 0) {
           languageDescription =
             `${languageName} ${
-              translations["video.from"] ?? "from"
+              translations["video.from"] ??
+              "from"
             } ${locationParts.join(", ")}`;
         } else {
           languageDescription =
@@ -530,7 +535,9 @@ export default async function VideosSlugPage({
         `language.${videoData.subtitle_language_code}`;
 
       subtitleLanguageName =
-        translations[subtitleLanguageKey] ??
+        translations[
+          subtitleLanguageKey
+        ] ??
         videoData.subtitle_language_code;
     }
 
@@ -603,7 +610,10 @@ export default async function VideosSlugPage({
           "channel_id",
           videoData.channel_id
         )
-        .eq("status", "active")
+        .eq(
+          "status",
+          "active"
+        )
         .maybeSingle();
 
       if (subscriptionError) {
@@ -621,25 +631,30 @@ export default async function VideosSlugPage({
     // WATCH ACCESS
     // ==================================================
 
-  const channel = Array.isArray(videoData.channels)
-    ? videoData.channels[0]
-    : videoData.channels;
+    const channel = Array.isArray(
+      videoData.channels
+    )
+      ? videoData.channels[0]
+      : videoData.channels;
 
-  const channelProfile = Array.isArray(channel?.profiles)
-    ? channel.profiles[0]
-    : channel?.profiles;
+    const channelProfile =
+      Array.isArray(
+        channel?.profiles
+      )
+        ? channel.profiles[0]
+        : channel?.profiles;
 
-  const isVideoOwner =
-    !!user &&
-    user.id === channelProfile?.id;
+    const isVideoOwner =
+      !!user &&
+      user.id === channelProfile?.id;
 
-  const canWatch =
-    isAuthenticated &&
-    (
-      isVideoOwner ||
-      videoData.access_type === "free" ||
-      hasActiveSubscription
-    );
+    const canWatch =
+      isAuthenticated &&
+      (
+        isVideoOwner ||
+        videoData.access_type === "free" ||
+        hasActiveSubscription
+      );
 
     // ==================================================
     // VIDEO URL
@@ -704,6 +719,7 @@ export default async function VideosSlugPage({
           published_at,
           created_at,
           language_code,
+          category_id,
           access_type,
           channel_id,
 
@@ -754,6 +770,58 @@ export default async function VideosSlugPage({
         relatedVideos =
           relatedVideoData ?? [];
       }
+    }
+
+    // ==================================================
+    // RELATED VIDEO LANGUAGE + CATEGORY LABELS
+    // ==================================================
+
+    if (relatedVideos.length > 0) {
+      const browseLanguages =
+        await getBrowseLanguages(locale);
+
+      const languageLabels: Record<
+        string,
+        string
+      > = Object.fromEntries(
+        browseLanguages.map(
+          (language) => [
+            language.code,
+            language.name,
+          ]
+        )
+      );
+
+      const relatedCategoryLabels =
+        await getCategoryLabels(
+          relatedVideos.map(
+            (video) =>
+              video.category_id
+          ),
+          locale,
+          false
+        );
+
+      relatedVideos =
+        relatedVideos.map(
+          (video) => ({
+            ...video,
+
+            language_label:
+              languageLabels[
+                video.language_code
+              ] ??
+              video.language_code ??
+              "",
+
+            category_label:
+              video.category_id
+                ? relatedCategoryLabels[
+                    video.category_id
+                  ] ?? ""
+                : "",
+          })
+        );
     }
 
     // ==================================================

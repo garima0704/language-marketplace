@@ -34,7 +34,10 @@ interface VideoCardProps {
   createdAt: string;
   level: string | null;
   accessType: "free" | "subscriber";
+
+  languageLabel?: string;
   categoryLabel?: string;
+
   status?: string;
   showStatus?: boolean;
   showManage?: boolean;
@@ -56,7 +59,10 @@ export default function VideoCard({
   createdAt,
   level,
   accessType,
+
+  languageLabel,
   categoryLabel,
+
   status,
   showStatus = false,
   showManage = false,
@@ -106,6 +112,13 @@ export default function VideoCard({
             ? levels.fluent
             : level;
 
+  const categoryDisplay = [
+    languageLabel,
+    categoryLabel,
+  ]
+    .filter(Boolean)
+    .join(" - ");
+
   return (
     <div className="group overflow-hidden rounded-xl border border-border bg-background transition hover:shadow-md">
       <Link href={`/videos/${slug}`}>
@@ -126,9 +139,9 @@ export default function VideoCard({
             </div>
           )}
 
-          {categoryLabel && (
+          {categoryDisplay && (
             <span className="absolute right-2 top-2 z-10 rounded-md bg-primary px-3 py-1 text-xs font-medium text-white shadow-sm">
-              {categoryLabel}
+              {categoryDisplay}
             </span>
           )}
         </div>
@@ -239,7 +252,7 @@ export default function VideoCard({
                   {labels.view}
                 </Button>
               </Link>
-            )}           
+            )}
           </div>
         )}
       </div>

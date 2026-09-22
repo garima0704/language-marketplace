@@ -1,14 +1,35 @@
-import LoginForm from "@/components/auth/LoginForm";
+import { cookies } from "next/headers";
 
-export default function LoginPage() {
+import LoginForm from "@/components/auth/LoginForm";
+import { getTranslations } from "@/lib/translations";
+
+export default async function LoginPage() {
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
+
+  const translations = await getTranslations(
+    [
+      "auth.welcome_back",
+      "auth.login_description",
+    ],
+    locale
+  );
+
+  console.log("LOGIN LOCALE:", locale);
+  console.log("LOGIN TRANSLATIONS:", translations);
+
   return (
     <>
       <h1 className="text-3xl font-bold">
-        Welcome back
+        {translations["auth.welcome_back"] ??
+          "Welcome back"}
       </h1>
 
       <p className="mt-2 text-gray-500">
-        Sign in to continue learning on NiceConvo.
+        {translations["auth.login_description"] ??
+          "Sign in to continue learning on NiceConvo."}
       </p>
 
       <LoginForm />

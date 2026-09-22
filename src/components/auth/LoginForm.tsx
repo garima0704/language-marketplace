@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+
 import { login } from "@/app/(auth)/actions";
 
 const initialState = {
@@ -10,16 +11,24 @@ const initialState = {
   error: "",
 };
 
-export default function LoginForm() {
-  const [showPassword, setShowPassword] = useState(false);
+interface LoginFormProps {
+  translations?: Record<string, string>;
+}
 
-  const [state, formAction, pending] = useActionState(
-    login,
-    initialState
-  );
+export default function LoginForm({
+  translations = {},
+}: LoginFormProps) {
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [state, formAction, pending] =
+    useActionState(login, initialState);
 
   return (
-    <form action={formAction} className="mt-6 space-y-4">
+    <form
+      action={formAction}
+      className="mt-6 space-y-4"
+    >
       {/* Server Error */}
       {state.error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
@@ -33,7 +42,7 @@ export default function LoginForm() {
           htmlFor="email"
           className="mb-1 block text-sm font-medium"
         >
-          Email
+          {translations["auth.email"] ?? "Email"}
         </label>
 
         <input
@@ -53,14 +62,17 @@ export default function LoginForm() {
             htmlFor="password"
             className="text-sm font-medium"
           >
-            Password
+            {translations["auth.password"] ??
+              "Password"}
           </label>
 
           <Link
             href="/forgot-password"
             className="text-sm text-gray-900 hover:underline"
           >
-            Forgot password?
+            {translations[
+              "auth.forgot_password"
+            ] ?? "Forgot password?"}
           </Link>
         </div>
 
@@ -68,16 +80,29 @@ export default function LoginForm() {
           <input
             id="password"
             name="password"
-            type={showPassword ? "text" : "password"}
+            type={
+              showPassword ? "text" : "password"
+            }
             required
-            placeholder="Enter your password"
+            placeholder={
+              translations[
+                "auth.password_placeholder"
+              ] ?? "Enter your password"
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2 pr-12 outline-none transition focus:border-gray-900"
           />
 
           <button
             type="button"
-            onClick={() => setShowPassword(!showPassword)}
+            onClick={() =>
+              setShowPassword(!showPassword)
+            }
             className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            aria-label={
+              showPassword
+                ? "Hide password"
+                : "Show password"
+            }
           >
             {showPassword ? (
               <EyeOff size={20} />
@@ -95,7 +120,9 @@ export default function LoginForm() {
           name="remember"
           className="rounded border-gray-300"
         />
-        Remember me
+
+        {translations["auth.remember_me"] ??
+          "Remember me"}
       </label>
 
       {/* Submit */}
@@ -107,20 +134,27 @@ export default function LoginForm() {
         {pending ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Signing In...
+
+            {translations["auth.signing_in"] ??
+              "Signing In..."}
           </>
         ) : (
+          translations["auth.sign_in"] ??
           "Sign In"
         )}
       </button>
 
+      {/* Sign Up */}
       <p className="text-center text-sm text-gray-600">
-        Don't have an account?{" "}
+        {translations["auth.no_account"] ??
+          "Don't have an account?"}{" "}
+
         <Link
           href="/signup"
           className="font-semibold text-gray-900 hover:underline"
         >
-          Sign Up
+          {translations["auth.sign_up"] ??
+            "Sign Up"}
         </Link>
       </p>
     </form>
