@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 
-import ProfileOnboardingDialog from "@/components/profile/ProfileOnboardingDialog";
+import ProfileOnboardingDialog,{ 
+  type ProfileOnboardingDialogTranslations, 
+} from "@/components/profile/ProfileOnboardingDialog";
 
 type Language = {
   code: string;
@@ -57,6 +59,8 @@ interface ProfileOnboardingWrapperProps {
 
   socialLinks: SocialLink[];
   availablePlatforms: SocialPlatform[];
+
+  translations: ProfileOnboardingDialogTranslations;
 }
 
 export default function ProfileOnboardingWrapper({
@@ -66,6 +70,7 @@ export default function ProfileOnboardingWrapper({
   availableLanguages,
   socialLinks,
   availablePlatforms,
+  translations,
 }: ProfileOnboardingWrapperProps) {
   const [open, setOpen] =
     useState(shouldOpen);
@@ -79,6 +84,7 @@ export default function ProfileOnboardingWrapper({
       availableLanguages={availableLanguages}
       socialLinks={socialLinks}
       availablePlatforms={availablePlatforms}
+      translations={translations}
     />
   );
 }

@@ -21,16 +21,27 @@ interface SocialPlatform {
   placeholder: string | null;
 }
 
+interface SocialLinksSectionTranslations {
+  title: string;
+  description: string;
+  edit_social_links: string;
+  platform: string;
+  profile: string;
+  no_social_links: string;
+}
+
 interface SocialLinksSectionProps {
   profileId: string;
   socialLinks: SocialLink[];
   availablePlatforms: SocialPlatform[];
+  translations: SocialLinksSectionTranslations;
 }
 
 export default function SocialLinksSection({
   profileId,
   socialLinks,
   availablePlatforms,
+  translations,
 }: SocialLinksSectionProps) {
   const [open, setOpen] = useState(false);
 
@@ -40,16 +51,16 @@ export default function SocialLinksSection({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold">
-              Social Links
+              {translations.title}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Your social profiles and other online links.
+              {translations.description}
             </p>
           </div>
 
           <Button onClick={() => setOpen(true)}>
-            Edit Social Links
+            {translations.edit_social_links}
           </Button>
         </div>
 
@@ -57,8 +68,8 @@ export default function SocialLinksSection({
           <div className="mt-5 overflow-hidden rounded-xl border">
             {/* Header */}
             <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] border-b px-4 py-3 text-sm font-medium text-muted-foreground">
-              <span>Platform</span>
-              <span>Profile</span>
+              <span>{translations.platform}</span>
+              <span>{translations.profile}</span>
             </div>
 
             {/* Social Links */}
@@ -86,7 +97,7 @@ export default function SocialLinksSection({
         ) : (
           <div className="mt-5 rounded-xl border border-dashed p-5 text-center">
             <p className="text-sm text-muted-foreground">
-              You haven't added any social links yet.
+              {translations.no_social_links}
             </p>
           </div>
         )}

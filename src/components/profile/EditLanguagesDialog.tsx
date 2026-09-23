@@ -45,12 +45,33 @@ interface EditableLanguage {
   is_native: boolean;
 }
 
+interface EditLanguagesDialogTranslations {
+  title: string;
+  description: string;
+  language: string;
+  proficiency: string;
+  native_language: string;
+  native: string;
+  remove_language: string;
+  no_languages: string;
+  add_language: string;
+  cancel: string;
+  saving: string;
+  save_changes: string;
+  beginner: string;
+  intermediate: string;
+  advanced: string;
+  fluent: string;
+  save_error: string;
+}
+
 interface EditLanguagesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profileId: string;
   languages: ProfileLanguage[];
   availableLanguages: AvailableLanguage[];
+  translations: EditLanguagesDialogTranslations;
 }
 
 export default function EditLanguagesDialog({
@@ -58,6 +79,7 @@ export default function EditLanguagesDialog({
   onOpenChange,
   languages,
   availableLanguages,
+  translations,
 }: EditLanguagesDialogProps) {
   const [items, setItems] = useState<EditableLanguage[]>([]);
   const [saving, setSaving] = useState(false);
@@ -154,8 +176,7 @@ export default function EditLanguagesDialog({
 
     if (!result.success) {
       setError(
-        result.error ??
-          "Failed to save languages."
+        result.error ?? translations.save_error
       );
       setSaving(false);
       return;
@@ -186,12 +207,11 @@ export default function EditLanguagesDialog({
       >
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-foreground">
-            Edit Languages
+            {translations.title}
           </DialogTitle>
 
           <DialogDescription>
-            Add the languages you speak and set your
-            proficiency level.
+            {translations.description}
           </DialogDescription>
         </DialogHeader>
 
@@ -215,10 +235,10 @@ export default function EditLanguagesDialog({
                   sm:grid
                 "
               >
-                <span>Language</span>
-                <span>Proficiency</span>
+                <span>{translations.language}</span>
+                <span>{translations.proficiency}</span>
                 <span className="text-center">
-                  Native
+                  {translations.native}
                 </span>
                 <span />
               </div>
@@ -249,7 +269,7 @@ export default function EditLanguagesDialog({
                       {/* Language */}
                       <div className="min-w-0">
                         <label className="mb-2 block text-sm font-medium text-foreground sm:hidden">
-                          Language
+                          {translations.language}
                         </label>
 
                         <select
@@ -317,7 +337,7 @@ export default function EditLanguagesDialog({
                       {/* Proficiency */}
                       <div>
                         <label className="mb-2 block text-sm font-medium text-foreground sm:hidden">
-                          Proficiency
+                          {translations.proficiency}
                         </label>
 
                         <select
@@ -348,19 +368,19 @@ export default function EditLanguagesDialog({
                           "
                         >
                           <option value="beginner">
-                            Beginner
+                            {translations.beginner}
                           </option>
 
                           <option value="intermediate">
-                            Intermediate
+                            {translations.intermediate}
                           </option>
 
                           <option value="advanced">
-                            Advanced
+                            {translations.advanced}
                           </option>
 
                           <option value="fluent">
-                            Fluent
+                            {translations.fluent}
                           </option>
                         </select>
                       </div>
@@ -375,7 +395,7 @@ export default function EditLanguagesDialog({
                         "
                       >
                         <label className="text-sm font-medium text-foreground sm:hidden">
-                          Native language
+                          {translations.native_language}
                         </label>
 
                         <input
@@ -402,7 +422,9 @@ export default function EditLanguagesDialog({
                             removeLanguage(item.id)
                           }
                           disabled={saving}
-                          aria-label="Remove language"
+                          aria-label={
+                            translations.remove_language
+                          }
                         >
                           <Trash2 className="h-4 w-4 text-muted-foreground" />
                         </Button>
@@ -415,7 +437,7 @@ export default function EditLanguagesDialog({
           ) : (
             <div className="rounded-xl border border-dashed p-8 text-center">
               <p className="text-sm text-muted-foreground">
-                No languages added yet.
+                {translations.no_languages}
               </p>
             </div>
           )}
@@ -432,7 +454,7 @@ export default function EditLanguagesDialog({
             }
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add Language
+            {translations.add_language}
           </Button>
 
           {error && (
@@ -450,7 +472,7 @@ export default function EditLanguagesDialog({
             onClick={() => onOpenChange(false)}
             disabled={saving}
           >
-            Cancel
+            {translations.cancel}
           </Button>
 
           <Button
@@ -460,8 +482,8 @@ export default function EditLanguagesDialog({
             className="transition-opacity hover:opacity-90"
           >
             {saving
-              ? "Saving..."
-              : "Save Changes"}
+              ? translations.saving
+              : translations.save_changes}
           </Button>
         </div>
       </DialogContent>

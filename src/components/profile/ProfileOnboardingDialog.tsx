@@ -69,6 +69,81 @@ type SocialPlatform = {
   placeholder: string | null;
 };
 
+export interface ProfileOnboardingDialogTranslations {
+  complete_your_profile: string; 
+  complete_your_profile_description: string; 
+  
+  basic_details: string; 
+  basic_details_description: string; 
+  
+  languages: string; 
+  languages_description: string; 
+  
+  social_links: string; 
+  social_links_description: string; 
+  
+  change_photo: string; 
+  uploading: string; 
+  image_formats: string; 
+  max_file_size: string; 
+  
+  display_name: string; 
+  display_name_required: string; 
+  
+  username: string; 
+  username_description: string; 
+  
+  country: string; 
+  country_placeholder: string; 
+  
+  date_of_birth: string; 
+  
+  gender: string; 
+  select_gender: string; 
+  gender_female: string; 
+  gender_male: string; 
+  
+  bio: string; 
+  bio_placeholder: string; 
+  
+  language: string; 
+  proficiency: string; 
+  native: string; 
+  native_language: string; 
+  remove_language: string; 
+  no_languages: string; 
+  add_language: string; 
+  
+  proficiency_beginner: string; 
+  proficiency_intermediate: string; 
+  proficiency_advanced: string; 
+  proficiency_fluent: string; 
+  
+  platform: string; 
+  profile: string; 
+  remove_social_link: string; 
+  no_social_links: string; 
+  add_link: string; 
+  your_username: string; 
+  
+  skip_for_now: string; 
+  back: string; 
+  continue: string; 
+  saving: string; 
+  finish: string; 
+  finishing: string; 
+  
+  max_file_size_error: string; 
+  invalid_image_type: string; 
+  photo_upload_error: string; 
+  
+  save_profile_error: string; 
+  save_languages_error: string; 
+  save_social_links_error: string; 
+  complete_profile_error: string; 
+  dismiss_onboarding_error: string; 
+}
+
 interface ProfileOnboardingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -89,88 +164,91 @@ interface ProfileOnboardingDialogProps {
 
   socialLinks: SocialLink[];
   availablePlatforms: SocialPlatform[];
+
+  translations: ProfileOnboardingDialogTranslations;
 }
+
+const PROFICIENCY_VALUES: Proficiency[] = [ 
+  "beginner", 
+  "intermediate", 
+  "advanced", 
+  "fluent", 
+]; 
+
+export default function ProfileOnboardingDialog({ 
+  open, 
+  onOpenChange, 
+  profile, 
+  languages: initialLanguages, 
+  availableLanguages, 
+  socialLinks: initialSocialLinks, 
+  availablePlatforms, 
+  translations, 
+}: ProfileOnboardingDialogProps) { 
+  const router = useRouter(); 
+  const supabase = createClient(); 
+  
+  const fileInputRef = 
+    useRef<HTMLInputElement>(null); 
+  
+  const [step, setStep] = useState(1); 
+  const [loading, setLoading] = useState(false); 
+  const [error, setError] = 
+    useState<string | null>(null); 
+
+  const [avatarUrl, setAvatarUrl] = 
+    useState(profile.avatar_url ?? ""); 
+  
+  const [displayName, setDisplayName] = 
+    useState(profile.display_name ?? ""); 
+    
+  const [bio, setBio] = 
+    useState(profile.bio ?? ""); 
+    
+  const [country, setCountry] = 
+    useState(profile.country ?? ""); 
+    
+  const [dateOfBirth, setDateOfBirth] = 
+    useState(profile.date_of_birth ?? ""); 
+  
+  const [gender, setGender] = 
+    useState(profile.gender ?? ""); 
+    
+  const [languages, setLanguages] = 
+    useState<ProfileLanguage[]>( 
+      initialLanguages 
+    ); 
+  
+  const [socialLinks, setSocialLinks] = 
+    useState<SocialLink[]>( 
+      initialSocialLinks 
+    );
 
 const GENDER_OPTIONS = [
   {
     value: "female",
-    label: "Female",
+    label: translations.gender_female,
   },
   {
     value: "male",
-    label: "Male",
+    label: translations.gender_male,
   },
 ];
 
 const PROFICIENCIES: {
   value: Proficiency;
   label: string;
-}[] = [
-  {
-    value: "beginner",
-    label: "Beginner",
-  },
-  {
-    value: "intermediate",
-    label: "Intermediate",
-  },
-  {
-    value: "advanced",
-    label: "Advanced",
-  },
-  {
-    value: "fluent",
-    label: "Fluent",
-  },
-];
-
-export default function ProfileOnboardingDialog({
-  open,
-  onOpenChange,
-  profile,
-  languages: initialLanguages,
-  availableLanguages,
-  socialLinks: initialSocialLinks,
-  availablePlatforms,
-}: ProfileOnboardingDialogProps) {
-  const router = useRouter();
-  const supabase = createClient();
-
-  const fileInputRef =
-    useRef<HTMLInputElement>(null);
-
-  const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] =
-    useState<string | null>(null);
-
-  const [avatarUrl, setAvatarUrl] =
-    useState(profile.avatar_url ?? "");
-
-  const [displayName, setDisplayName] =
-    useState(profile.display_name ?? "");
-
-  const [bio, setBio] =
-    useState(profile.bio ?? "");
-
-  const [country, setCountry] =
-    useState(profile.country ?? "");
-
-  const [dateOfBirth, setDateOfBirth] =
-    useState(profile.date_of_birth ?? "");
-
-  const [gender, setGender] =
-    useState(profile.gender ?? "");
-
-  const [languages, setLanguages] =
-    useState<ProfileLanguage[]>(
-      initialLanguages
-    );
-
-  const [socialLinks, setSocialLinks] =
-    useState<SocialLink[]>(
-      initialSocialLinks
-    );
+}[] = PROFICIENCY_VALUES.map((value) => ({ 
+  value, 
+  label: 
+    value === "beginner" 
+      ? translations.proficiency_beginner 
+      : value === "intermediate"
+        ? translations.proficiency_intermediate 
+        : value === "advanced" 
+          ? translations.proficiency_advanced 
+          : translations.proficiency_fluent,
+}));
 
   async function handleAvatarUpload(
     e: React.ChangeEvent<HTMLInputElement>
@@ -182,7 +260,9 @@ export default function ProfileOnboardingDialog({
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setError("Maximum file size is 5 MB.");
+      setError(
+        translations.max_file_size_error
+      );
       return;
     }
 
@@ -194,7 +274,7 @@ export default function ProfileOnboardingDialog({
 
     if (!allowedTypes.includes(file.type)) {
       setError(
-        "Only JPG, PNG and WebP files are allowed."
+        translations.invalid_image_type
       );
       return;
     }
@@ -221,7 +301,7 @@ export default function ProfileOnboardingDialog({
         );
 
         setError(
-          "Unable to upload profile photo."
+          translations.photo_upload_error
         );
 
         return;
@@ -251,7 +331,7 @@ export default function ProfileOnboardingDialog({
 
     if (!trimmedDisplayName) {
       setError(
-        "Please enter your display name."
+        translations.display_name_required
       );
       return;
     }
@@ -275,7 +355,7 @@ export default function ProfileOnboardingDialog({
     if (!result.success) {
       setError(
         result.error ||
-          "Unable to save your profile."
+          translations.save_profile_error
       );
       return;
     }
@@ -304,7 +384,7 @@ export default function ProfileOnboardingDialog({
     if (!result.success) {
       setError(
         result.error ||
-          "Unable to save your languages."
+          translations.save_languages_error
       );
       return;
     }
@@ -359,7 +439,7 @@ export default function ProfileOnboardingDialog({
 
       setError(
         socialResult.error ||
-          "Unable to save your social links."
+          translations.save_social_links_error
       );
 
       return;
@@ -373,7 +453,7 @@ export default function ProfileOnboardingDialog({
     if (!result.success) {
       setError(
         result.error ||
-          "Unable to complete profile setup."
+          translations.complete_profile_error
       );
       return;
     }
@@ -394,7 +474,7 @@ export default function ProfileOnboardingDialog({
     if (!result.success) {
       setError(
         result.error ||
-          "Unable to dismiss onboarding."
+          translations.dismiss_onboarding_error
       );
       return;
     }
@@ -593,13 +673,11 @@ export default function ProfileOnboardingDialog({
       >
         <DialogHeader>
           <DialogTitle className="text-2xl">
-            Complete Your Profile
+            {translations.complete_your_profile}
           </DialogTitle>
 
           <DialogDescription>
-            Set up the information other
-            NiceConvo users will see when
-            they visit your profile.
+            {translations.complete_your_profile_description}
           </DialogDescription>
         </DialogHeader>
 
@@ -609,15 +687,15 @@ export default function ProfileOnboardingDialog({
           {[
             {
               number: 1,
-              label: "Basic Details",
+              label: translations.basic_details,
             },
             {
               number: 2,
-              label: "Languages",
+              label: translations.languages,
             },
             {
               number: 3,
-              label: "Social Links",
+              label: translations.social_links,
             },
           ].map((item, index) => (
             <div
@@ -671,12 +749,11 @@ export default function ProfileOnboardingDialog({
           <div className="space-y-6">
             <div className="pt-4">
               <h3 className="text-lg font-semibold">
-                Basic Details
+                {translations.basic_details}
               </h3>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Add a few details so other NiceConvo users can
-                learn more about you.
+                {translations.basic_details_description}
               </p>
             </div>
 
@@ -713,13 +790,13 @@ export default function ProfileOnboardingDialog({
                     }
                     disabled={loading}
                   >
-                    Change Photo
+                    {translations.change_photo}
                   </Button>
 
                   <p className="mt-2 text-center text-xs text-muted-foreground">
-                    JPG, PNG or WebP
+                    {translations.image_formats}
                     <br />
-                    Maximum 5 MB
+                    {translations.max_file_size}
                   </p>
                 </div>
 
@@ -728,7 +805,7 @@ export default function ProfileOnboardingDialog({
                   {/* Display Name */}
                   <div className="space-y-2">
                     <Label htmlFor="onboarding-display-name">
-                      Display Name
+                      {translations.display_name}
                     </Label>
 
                     <Input
@@ -744,7 +821,7 @@ export default function ProfileOnboardingDialog({
                   {/* Username */}
                   <div className="space-y-2">
                     <Label htmlFor="onboarding-username">
-                      Username
+                      {translations.username}
                     </Label>
 
                     <Input
@@ -754,14 +831,14 @@ export default function ProfileOnboardingDialog({
                     />
 
                     <p className="text-xs text-muted-foreground">
-                      This appears in your public profile URL.
+                      {translations.username_description}
                     </p>
                   </div>
 
                   {/* Country */}
                   <div className="space-y-2">
                     <Label htmlFor="onboarding-country">
-                      Country
+                      {translations.country}
                     </Label>
 
                     <Input
@@ -771,7 +848,9 @@ export default function ProfileOnboardingDialog({
                         setCountry(event.target.value)
                       }
                       disabled={loading}
-                      placeholder="e.g. India"
+                      placeholder={
+                        translations.country_placeholder
+                      }
                     />
                   </div>
 
@@ -780,7 +859,7 @@ export default function ProfileOnboardingDialog({
                     {/* Date of Birth */}
                     <div className="space-y-2">
                       <Label htmlFor="onboarding-dob">
-                        Date of Birth
+                        {translations.date_of_birth}
                       </Label>
 
                       <Input
@@ -797,7 +876,7 @@ export default function ProfileOnboardingDialog({
                     {/* Gender */}
                     <div className="space-y-2">
                       <Label htmlFor="onboarding-gender">
-                        Gender
+                        {translations.gender}
                       </Label>
 
                       <select
@@ -822,7 +901,7 @@ export default function ProfileOnboardingDialog({
                         "
                       >
                         <option value="">
-                          Select gender
+                          {translations.select_gender}
                         </option>
 
                         {GENDER_OPTIONS.map((option) => (
@@ -840,7 +919,7 @@ export default function ProfileOnboardingDialog({
                   {/* Bio */}
                   <div className="space-y-2">
                     <Label htmlFor="onboarding-bio">
-                      Bio
+                      {translations.bio}
                     </Label>
 
                     <Textarea
@@ -850,7 +929,9 @@ export default function ProfileOnboardingDialog({
                         setBio(event.target.value)
                       }
                       disabled={loading}
-                      placeholder="Tell people a little about yourself..."
+                      placeholder={
+                        translations.bio_placeholder
+                      }
                       rows={4}
                       maxLength={500}
                     />
@@ -873,7 +954,7 @@ export default function ProfileOnboardingDialog({
                 disabled={loading}
                 onClick={handleSkip}
               >
-                Skip for now
+                {translations.skip_for_now}
               </Button>
 
               <Button
@@ -881,7 +962,10 @@ export default function ProfileOnboardingDialog({
                 disabled={loading}
                 onClick={handleNextFromProfile}
               >
-                {loading ? "Saving..." : "Continue"}
+                {loading 
+                  ? translations.saving 
+                  : translations.continue
+                }
               </Button>
             </div>
           </div>
@@ -895,12 +979,11 @@ export default function ProfileOnboardingDialog({
           <div className="space-y-6">
             <div className="pt-2">
               <h3 className="text-lg font-semibold">
-                Languages
+                {translations.languages}
               </h3>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Add the languages you speak and
-                set your proficiency level.
+                {translations.languages_description}
               </p>
             </div>
 
@@ -924,10 +1007,10 @@ export default function ProfileOnboardingDialog({
                     sm:grid
                   "
                 >
-                  <span>Language</span>
-                  <span>Proficiency</span>
+                  <span>{translations.language}</span>
+                  <span>{translations.proficiency}</span>
                   <span className="text-center">
-                    Native
+                    {translations.native}
                   </span>
                   <span />
                 </div>
@@ -962,7 +1045,7 @@ export default function ProfileOnboardingDialog({
 
                           <div className="min-w-0">
                             <label className="mb-2 block text-sm font-medium sm:hidden">
-                              Language
+                              {translations.language}
                             </label>
 
                             <select
@@ -1018,7 +1101,7 @@ export default function ProfileOnboardingDialog({
 
                           <div>
                             <label className="mb-2 block text-sm font-medium sm:hidden">
-                              Proficiency
+                              {translations.proficiency}
                             </label>
 
                             <select
@@ -1067,7 +1150,7 @@ export default function ProfileOnboardingDialog({
 
                           <div className="flex items-center justify-between sm:justify-center">
                             <label className="text-sm font-medium sm:hidden">
-                              Native language
+                              {translations.native_language}
                             </label>
 
                             <input
@@ -1113,7 +1196,7 @@ export default function ProfileOnboardingDialog({
             ) : (
               <div className="rounded-xl border border-dashed p-8 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No languages added yet.
+                  {translations.no_languages}
                 </p>
               </div>
             )}
@@ -1129,7 +1212,7 @@ export default function ProfileOnboardingDialog({
               }
             >
               <Plus className="mr-2 h-4 w-4" />
-              Add Language
+              {translations.add_language}
             </Button>
 
             <div className="flex justify-between pt-2">
@@ -1142,7 +1225,7 @@ export default function ProfileOnboardingDialog({
                 }}
                 disabled={loading}
               >
-                Back
+                {translations.back}
               </Button>
 
               <Button
@@ -1152,9 +1235,10 @@ export default function ProfileOnboardingDialog({
                 }
                 disabled={loading}
               >
-                {loading
-                  ? "Saving..."
-                  : "Continue"}
+                {loading 
+                  ? translations.saving 
+                  : translations.continue
+                }
               </Button>
             </div>
           </div>
@@ -1168,12 +1252,11 @@ export default function ProfileOnboardingDialog({
           <div className="space-y-6">
             <div className="pt-2">
               <h3 className="text-lg font-semibold">
-                Social Links
+                {translations.social_links}
               </h3>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Add links to your social profiles
-                or other websites.
+                {translations.social_links_description}
               </p>
             </div>
 
@@ -1197,8 +1280,8 @@ export default function ProfileOnboardingDialog({
                     sm:grid
                   "
                 >
-                  <span>Platform</span>
-                  <span>Profile</span>
+                  <span>{translations.platform}</span>
+                  <span>{translations.profile}</span>
                   <span />
                 </div>
 
@@ -1256,7 +1339,7 @@ export default function ProfileOnboardingDialog({
 
                             <div className="min-w-0">
                               <label className="mb-2 block text-sm font-medium sm:hidden">
-                                Platform
+                                {translations.platform}
                               </label>
 
                               <select
@@ -1314,7 +1397,7 @@ export default function ProfileOnboardingDialog({
 
                             <div className="min-w-0">
                               <label className="mb-2 block text-sm font-medium sm:hidden">
-                                Profile
+                                {translations.profile}
                               </label>
 
                               <div className="flex min-w-0">
@@ -1355,8 +1438,8 @@ export default function ProfileOnboardingDialog({
                                     )
                                   }
                                   placeholder={
-                                    platform?.placeholder ??
-                                    "your username"
+                                    platform?.placeholder ?? 
+                                    translations.your_username
                                   }
                                   disabled={loading}
                                   className="h-10 min-w-0 rounded-l-none"
@@ -1377,7 +1460,9 @@ export default function ProfileOnboardingDialog({
                                   )
                                 }
                                 disabled={loading}
-                                aria-label="Remove social link"
+                                aria-label={
+                                  translations.remove_social_link
+                                }
                               >
                                 <Trash2 className="h-4 w-4 text-muted-foreground" />
                               </Button>
@@ -1392,7 +1477,7 @@ export default function ProfileOnboardingDialog({
             ) : (
               <div className="rounded-xl border border-dashed p-8 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No social links added yet.
+                  {translations.no_social_links}
                 </p>
               </div>
             )}
@@ -1408,7 +1493,7 @@ export default function ProfileOnboardingDialog({
               }
             >
               <Plus className="mr-2 h-4 w-4" />
-              Add Link
+              {translations.add_link}
             </Button>
 
             <div className="flex justify-between pt-2">
@@ -1421,7 +1506,7 @@ export default function ProfileOnboardingDialog({
                 }}
                 disabled={loading}
               >
-                Back
+                {translations.back}
               </Button>
 
               <Button
@@ -1429,9 +1514,10 @@ export default function ProfileOnboardingDialog({
                 onClick={handleFinish}
                 disabled={loading}
               >
-                {loading
-                  ? "Finishing..."
-                  : "Finish"}
+                {loading 
+                  ? translations.finishing 
+                  : translations.finish
+                }
               </Button>
             </div>
           </div>

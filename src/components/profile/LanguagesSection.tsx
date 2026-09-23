@@ -22,6 +22,31 @@ interface ProfileLanguage {
   } | null;
 }
 
+interface LanguagesSectionTranslations {
+  title: string;
+  description: string;
+  edit_languages: string;
+  language: string;
+  proficiency: string;
+  native: string;
+  no_languages: string;
+
+  dialog_title: string;
+  dialog_description: string;
+  native_language: string;
+  remove_language: string;
+  no_languages_dialog: string;
+  add_language: string;
+  cancel: string;
+  saving: string;
+  save_changes: string;
+  beginner: string;
+  intermediate: string;
+  advanced: string;
+  fluent: string;
+  save_error: string;
+}
+
 interface LanguagesSectionProps {
   profileId: string;
   languages: ProfileLanguage[];
@@ -29,14 +54,26 @@ interface LanguagesSectionProps {
     code: string;
     name: string;
   }[];
+  translations: LanguagesSectionTranslations;
 }
 
 export default function LanguagesSection({
   profileId,
   languages,
   availableLanguages,
+  translations,
 }: LanguagesSectionProps) {
   const [open, setOpen] = useState(false);
+
+  const proficiencyLabels: Record<
+    ProfileLanguage["proficiency"],
+    string
+  > = {
+    beginner: translations.beginner,
+    intermediate: translations.intermediate,
+    advanced: translations.advanced,
+    fluent: translations.fluent,
+  };
 
   return (
     <>
@@ -44,16 +81,16 @@ export default function LanguagesSection({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold">
-              Languages
+              {translations.title}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Languages you speak and your proficiency level.
+              {translations.description}
             </p>
           </div>
 
           <Button onClick={() => setOpen(true)}>
-            Edit Languages
+            {translations.edit_languages}
           </Button>
         </div>
 
@@ -61,9 +98,13 @@ export default function LanguagesSection({
           <div className="mt-5 overflow-hidden rounded-xl border">
             {/* Header */}
             <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_90px] border-b px-4 py-3 text-sm font-medium text-muted-foreground">
-              <span>Language</span>
-              <span>Proficiency</span>
-              <span className="text-right">Native</span>
+              <span>{translations.language}</span>
+
+              <span>{translations.proficiency}</span>
+
+              <span className="text-right">
+                {translations.native}
+              </span>
             </div>
 
             {/* Languages */}
@@ -74,19 +115,20 @@ export default function LanguagesSection({
               >
                 {/* Language */}
                 <span className="min-w-0 font-medium">
-                  {language.locales?.name ?? language.language_code}
+                  {language.locales?.name ??
+                    language.language_code}
                 </span>
 
                 {/* Proficiency */}
-                <span className="capitalize text-muted-foreground">
-                  {language.proficiency}
+                <span className="text-muted-foreground">
+                  {proficiencyLabels[language.proficiency]}
                 </span>
 
                 {/* Native */}
                 <span className="flex justify-end">
                   {language.is_native ? (
                     <span className="inline-flex whitespace-nowrap rounded-full bg-secondary px-3 py-1 text-sm font-medium text-white">
-                      Native
+                      {translations.native}
                     </span>
                   ) : (
                     <span className="text-muted-foreground">
@@ -100,7 +142,7 @@ export default function LanguagesSection({
         ) : (
           <div className="mt-5 rounded-xl border border-dashed p-5 text-center">
             <p className="text-sm text-muted-foreground">
-              You haven't added any languages yet.
+              {translations.no_languages}
             </p>
           </div>
         )}
@@ -112,8 +154,26 @@ export default function LanguagesSection({
         profileId={profileId}
         languages={languages}
         availableLanguages={availableLanguages}
+        translations={{
+          title: translations.dialog_title,
+          description: translations.dialog_description,
+          language: translations.language,
+          proficiency: translations.proficiency,
+          native_language: translations.native_language,
+          native: translations.native,
+          remove_language: translations.remove_language,
+          no_languages: translations.no_languages_dialog,
+          add_language: translations.add_language,
+          cancel: translations.cancel,
+          saving: translations.saving,
+          save_changes: translations.save_changes,
+          beginner: translations.beginner,
+          intermediate: translations.intermediate,
+          advanced: translations.advanced,
+          fluent: translations.fluent,
+          save_error: translations.save_error,
+        }}
       />
     </>
   );
 }
-

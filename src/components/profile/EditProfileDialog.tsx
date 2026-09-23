@@ -34,27 +34,55 @@ interface Profile {
   gender: string | null;
 }
 
+interface EditProfileDialogTranslations {
+  title: string;
+  change_photo: string;
+  uploading: string;
+  image_formats: string;
+  max_file_size: string;
+
+  display_name: string;
+  display_name_required: string;
+
+  username: string;
+  username_required: string;
+  username_description: string;
+
+  country: string;
+  country_placeholder: string;
+
+  date_of_birth: string;
+
+  gender: string;
+  select_gender: string;
+  gender_female: string;
+  gender_male: string;
+
+  bio: string;
+  bio_placeholder: string;
+
+  cancel: string;
+  saving: string;
+  save_changes: string;
+
+  username_taken: string;
+  max_file_size_error: string;
+  invalid_image_type: string;
+  photo_upload_error: string;
+}
+
 interface EditProfileDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profile: Profile;
+  translations: EditProfileDialogTranslations;
 }
-
-const genderOptions = [
-  {
-    value: "female",
-    label: "Female",
-  },
-  {
-    value: "male",
-    label: "Male",
-  },
-];
 
 export default function EditProfileDialog({
   open,
   onOpenChange,
   profile,
+  translations,
 }: EditProfileDialogProps) {
   const router = useRouter();
   const supabase = createClient();
@@ -72,6 +100,17 @@ export default function EditProfileDialog({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+
+  const genderOptions = [
+    {
+      value: "female",
+      label: translations.gender_female,
+    },
+    {
+      value: "male",
+      label: translations.gender_male,
+    },
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -99,12 +138,12 @@ export default function EditProfileDialog({
     const trimmedUsername = username.trim();
 
     if (!trimmedDisplayName) {
-      setError("Display name is required.");
+      setError(translations.display_name_required);
       return;
     }
 
     if (!trimmedUsername) {
-      setError("Username is required.");
+      setError(translations.username_required);
       return;
     }
 
@@ -133,7 +172,7 @@ export default function EditProfileDialog({
 
       setError(
         error.code === "23505"
-          ? "That username is already taken."
+          ? translations.username_taken
           : error.message
       );
 
@@ -155,7 +194,7 @@ export default function EditProfileDialog({
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setError("Maximum file size is 5MB.");
+      setError(translations.max_file_size_error);
       return;
     }
 
@@ -166,9 +205,7 @@ export default function EditProfileDialog({
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      setError(
-        "Only JPG, PNG and WebP files are allowed."
-      );
+      setError(translations.invalid_image_type);
       return;
     }
 
@@ -191,7 +228,7 @@ export default function EditProfileDialog({
         error.message
       );
 
-      setError("Failed to upload profile photo.");
+      setError(translations.photo_upload_error);
       setUploading(false);
       return;
     }
@@ -226,7 +263,7 @@ export default function EditProfileDialog({
       >
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-foreground">
-            Edit Basic Details
+            {translations.title}
           </DialogTitle>
         </DialogHeader>
 
@@ -260,14 +297,14 @@ export default function EditProfileDialog({
               disabled={uploading || loading}
             >
               {uploading
-                ? "Uploading..."
-                : "Change Photo"}
+                ? translations.uploading
+                : translations.change_photo}
             </Button>
 
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              JPG, PNG or WebP
+              {translations.image_formats}
               <br />
-              Maximum 5 MB
+              {translations.max_file_size}
             </p>
           </div>
 
@@ -276,7 +313,7 @@ export default function EditProfileDialog({
             {/* Display Name */}
             <div className="space-y-2">
               <Label htmlFor="displayName">
-                Display Name
+                {translations.display_name}
               </Label>
 
               <Input
@@ -292,7 +329,7 @@ export default function EditProfileDialog({
             {/* Username */}
             <div className="space-y-2">
               <Label htmlFor="username">
-                Username
+                {translations.username}
               </Label>
 
               <Input
@@ -305,14 +342,14 @@ export default function EditProfileDialog({
               />
 
               <p className="text-xs text-muted-foreground">
-                This appears in your public profile URL.
+                {translations.username_description}
               </p>
             </div>
 
             {/* Country */}
             <div className="space-y-2">
               <Label htmlFor="country">
-                Country
+                {translations.country}
               </Label>
 
               <Input
@@ -322,14 +359,16 @@ export default function EditProfileDialog({
                   setCountry(e.target.value)
                 }
                 disabled={loading}
-                placeholder="e.g. India"
+                placeholder={
+                  translations.country_placeholder
+                }
               />
             </div>
 
             {/* Date of Birth */}
             <div className="space-y-2">
               <Label htmlFor="dateOfBirth">
-                Date of Birth
+                {translations.date_of_birth}
               </Label>
 
               <Input
@@ -346,7 +385,7 @@ export default function EditProfileDialog({
             {/* Gender */}
             <div className="space-y-2">
               <Label htmlFor="gender">
-                Gender
+                {translations.gender}
               </Label>
 
               <select
@@ -359,7 +398,7 @@ export default function EditProfileDialog({
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="">
-                  Select gender
+                  {translations.select_gender}
                 </option>
 
                 {genderOptions.map((option) => (
@@ -376,7 +415,7 @@ export default function EditProfileDialog({
             {/* Bio */}
             <div className="space-y-2">
               <Label htmlFor="bio">
-                Bio
+                {translations.bio}
               </Label>
 
               <Textarea
@@ -386,7 +425,9 @@ export default function EditProfileDialog({
                   setBio(e.target.value)
                 }
                 disabled={loading}
-                placeholder="Tell people a little about yourself..."
+                placeholder={
+                  translations.bio_placeholder
+                }
                 rows={5}
               />
             </div>
@@ -405,7 +446,7 @@ export default function EditProfileDialog({
                 onClick={() => onOpenChange(false)}
                 disabled={loading || uploading}
               >
-                Cancel
+                {translations.cancel}
               </Button>
 
               <Button
@@ -415,8 +456,8 @@ export default function EditProfileDialog({
                 className="transition-opacity hover:opacity-90"
               >
                 {loading
-                  ? "Saving..."
-                  : "Save Changes"}
+                  ? translations.saving
+                  : translations.save_changes}
               </Button>
             </div>
           </div>
