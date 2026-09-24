@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-
-import SellerOnboardingDialog from "@/components/seller/SellerOnboardingDialog";
 import { getTranslations } from "@/lib/translations";
+
+import SellerOnboardingDialog, {
+  type SellerOnboardingDialogTranslations,
+} from "@/components/seller/SellerOnboardingDialog";
 
 export default async function SellerOnboardingPage() {
   const supabase = await createClient();
@@ -73,6 +75,14 @@ export default async function SellerOnboardingPage() {
     .eq("profile_id", user.id)
     .order("is_native", { ascending: false });
 
+  const normalizedLanguages =
+    languages?.map((language) => ({
+      ...language,
+      locales: Array.isArray(language.locales)
+        ? language.locales[0] ?? null
+        : language.locales,
+    })) ?? [];
+
   /*
    * ---------------------------------------------------------
    * Available languages
@@ -125,18 +135,16 @@ export default async function SellerOnboardingPage() {
    * ---------------------------------------------------------
    * Translations
    * ---------------------------------------------------------
-   *
-   * First three steps reuse the Profile Onboarding
-   * translation keys.
+   * 
+   * First three steps reuse the existing profile translation
+   * keys.
    *
    * Seller-specific payout strings are added to the same
    * translation object.
    */
 
-  const translations = await getTranslations(
+  const translations = (await getTranslations(
     [
-      "complete_your_profile",
-      "complete_your_profile_description",
       "basic_details",
       "basic_details_description",
       "languages",
@@ -152,7 +160,7 @@ export default async function SellerOnboardingPage() {
       "display_name",
       "display_name_required",
       "username",
-      "username_description",
+      "username_locked_description",
       "country",
       "country_placeholder",
       "date_of_birth",
@@ -187,8 +195,6 @@ export default async function SellerOnboardingPage() {
       "back",
       "continue",
       "saving",
-      "finish",
-      "finishing",
 
       "max_file_size_error",
       "invalid_image_type",
@@ -232,7 +238,7 @@ export default async function SellerOnboardingPage() {
       "stripe_connect_error",
     ],
     "seller"
-  );
+  )) as unknown as SellerOnboardingDialogTranslations;
 
   return (
     <SellerOnboardingDialog
@@ -241,7 +247,7 @@ export default async function SellerOnboardingPage() {
         // The page itself owns the initial open state.
       }}
       profile={profile}
-      languages={languages ?? []}
+      languages={normalizedLanguages}
       availableLanguages={availableLanguages ?? []}
       socialLinks={socialLinks ?? []}
       availablePlatforms={availablePlatforms ?? []}
