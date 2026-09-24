@@ -51,7 +51,7 @@ async function getCurrentUser() {
    Profile
 -------------------------------------------------- */
 
-export async function saveOnboardingProfile(
+export async function saveProfile(
   profile: ProfileData
 ) {
   const { supabase, user } = await getCurrentUser();
@@ -105,7 +105,7 @@ export async function saveOnboardingProfile(
    Languages
 -------------------------------------------------- */
 
-export async function saveOnboardingLanguages(
+export async function saveProfileLanguages(
   languages: LanguageData[]
 ) {
   const { supabase, user } = await getCurrentUser();
@@ -316,7 +316,7 @@ export async function saveOnboardingLanguages(
    Social Links
 -------------------------------------------------- */
 
-export async function saveOnboardingSocialLinks(
+export async function saveProfileSocialLinks(
   links: SocialLinkData[]
 ) {
   const { supabase, user } = await getCurrentUser();

@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { saveOnboardingLanguages } from "@/app/actions/profile-onboarding";
+import { saveProfileLanguages } from "@/app/actions/profile";
 
 type Proficiency =
   | "beginner"
@@ -166,7 +166,7 @@ export default function EditLanguagesDialog({
     setSaving(true);
     setError("");
 
-    const result = await saveOnboardingLanguages(
+    const result = await saveProfileLanguages(
       items.map((item) => ({
         language_code: item.language_code,
         proficiency: item.proficiency,

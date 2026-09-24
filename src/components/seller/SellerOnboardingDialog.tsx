@@ -28,10 +28,10 @@ import {
 } from "lucide-react";
 
 import {
-  saveOnboardingLanguages,
-  saveOnboardingProfile,
-  saveOnboardingSocialLinks,
-} from "@/app/actions/profile-onboarding";
+  saveProfileLanguages,
+  saveProfile,
+  saveProfileSocialLinks,
+} from "@/app/actions/profile";
 
 import { createClient } from "@/lib/supabase/client";
 
@@ -373,7 +373,7 @@ export default function SellerOnboardingDialog({
     try {
       setLoading(true);
 
-      const result = await saveOnboardingProfile({
+      const result = await saveProfile({
         display_name: displayName.trim(),
         avatar_url: avatarUrl || null,
         bio: bio.trim() || null,
@@ -494,7 +494,7 @@ export default function SellerOnboardingDialog({
     try {
       setLoading(true);
 
-      const result = await saveOnboardingLanguages(
+      const result = await saveProfileLanguages(
         languages.map((language) => ({
           language_code: language.language_code,
           proficiency: language.proficiency,
@@ -581,7 +581,7 @@ export default function SellerOnboardingDialog({
           url: link.url.trim(),
         }));
 
-      const result = await saveOnboardingSocialLinks(cleanedLinks);
+      const result = await saveProfileSocialLinks(cleanedLinks);
 
       if (!result?.success) {
         throw new Error(

@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { saveOnboardingSocialLinks } from "@/app/actions/profile-onboarding";
+import { saveProfileSocialLinks } from "@/app/actions/profile";
 
 interface SocialLink {
   id: number;
@@ -177,7 +177,7 @@ export default function EditSocialLinksDialog({
       );
 
     const result =
-      await saveOnboardingSocialLinks(
+      await saveProfileSocialLinks(
         cleanedLinks
       );
 
