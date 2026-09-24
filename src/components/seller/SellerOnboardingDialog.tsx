@@ -85,10 +85,7 @@ type SocialPlatform = {
 type PayoutMethod = "stripe" | "paypal" | "bank";
 
 export interface SellerOnboardingDialogTranslations {
-  /* Profile onboarding - reused exactly */
-
-  complete_your_profile: string;
-  complete_your_profile_description: string;
+  /* Seller onboarding */
 
   basic_details: string;
   basic_details_description: string;
@@ -108,7 +105,7 @@ export interface SellerOnboardingDialogTranslations {
   display_name_required: string;
 
   username: string;
-  username_description: string;
+  username_locked_description: string;
 
   country: string;
   country_placeholder: string;
@@ -147,9 +144,7 @@ export interface SellerOnboardingDialogTranslations {
   back: string;
   continue: string;
   saving: string;
-  finish: string;
-  finishing: string;
-
+  
   max_file_size_error: string;
   invalid_image_type: string;
   photo_upload_error: string;
@@ -999,7 +994,7 @@ export default function SellerOnboardingDialog({
                     />
 
                     <p className="text-xs text-muted-foreground">
-                      {translations.username_description}
+                      {translations.username_locked_description}
                     </p>
                   </div>
 

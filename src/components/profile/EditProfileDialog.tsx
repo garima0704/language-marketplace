@@ -45,8 +45,7 @@ interface EditProfileDialogTranslations {
   display_name_required: string;
 
   username: string;
-  username_required: string;
-  username_description: string;
+  username_locked_description: string;
 
   country: string;
   country_placeholder: string;
@@ -65,7 +64,6 @@ interface EditProfileDialogTranslations {
   saving: string;
   save_changes: string;
 
-  username_taken: string;
   max_file_size_error: string;
   invalid_image_type: string;
   photo_upload_error: string;
@@ -91,7 +89,6 @@ export default function EditProfileDialog({
 
   const [avatarUrl, setAvatarUrl] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [username, setUsername] = useState("");
   const [country, setCountry] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState("");
@@ -117,8 +114,6 @@ export default function EditProfileDialog({
 
     setAvatarUrl(profile.avatar_url ?? "");
     setDisplayName(profile.display_name ?? "");
-    setUsername(profile.username ?? "");
-    setCountry(profile.country ?? "");
     setDateOfBirth(profile.date_of_birth ?? "");
     setGender(profile.gender ?? "");
     setBio(profile.bio ?? "");
@@ -135,15 +130,9 @@ export default function EditProfileDialog({
 
   async function handleSave() {
     const trimmedDisplayName = displayName.trim();
-    const trimmedUsername = username.trim();
 
     if (!trimmedDisplayName) {
       setError(translations.display_name_required);
-      return;
-    }
-
-    if (!trimmedUsername) {
-      setError(translations.username_required);
       return;
     }
 
@@ -154,7 +143,6 @@ export default function EditProfileDialog({
       .from("profiles")
       .update({
         display_name: trimmedDisplayName,
-        username: trimmedUsername,
         country: country.trim() || null,
         date_of_birth: dateOfBirth || null,
         gender: gender || null,
@@ -170,11 +158,7 @@ export default function EditProfileDialog({
         error.message
       );
 
-      setError(
-        error.code === "23505"
-          ? translations.username_taken
-          : error.message
-      );
+      setError(error.message);
 
       setLoading(false);
       return;
@@ -334,15 +318,12 @@ export default function EditProfileDialog({
 
               <Input
                 id="username"
-                value={username}
-                onChange={(e) =>
-                  setUsername(e.target.value)
-                }
-                disabled={loading}
+                value={profile.username}
+                disabled
               />
 
               <p className="text-xs text-muted-foreground">
-                {translations.username_description}
+                {translations.username_locked_description}
               </p>
             </div>
 

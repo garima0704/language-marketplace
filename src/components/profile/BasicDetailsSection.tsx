@@ -43,8 +43,7 @@ interface BasicDetailsTranslations {
   display_name_required: string;
 
   username: string;
-  username_required: string;
-  username_description: string;
+  username_locked_description: string;
 
   country: string;
   country_placeholder: string;
@@ -62,7 +61,6 @@ interface BasicDetailsTranslations {
   saving: string;
   save_changes: string;
 
-  username_taken: string;
   max_file_size_error: string;
   invalid_image_type: string;
   photo_upload_error: string;
@@ -95,9 +93,8 @@ export default function BasicDetailsSection({
   const gender = profile.gender
     ? genderLabels[profile.gender] ?? profile.gender
     : "";
-    
-  const age = calculateAge(profile.date_of_birth);
 
+  const age = calculateAge(profile.date_of_birth);
   return (
     <>
       <Card className="rounded-2xl p-8 shadow-sm">
@@ -212,10 +209,8 @@ export default function BasicDetailsSection({
             translations.display_name_required,
 
           username: translations.username,
-          username_required:
-            translations.username_required,
-          username_description:
-            translations.username_description,
+          username_locked_description:
+            translations.username_locked_description,
 
           country: translations.country,
           country_placeholder:
@@ -241,8 +236,6 @@ export default function BasicDetailsSection({
           save_changes:
             translations.save_changes,
 
-          username_taken:
-            translations.username_taken,
           max_file_size_error:
             translations.max_file_size_error,
           invalid_image_type:

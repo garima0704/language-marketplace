@@ -12,7 +12,6 @@ import { Card } from "@/components/ui/card";
 import BasicDetailsSection from "@/components/profile/BasicDetailsSection";
 import LanguagesSection from "@/components/profile/LanguagesSection";
 import SocialLinksSection from "@/components/profile/SocialLinksSection";
-import ProfileOnboardingWrapper from "@/components/profile/ProfileOnboardingWrapper";
 import ChannelCard from "@/components/channels/ChannelCard";
 import StartSellingButton from "@/components/seller/StartSellingButton";
 
@@ -42,8 +41,7 @@ export default async function ProfilePage() {
       "profile.display_name",
       "profile.display_name_required",
       "profile.username",
-      "profile.username_required",
-      "profile.username_description",
+      "profile.username_locked_description",
       "profile.country",
       "profile.country_placeholder",
       "profile.date_of_birth",
@@ -55,7 +53,6 @@ export default async function ProfilePage() {
       "profile.cancel",
       "profile.saving",
       "profile.save_changes",
-      "profile.username_taken",
       "profile.max_file_size_error",
       "profile.invalid_image_type",
       "profile.photo_upload_error",
@@ -89,23 +86,8 @@ export default async function ProfilePage() {
       "profile.proficiency_fluent",
       "profile.save_languages_error",
       
-      "profile.complete_your_profile",
-      "profile.complete_your_profile_description",
       "profile.basic_details",
       "profile.basic_details_description",
-      "profile.skip_for_now",
-      "profile.continue",
-      "profile.back",
-      "profile.finish",
-      "profile.finishing",
-      "profile.add_link",
-      "profile.remove_social_link",
-      "profile.your_username",
-      "profile.save_profile_error",
-      "profile.save_social_links_error",
-      "profile.complete_profile_error",
-      "profile.dismiss_onboarding_error",
-
       "profile.social_links",
       "profile.social_links_description",
       "profile.edit_social_links",
@@ -114,9 +96,14 @@ export default async function ProfilePage() {
       "profile.no_social_links",
 
       "profile.start_selling",
+      "profile.remove_social_link",
+      "profile.add_link",
+      "profile.your_username",
+      "profile.skip_for_now",
+      "profile.save_profile_error",
 
-      "seller.become_a_seller",
-      "seller.become_a_seller_description",
+      "seller.become.title",
+      "seller.become.description",
       "seller.payout",
       "seller.payout_description",
       "seller.stripe",
@@ -180,15 +167,6 @@ export default async function ProfilePage() {
       </div>
     );
   }
-
-  // --------------------------------------------------
-  // Onboarding
-  // --------------------------------------------------
-
-  const shouldOpenOnboarding =
-    profile.role === "user" &&
-    !profile.onboarding_completed &&
-    !profile.onboarding_dismissed_at;
 
   // --------------------------------------------------
   // Languages
@@ -321,197 +299,6 @@ export default async function ProfilePage() {
     <div className="space-y-6 px-6 py-6">
 
       {/* ==================================================
-          FIRST-TIME PROFILE ONBOARDING
-      ================================================== */}
-
-      <ProfileOnboardingWrapper
-        shouldOpen={shouldOpenOnboarding}
-        profile={{
-          id: profile.id,
-          username: profile.username,
-          display_name: profile.display_name,
-          avatar_url: profile.avatar_url,
-          bio: profile.bio,
-          country: profile.country,
-          date_of_birth: profile.date_of_birth,
-          gender: profile.gender,
-        }}
-        languages={languages ?? []}
-        availableLanguages={availableLanguages ?? []}
-        socialLinks={socialLinks ?? []}
-        availablePlatforms={availablePlatforms ?? []}
-        translations={{
-          complete_your_profile:
-            translations["profile.complete_your_profile"],
-
-          complete_your_profile_description:
-            translations["profile.complete_your_profile_description"],
-
-          basic_details:
-            translations["profile.basic_details"],
-
-          basic_details_description:
-            translations["profile.basic_details_description"],
-
-          languages:
-            translations["profile.languages"],
-
-          languages_description:
-            translations["profile.languages_description"],
-
-          social_links:
-            translations["profile.social_links"],
-
-          social_links_description:
-            translations["profile.social_links_description"],
-
-          change_photo:
-            translations["profile.change_photo"],
-
-          uploading:
-            translations["profile.uploading"],
-
-          image_formats:
-            translations["profile.image_formats"],
-
-          max_file_size:
-            translations["profile.max_file_size"],
-
-          display_name:
-            translations["profile.display_name"],
-
-          display_name_required:
-            translations["profile.display_name_required"],
-
-          username:
-            translations["profile.username"],
-
-          username_description:
-            translations["profile.username_description"],
-
-          country:
-            translations["profile.country"],
-
-          country_placeholder:
-            translations["profile.country_placeholder"],
-
-          date_of_birth:
-            translations["profile.date_of_birth"],
-
-          gender:
-            translations["profile.gender"],
-
-          select_gender:
-            translations["profile.select_gender"],
-
-          gender_female:
-            translations["profile.gender_female"],
-
-          gender_male:
-            translations["profile.gender_male"],
-
-          bio:
-            translations["profile.bio"],
-
-          bio_placeholder:
-            translations["profile.bio_placeholder"],
-
-          language:
-            translations["profile.language"],
-
-          proficiency:
-            translations["profile.proficiency"],
-
-          native:
-            translations["profile.native"],
-
-          native_language:
-            translations["profile.native_language"],
-
-          remove_language:
-            translations["profile.remove_language"],
-
-          no_languages:
-            translations["profile.no_languages"],
-
-          add_language:
-            translations["profile.add_language"],
-
-          proficiency_beginner:
-            translations["profile.proficiency_beginner"],
-
-          proficiency_intermediate:
-            translations["profile.proficiency_intermediate"],
-
-          proficiency_advanced:
-            translations["profile.proficiency_advanced"],
-
-          proficiency_fluent:
-            translations["profile.proficiency_fluent"],
-
-          platform:
-            translations["profile.platform"],
-
-          profile:
-            translations["profile.profile"],
-
-          remove_social_link:
-            translations["profile.remove_social_link"],
-
-          no_social_links:
-            translations["profile.no_social_links"],
-
-          add_link:
-            translations["profile.add_link"],
-
-          your_username:
-            translations["profile.your_username"],
-
-          skip_for_now:
-            translations["profile.skip_for_now"],
-
-          back:
-            translations["profile.back"],
-
-          continue:
-            translations["profile.continue"],
-
-          saving:
-            translations["profile.saving"],
-
-          finish:
-            translations["profile.finish"],
-
-          finishing:
-            translations["profile.finishing"],
-
-          max_file_size_error:
-            translations["profile.max_file_size_error"],
-
-          invalid_image_type:
-            translations["profile.invalid_image_type"],
-
-          photo_upload_error:
-            translations["profile.photo_upload_error"],
-
-          save_profile_error:
-            translations["profile.save_profile_error"],
-
-          save_languages_error:
-            translations["profile.save_languages_error"],
-
-          save_social_links_error:
-            translations["profile.save_social_links_error"],
-
-          complete_profile_error:
-            translations["profile.complete_profile_error"],
-
-          dismiss_onboarding_error:
-            translations["profile.dismiss_onboarding_error"],
-        }}
-      />
-
-      {/* ==================================================
           BASIC DETAILS
       ================================================== */}
 
@@ -570,13 +357,9 @@ export default async function ProfilePage() {
         translations["profile.username"] ??
         "Username",
 
-      username_required:
-        translations["profile.username_required"] ??
-        "Username is required.",
-
-      username_description:
-        translations["profile.username_description"] ??
-        "This appears in your public profile URL.",
+      username_locked_description:
+        translations["profile.username_locked_description"] ??
+        "Your username cannot be changed.",
 
       country:
         translations["profile.country"] ??
@@ -621,10 +404,6 @@ export default async function ProfilePage() {
       save_changes:
         translations["profile.save_changes"] ??
         "Save Changes",
-
-      username_taken:
-        translations["profile.username_taken"] ??
-        "That username is already taken.",
 
       max_file_size_error:
         translations["profile.max_file_size_error"] ??
@@ -864,12 +643,6 @@ export default async function ProfilePage() {
     start_selling:
       translations["profile.start_selling"],
 
-    complete_your_profile:
-      translations["profile.complete_your_profile"],
-
-    complete_your_profile_description:
-      translations["profile.complete_your_profile_description"],
-
     basic_details:
       translations["profile.basic_details"],
 
@@ -908,9 +681,9 @@ export default async function ProfilePage() {
 
     username:
       translations["profile.username"],
-
-    username_description:
-      translations["profile.username_description"],
+    
+    username_locked_description:
+      translations["profile.username_locked_description"],
 
     country:
       translations["profile.country"],
@@ -1002,12 +775,6 @@ export default async function ProfilePage() {
     saving:
       translations["profile.saving"],
 
-    finish:
-      translations["profile.finish"],
-
-    finishing:
-      translations["profile.finishing"],
-
     max_file_size_error:
       translations["profile.max_file_size_error"],
 
@@ -1025,12 +792,6 @@ export default async function ProfilePage() {
 
     save_social_links_error:
       translations["profile.save_social_links_error"],
-
-    complete_profile_error:
-      translations["profile.complete_profile_error"],
-
-    dismiss_onboarding_error:
-      translations["profile.dismiss_onboarding_error"],
     
     become_a_seller: 
       translations["seller.become.title"],

@@ -62,9 +62,6 @@ interface StartSellingButtonProps {
   translations: {
     start_selling: string;
 
-    complete_your_profile: string;
-    complete_your_profile_description: string;
-
     basic_details: string;
     basic_details_description: string;
 
@@ -82,7 +79,7 @@ interface StartSellingButtonProps {
     display_name: string;
     display_name_required: string;
     username: string;
-    username_description: string;
+    username_locked_description: string;
     country: string;
     country_placeholder: string;
     date_of_birth: string;
@@ -117,8 +114,6 @@ interface StartSellingButtonProps {
     back: string;
     continue: string;
     saving: string;
-    finish: string;
-    finishing: string;
 
     max_file_size_error: string;
     invalid_image_type: string;
