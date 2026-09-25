@@ -219,6 +219,8 @@ export default function SellerOnboardingDialog({
   availablePlatforms,
   translations,
 }: Props) {
+  console.log("Seller onboarding translations:", translations);
+  console.log("Continue translation:", translations.continue);
   const router = useRouter();
   const supabase = createClient();
 
@@ -674,15 +676,45 @@ export default function SellerOnboardingDialog({
         throw new Error(translations.payout_error);
       }
 
-      const { error: payoutError } = await supabase
-        .from("creator_payout_accounts")
-        .insert({
-          user_id: user.id,
-          provider: "paypal",
-          paypal_email: paypalEmail.trim(),
-          is_default: true,
-          status: "pending",
-        });
+      const { data: existingPaypal, error: paypalLookupError } =
+        await supabase
+          .from("creator_payout_accounts")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("provider", "paypal")
+          .maybeSingle();
+
+      if (paypalLookupError) {
+        throw paypalLookupError;
+      }
+
+      let payoutError;
+
+      if (existingPaypal) {
+        const { error } = await supabase
+          .from("creator_payout_accounts")
+          .update({
+            paypal_email: paypalEmail.trim(),
+            is_default: true,
+            status: "pending",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingPaypal.id);
+
+        payoutError = error;
+      } else {
+        const { error } = await supabase
+          .from("creator_payout_accounts")
+          .insert({
+            user_id: user.id,
+            provider: "paypal",
+            paypal_email: paypalEmail.trim(),
+            is_default: true,
+            status: "pending",
+          });
+
+        payoutError = error;
+      }
 
       if (payoutError) {
         throw payoutError;
@@ -718,13 +750,43 @@ export default function SellerOnboardingDialog({
         throw new Error(translations.payout_error);
       }
 
-      const { error: payoutError } = await supabase
+      const { data: existingBank, error: bankLookupError } =
+      await supabase
+        .from("creator_payout_accounts")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("provider", "bank")
+        .maybeSingle();
+
+    if (bankLookupError) {
+      throw bankLookupError;
+    }
+
+    let payoutError;
+
+    if (existingBank) {
+      const { error } = await supabase
+        .from("creator_payout_accounts")
+        .update({
+          account_holder_name: accountHolderName.trim(),
+          bank_name: bankName.trim(),
+          account_number: accountNumber.trim(),
+          iban: iban.trim() || null,
+          swift_code: swiftCode.trim() || null,
+          is_default: true,
+          status: "pending",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingBank.id);
+
+      payoutError = error;
+    } else {
+      const { error } = await supabase
         .from("creator_payout_accounts")
         .insert({
           user_id: user.id,
           provider: "bank",
-          account_holder_name:
-            accountHolderName.trim(),
+          account_holder_name: accountHolderName.trim(),
           bank_name: bankName.trim(),
           account_number: accountNumber.trim(),
           iban: iban.trim() || null,
@@ -733,9 +795,12 @@ export default function SellerOnboardingDialog({
           status: "pending",
         });
 
-      if (payoutError) {
-        throw payoutError;
-      }
+      payoutError = error;
+    }
+
+    if (payoutError) {
+      throw payoutError;
+    }
 
       await setCreatorAndContinue();
     } catch {

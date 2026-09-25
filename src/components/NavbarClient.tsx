@@ -17,6 +17,14 @@ type NavbarTranslations = {
   searchPlaceholder: string;
   login: string;
   signUp: string;
+
+  notifications: string;
+  unreadNotifications: string;
+  loading: string;
+  user: string;
+  myProfile: string;
+  settings: string;
+  signOut: string;
 };
 
 type NavbarClientProps = {
@@ -91,7 +99,24 @@ export default function NavbarClient({
           <LanguageDropdown locales={locales} />
 
           {user ? (
-            <UserMenu user={user} />
+            <UserMenu
+              user={user}
+              translations={{
+                notifications:
+                  translations.notifications,
+                unreadNotifications:
+                  translations.unreadNotifications,
+                loading:
+                  translations.loading,
+                user: translations.user,
+                myProfile:
+                  translations.myProfile,
+                settings:
+                  translations.settings,
+                signOut:
+                  translations.signOut,
+              }}
+            />
           ) : (
             <>
               <Link

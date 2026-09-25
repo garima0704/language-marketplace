@@ -6,11 +6,15 @@ import type { Notification } from "./types";
 type NotificationListProps = {
   notifications: Notification[];
   onRead?: (id: string) => void;
+  locale: string;
+  translations: Record<string, string>;
 };
 
 export default function NotificationList({
   notifications,
   onRead,
+  locale,
+  translations,
 }: NotificationListProps) {
   if (notifications.length === 0) {
     return (
@@ -20,11 +24,13 @@ export default function NotificationList({
         </div>
 
         <h2 className="mt-4 text-sm font-semibold">
-          No notifications yet
+          {translations["notifications.empty_title"] ??
+            "No notifications yet"}
         </h2>
 
         <p className="mt-1 text-sm text-muted-foreground">
-          You&apos;ll see your notifications here when you have them.
+          {translations["notifications.empty_description"] ??
+            "You’ll see your notifications here when you have them."}
         </p>
       </div>
     );
@@ -38,6 +44,8 @@ export default function NotificationList({
             key={notification.id}
             notification={notification}
             onRead={onRead}
+            locale={locale}
+            translations={translations}
           />
         ))}
       </div>

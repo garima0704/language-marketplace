@@ -7,9 +7,18 @@ import { Input } from "@/components/ui/input";
 
 import SettingsPanel from "./SettingsPanel";
 
-export default function DeleteAccountSettings() {
-  const [confirmText, setConfirmText] = useState("");
-  const [deleting, setDeleting] = useState(false);
+type DeleteAccountSettingsProps = {
+  translations: Record<string, string>;
+};
+
+export default function DeleteAccountSettings({
+  translations,
+}: DeleteAccountSettingsProps) {
+  const [confirmText, setConfirmText] =
+    useState("");
+
+  const [deleting, setDeleting] =
+    useState(false);
 
   async function handleDeleteAccount() {
     if (confirmText !== "DELETE") {
@@ -32,31 +41,53 @@ export default function DeleteAccountSettings() {
 
   return (
     <SettingsPanel
-      title="Delete Account"
-      description="Permanently remove your NiceConvo account."
+      title={
+        translations[
+          "settings.delete_account"
+        ] ?? "Delete Account"
+      }
+      description={
+        translations[
+          "settings.delete_account_description"
+        ] ??
+        "Permanently remove your NiceConvo account."
+      }
     >
       <div className="max-w-xl">
         <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-5">
           <h3 className="text-sm font-semibold text-destructive">
-            This action cannot be undone
+            {translations[
+              "settings.delete_account_warning"
+            ] ??
+              "This action cannot be undone"}
           </h3>
 
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Deleting your account will permanently remove your
-            account and associated data from NiceConvo.
+            {translations[
+              "settings.delete_account_data_description"
+            ] ??
+              "Deleting your account will permanently remove your account and associated data from NiceConvo."}
           </p>
 
           <div className="mt-5">
             <label className="mb-2 block text-sm font-medium">
-              Type DELETE to continue
+              {translations[
+                "settings.delete_account_confirm_label"
+              ] ?? "Type DELETE to continue"}
             </label>
 
             <Input
               value={confirmText}
               onChange={(event) =>
-                setConfirmText(event.target.value)
+                setConfirmText(
+                  event.target.value
+                )
               }
-              placeholder="DELETE"
+              placeholder={
+                translations[
+                  "settings.delete_account_placeholder"
+                ] ?? "DELETE"
+              }
               className="h-10 max-w-sm bg-background"
             />
           </div>
@@ -67,13 +98,18 @@ export default function DeleteAccountSettings() {
             size="sm"
             className="mt-4"
             disabled={
-              confirmText !== "DELETE" || deleting
+              confirmText !== "DELETE" ||
+              deleting
             }
             onClick={handleDeleteAccount}
           >
             {deleting
-              ? "Deleting..."
-              : "Delete Account"}
+              ? translations[
+                  "settings.deleting"
+                ] ?? "Deleting..."
+              : translations[
+                  "settings.delete_account_button"
+                ] ?? "Delete Account"}
           </Button>
         </div>
       </div>

@@ -96,6 +96,8 @@ export default async function ProfilePage() {
       "profile.no_social_links",
 
       "profile.start_selling",
+      "profile.continue",
+      "profile.back",
       "profile.remove_social_link",
       "profile.add_link",
       "profile.your_username",

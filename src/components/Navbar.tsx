@@ -27,6 +27,15 @@ export default async function Navbar() {
     "search.search_placeholder",
     "auth.login",
     "auth.sign_up",
+
+    // User menu 
+    "nav.notifications", 
+    "nav.unread_notifications", 
+    "nav.loading", 
+    "nav.user", 
+    "nav.my_profile", 
+    "nav.settings", 
+    "nav.sign_out",
   ];
 
   const translations = await getTranslations(
@@ -38,12 +47,18 @@ export default async function Navbar() {
     <NavbarClient
       locales={locales ?? []}
       user={user}
-      translations={{
-        searchPlaceholder:
-          translations["search.search_placeholder"],
-        login: translations["auth.login"],
-        signUp: translations["auth.sign_up"],
-      }}
+      translations={{ 
+        searchPlaceholder: 
+          translations["search.search_placeholder"], 
+          login: translations["auth.login"], 
+          signUp: translations["auth.sign_up"], 
+          notifications: translations["nav.notifications"], 
+          unreadNotifications: translations["nav.unread_notifications"], 
+          loading: translations["nav.loading"], 
+          user: translations["nav.user"], 
+          myProfile: translations["nav.my_profile"], 
+          settings: translations["nav.settings"], 
+          signOut: translations["nav.sign_out"], }}
     />
   );
 }

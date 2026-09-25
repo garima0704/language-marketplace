@@ -1,182 +1,110 @@
-"use client";
+import { cookies } from "next/headers";
 
-import { useEffect, useState } from "react";
-import {
-  Mail,
-  Bell,
-  Wallet,
-  Trash2,
-} from "lucide-react";
+import { getTranslations } from "@/lib/translations";
 
-import { createClient } from "@/lib/supabase/client";
+import SettingsPageClient from "./SettingsPageClient";
 
-import SettingsNavigation from "@/components/settings/SettingsNavigation";
-import AccountSettings from "@/components/settings/AccountSettings";
-import NotificationsSettings from "@/components/settings/NotificationsSettings";
-import PayoutSettings from "@/components/settings/PayoutSettings";
-import DeleteAccountSettings from "@/components/settings/DeleteAccountSettings";
-import type {
-  Section,
-  SettingItem,
-} from "@/components/settings/types";
+export default async function SettingsPage() {
+  const cookieStore = await cookies();
 
-const accountSettings: SettingItem[] = [
-  {
-    id: "account",
-    title: "Email & Password",
-    icon: Mail,
-  },
-];
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
 
-const preferenceSettings: SettingItem[] = [
-  {
-    id: "notifications",
-    title: "Notifications",
-    icon: Bell,
-  },
-];
+  const translations = await getTranslations(
+    [
+      "settings.title",
+      "settings.description",
 
-const sellerSettings: SettingItem[] = [
-  {
-    id: "payouts",
-    title: "Payouts",
-    icon: Wallet,
-  },
-];
+      "settings.account",
+      "settings.email_password",
 
-const dangerSettings: SettingItem[] = [
-  {
-    id: "delete-account",
-    title: "Delete Account",
-    icon: Trash2,
-  },
-];
+      "settings.preferences",
+      "settings.notifications",
 
-export default function SettingsPage() {
-  const supabase = createClient();
+      "settings.seller",
+      "settings.payouts",
 
-  const [activeSection, setActiveSection] =
-    useState<Section>("account");
+      "settings.danger_zone",
+      "settings.delete_account",
 
-  const [isCreator, setIsCreator] = useState(false);
-  const [loading, setLoading] = useState(true);
+      // Account
+      "settings.email_address",
+      "settings.email_password_description",
+      "settings.email_change_confirmation",
+      "settings.update_email",
+      "settings.updating",
+      "settings.password",
+      "settings.password_description",
+      "settings.change_password",
+      "settings.sending",
+      "settings.confirmation_email_sent",
+      "settings.password_reset_email_sent",
+      "settings.account_email_not_found",
 
-  useEffect(() => {
-    async function loadProfile() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // Notifications
+      "settings.comments",
+      "settings.comments_description",
+      "settings.likes",
+      "settings.likes_description",
+      "settings.reports",
+      "settings.reports_description",
+      "settings.seller_activity",
+      "settings.seller_activity_description",
+      "settings.notifications_description",
+      "settings.notification_preferences_footer",
 
-      if (!user) {
-        window.location.href = "/login";
-        return;
-      }
+      // Payouts
+      "settings.payouts_description",
+      "settings.stripe",
+      "settings.stripe_description",
+      "settings.connect_stripe",
+      "settings.stripe_connect_description",
+      "settings.connecting",
+      "settings.stripe_connect_error",
+      "settings.stripe_connected",
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_creator")
-        .eq("id", user.id)
-        .single();
+      "settings.paypal",
+      "settings.paypal_description",
+      "settings.paypal_email_description",
+      "settings.paypal_email_placeholder",
+      "settings.save_paypal",
+      "settings.saving",
+      "settings.paypal_saved",
+      "settings.paypal_email_required",
+      "settings.paypal_save_error",
 
-      setIsCreator(profile?.is_creator ?? false);
-      setLoading(false);
-    }
+      "settings.bank_account",
+      "settings.bank_account_description",
+      "settings.account_holder_name",
+      "settings.bank_name",
+      "settings.account_number",
+      "settings.iban",
+      "settings.swift_code",
+      "settings.save_bank_details",
+      "settings.bank_details_saved",
+      "settings.bank_details_required",
+      "settings.bank_details_save_error",
 
-    loadProfile();
-  }, [supabase]);
+      "settings.loading_payouts",
+      "settings.payout_load_error",
+      "settings.must_be_logged_in",
 
-  if (loading) {
-    return (
-      <main className="min-h-[calc(100vh-6rem)] px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="rounded-2xl border border-border bg-background p-8">
-            <div className="h-7 w-32 animate-pulse rounded bg-muted-bg" />
-
-            <div className="mt-3 h-4 w-72 animate-pulse rounded bg-muted-bg" />
-
-            <div className="mt-8 grid gap-8 md:grid-cols-[240px_minmax(0,1fr)]">
-              <div className="space-y-3">
-                <div className="h-10 animate-pulse rounded-lg bg-muted-bg" />
-                <div className="h-10 animate-pulse rounded-lg bg-muted-bg" />
-                <div className="h-10 animate-pulse rounded-lg bg-muted-bg" />
-              </div>
-
-              <div className="space-y-4">
-                <div className="h-6 w-48 animate-pulse rounded bg-muted-bg" />
-                <div className="h-4 w-80 animate-pulse rounded bg-muted-bg" />
-                <div className="h-10 animate-pulse rounded-lg bg-muted-bg" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  const navigationSections = [
-    {
-      title: "Account",
-      items: accountSettings,
-    },
-    {
-      title: "Preferences",
-      items: preferenceSettings,
-    },
-    ...(isCreator
-      ? [
-          {
-            title: "Seller",
-            items: sellerSettings,
-          },
-        ]
-      : []),
-    {
-      title: "Danger Zone",
-      items: dangerSettings,
-    },
-  ];
+      // Delete account
+      "settings.delete_account_description",
+      "settings.delete_account_warning",
+      "settings.delete_account_data_description",
+      "settings.delete_account_confirm_label",
+      "settings.delete_account_placeholder",
+      "settings.delete_account_button",
+      "settings.deleting",
+    ],
+  locale
+);
 
   return (
-    <main className="min-h-[calc(100vh-6rem)] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Settings
-          </h1>
-
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage your account and notification preferences.
-          </p>
-        </div>
-
-        <div className="overflow-hidden rounded-2xl border border-border bg-background">
-          <div className="md:grid md:grid-cols-[240px_minmax(0,1fr)]">
-            <SettingsNavigation
-              sections={navigationSections}
-              activeSection={activeSection}
-              onSectionChange={setActiveSection}
-            />
-
-            <section className="min-w-0">
-              {activeSection === "account" && (
-                <AccountSettings />
-              )}
-
-              {activeSection === "notifications" && (
-                <NotificationsSettings />
-              )}
-
-              {activeSection === "payouts" && isCreator && (
-                <PayoutSettings />
-              )}
-
-              {activeSection === "delete-account" && (
-                <DeleteAccountSettings />
-              )}
-            </section>
-          </div>
-        </div>
-      </div>
-    </main>
+    <SettingsPageClient
+      translations={translations}
+      locale={locale}
+    />
   );
 }

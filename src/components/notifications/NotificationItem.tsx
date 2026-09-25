@@ -9,11 +9,15 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { formatTimeAgo } from "@/lib/utils";
+
 import type { Notification } from "./types";
 
 type NotificationItemProps = {
   notification: Notification;
   onRead?: (id: string) => void;
+  locale: string;
+  translations: Record<string, string>;
 };
 
 function getNotificationIcon(type: Notification["type"]) {
@@ -35,44 +39,22 @@ function getNotificationIcon(type: Notification["type"]) {
   }
 }
 
-function formatNotificationTime(dateString: string) {
-  const date = new Date(dateString);
-  const now = new Date();
-
-  const seconds = Math.floor(
-    (now.getTime() - date.getTime()) / 1000
-  );
-
-  if (seconds < 60) {
-    return "Just now";
-  }
-
-  const minutes = Math.floor(seconds / 60);
-
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-
-  if (hours < 24) {
-    return `${hours}h ago`;
-  }
-
-  const days = Math.floor(hours / 24);
-
-  if (days < 7) {
-    return `${days}d ago`;
-  }
-
-  return date.toLocaleDateString();
-}
-
 export default function NotificationItem({
   notification,
   onRead,
+  locale,
+  translations,
 }: NotificationItemProps) {
   const Icon = getNotificationIcon(notification.type);
+
+  const title =
+    translations[notification.title] ??
+    notification.title;
+
+  const message = notification.message
+    ? translations[notification.message] ??
+      notification.message
+    : null;
 
   const content = (
     <div
@@ -92,18 +74,21 @@ export default function NotificationItem({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-medium">
-              {notification.title}
+              {title}
             </p>
 
-            {notification.message && (
+            {message && (
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                {notification.message}
+                {message}
               </p>
             )}
           </div>
 
           <span className="shrink-0 text-xs text-muted-foreground">
-            {formatNotificationTime(notification.created_at)}
+            {formatTimeAgo(
+              notification.created_at,
+              locale
+            )}
           </span>
         </div>
       </div>
@@ -111,7 +96,10 @@ export default function NotificationItem({
       {!notification.is_read && (
         <span
           className="mt-2 h-2 w-2 shrink-0 rounded-full bg-foreground"
-          aria-label="Unread"
+          aria-label={
+            translations["notifications.unread"] ??
+            "Unread"
+          }
         />
       )}
     </div>
@@ -121,7 +109,9 @@ export default function NotificationItem({
     return (
       <button
         type="button"
-        onClick={() => onRead?.(notification.id)}
+        onClick={() =>
+          onRead?.(notification.id)
+        }
         className="block w-full text-left"
       >
         {content}
@@ -132,7 +122,9 @@ export default function NotificationItem({
   return (
     <Link
       href={notification.href}
-      onClick={() => onRead?.(notification.id)}
+      onClick={() =>
+        onRead?.(notification.id)
+      }
       className="block"
     >
       {content}

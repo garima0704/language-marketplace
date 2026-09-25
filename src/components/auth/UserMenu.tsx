@@ -25,8 +25,19 @@ import {
 
 import { signOut } from "@/app/(auth)/actions";
 
+type UserMenuTranslations = {
+  notifications: string;
+  unreadNotifications: string;
+  loading: string;
+  user: string;
+  myProfile: string;
+  settings: string;
+  signOut: string;
+};
+
 type UserMenuProps = {
   user: User;
+  translations: UserMenuTranslations;
 };
 
 type Profile = {
@@ -37,6 +48,7 @@ type Profile = {
 
 export default function UserMenu({
   user,
+  translations,
 }: UserMenuProps) {
   const supabase = useMemo(
     () => createClient(),
@@ -178,12 +190,12 @@ export default function UserMenu({
     profile?.display_name ||
     profile?.username ||
     user.email?.split("@")[0] ||
-    "User";
+    translations.user;
 
   const username =
     profile?.username ||
     user.email?.split("@")[0] ||
-    "User";
+    translations.user;
 
   const avatarUrl =
     profile?.avatar_url || "";
@@ -201,8 +213,8 @@ export default function UserMenu({
         href="/notifications"
         aria-label={
           unreadCount > 0
-            ? `${unreadCount} unread notifications`
-            : "Notifications"
+            ? `${unreadCount} ${translations.unreadNotifications}`
+            : translations.notifications
         }
         className="
           relative
@@ -343,7 +355,7 @@ export default function UserMenu({
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-foreground">
                     {loadingProfile
-                      ? "Loading..."
+                      ? translations.loading
                       : displayName}
                   </p>
 
@@ -373,7 +385,7 @@ export default function UserMenu({
             render={<Link href="/profile" />}
           >
             <UserIcon className="size-4" />
-            My Profile
+            {translations.myProfile}
           </DropdownMenuItem>
 
           <DropdownMenuItem
@@ -390,7 +402,7 @@ export default function UserMenu({
             render={<Link href="/settings" />}
           >
             <Settings className="size-4" />
-            Settings
+            {translations.settings}
           </DropdownMenuItem>
 
           <DropdownMenuSeparator className="bg-border" />
@@ -414,7 +426,7 @@ export default function UserMenu({
               "
             >
               <LogOut className="size-4" />
-              Sign Out
+              {translations.signOut}
             </button>
           </form>
         </DropdownMenuContent>

@@ -9,13 +9,20 @@ import { Input } from "@/components/ui/input";
 import SettingsPanel from "./SettingsPanel";
 import StatusMessage from "./StatusMessage";
 
-export default function AccountSettings() {
+type AccountSettingsProps = {
+  translations: Record<string, string>;
+};
+
+export default function AccountSettings({
+  translations,
+}: AccountSettingsProps) {
   const supabase = createClient();
 
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [updatingEmail, setUpdatingEmail] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
+  const [changingPassword, setChangingPassword] =
+    useState(false);
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -43,15 +50,19 @@ export default function AccountSettings() {
     setMessage("");
     setError("");
 
-    const { error } = await supabase.auth.updateUser({
-      email: email.trim(),
-    });
+    const { error } =
+      await supabase.auth.updateUser({
+        email: email.trim(),
+      });
 
     if (error) {
       setError(error.message);
     } else {
       setMessage(
-        "A confirmation email has been sent to your new email address."
+        translations[
+          "settings.confirmation_email_sent"
+        ] ??
+          "A confirmation email has been sent to your new email address."
       );
     }
 
@@ -68,7 +79,13 @@ export default function AccountSettings() {
     } = await supabase.auth.getUser();
 
     if (!user?.email) {
-      setError("Unable to find your account email.");
+      setError(
+        translations[
+          "settings.account_email_not_found"
+        ] ??
+          "Unable to find your account email."
+      );
+
       setChangingPassword(false);
       return;
     }
@@ -85,7 +102,10 @@ export default function AccountSettings() {
       setError(error.message);
     } else {
       setMessage(
-        "A password reset email has been sent to your email address."
+        translations[
+          "settings.password_reset_email_sent"
+        ] ??
+          "A password reset email has been sent to your email address."
       );
     }
 
@@ -94,13 +114,22 @@ export default function AccountSettings() {
 
   return (
     <SettingsPanel
-      title="Email & Password"
-      description="Manage the email address and password used to access your account."
+      title={
+        translations["settings.email_password"] ??
+        "Email & Password"
+      }
+      description={
+        translations[
+          "settings.email_password_description"
+        ] ??
+        "Manage the email address and password used to access your account."
+      }
     >
       <div className="max-w-xl space-y-8">
         <div>
           <label className="mb-2 block text-sm font-medium">
-            Email address
+            {translations["settings.email_address"] ??
+              "Email address"}
           </label>
 
           <Input
@@ -114,7 +143,10 @@ export default function AccountSettings() {
           />
 
           <p className="mt-2 text-xs text-muted-foreground">
-            Changing your email may require confirmation.
+            {translations[
+              "settings.email_change_confirmation"
+            ] ??
+              "Changing your email may require confirmation."}
           </p>
 
           <Button
@@ -129,19 +161,24 @@ export default function AccountSettings() {
             onClick={handleUpdateEmail}
           >
             {updatingEmail
-              ? "Updating..."
-              : "Update Email"}
+              ? translations["settings.updating"] ??
+                "Updating..."
+              : translations["settings.update_email"] ??
+                "Update Email"}
           </Button>
         </div>
 
         <div className="border-t border-border pt-8">
           <h3 className="text-sm font-semibold">
-            Password
+            {translations["settings.password"] ??
+              "Password"}
           </h3>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            We will send you an email with a secure link to
-            change your password.
+            {translations[
+              "settings.password_description"
+            ] ??
+              "We will send you an email with a secure link to change your password."}
           </p>
 
           <Button
@@ -153,8 +190,10 @@ export default function AccountSettings() {
             onClick={handleChangePassword}
           >
             {changingPassword
-              ? "Sending..."
-              : "Change Password"}
+              ? translations["settings.sending"] ??
+                "Sending..."
+              : translations["settings.change_password"] ??
+                "Change Password"}
           </Button>
         </div>
 
