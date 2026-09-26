@@ -8,9 +8,12 @@ import ChannelCard from "@/components/channels/ChannelCard";
 
 type Channel = {
   id: string;
-  channel_name?: string | null;
-  slug?: string | null;
-  logo_url?: string | null;
+  channel_name: string;
+  slug: string;
+  logo_url: string | null;
+  description: string | null;
+  banner_url: string | null;
+  subscription_price: number | null;
   [key: string]: any;
 };
 
