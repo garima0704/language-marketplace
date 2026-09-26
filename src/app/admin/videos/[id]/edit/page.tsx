@@ -94,6 +94,7 @@ export default async function AdminEditVideoPage({
       channel_name,
       user_id,
       profiles!inner (
+        id,
         username,
         display_name
       )
