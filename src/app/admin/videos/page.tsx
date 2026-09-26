@@ -395,23 +395,21 @@ export default async function AdminVideosPage({
     search.toLowerCase();
 
   const listVideos = search
-    ? allListVideos.filter(
-        (video) =>
-          [
-            video.title,
-            video.channel_name,
-            video.seller_name,
-            video.seller_username ??
-              "",
-          ].some((value) =>
-            value
-              .toLowerCase()
-              .includes(
-                searchLower
-              )
-          )
-      )
-    : allListVideos;
+  ? allListVideos.filter((video) => {
+      const channel = Array.isArray(video.channels)
+        ? video.channels[0]
+        : video.channels;
+
+      return [
+        video.title,
+        channel?.channel_name ?? "",
+        video.seller_name ?? "",
+        video.seller_username ?? "",
+      ].some((value) =>
+        value.toLowerCase().includes(searchLower)
+      );
+    })
+  : allListVideos;
 
   return (
     <main className="w-full">
