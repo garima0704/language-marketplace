@@ -320,7 +320,7 @@ export async function createCategory(
         value: name,
         section: "category",
         name,
-        is_active: input.isActive,
+        is_active: true,
       });
 
   if (translationError) {

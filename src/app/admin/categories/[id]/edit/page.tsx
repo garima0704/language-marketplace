@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 import { requireAdmin } from "@/lib/auth/admin";
 import CategoryForm from "@/components/admin/categories/CategoryForm";
@@ -30,10 +32,6 @@ export default async function EditCategoryPage({
 
   const { supabase } = await requireAdmin();
 
-  // --------------------------------------------------
-  // Fetch category
-  // --------------------------------------------------
-
   const { data: category, error: categoryError } =
     await supabase
       .from("categories")
@@ -46,10 +44,6 @@ export default async function EditCategoryPage({
   if (categoryError || !category) {
     notFound();
   }
-
-  // --------------------------------------------------
-  // Fetch all categories
-  // --------------------------------------------------
 
   const { data: categories, error: categoriesError } =
     await supabase
@@ -69,24 +63,11 @@ export default async function EditCategoryPage({
 
   const categoryList = (categories ?? []) as Category[];
 
-  // --------------------------------------------------
-  // Build category map
-  // --------------------------------------------------
-
   const categoryMap = new Map<string, Category>();
 
   for (const item of categoryList) {
     categoryMap.set(item.id, item);
   }
-
-  // --------------------------------------------------
-  // Build hierarchical translation keys
-  //
-  // Example:
-  // category.technical
-  // category.technical.business
-  // category.technical.business.customer-service
-  // --------------------------------------------------
 
   const categoryKeyMap = new Map<string, string>();
 
@@ -120,10 +101,6 @@ export default async function EditCategoryPage({
     );
   }
 
-  // --------------------------------------------------
-  // Fetch English category translations
-  // --------------------------------------------------
-
   const {
     data: translations,
     error: translationsError,
@@ -134,7 +111,6 @@ export default async function EditCategoryPage({
     )
     .eq("section", "category")
     .eq("locale_code", "en")
-    .eq("is_active", true);
 
   if (translationsError) {
     console.error(
@@ -142,10 +118,6 @@ export default async function EditCategoryPage({
       translationsError
     );
   }
-
-  // --------------------------------------------------
-  // Create English translation map
-  // --------------------------------------------------
 
   const translationMap = new Map<string, string>();
 
@@ -166,13 +138,6 @@ export default async function EditCategoryPage({
     );
   }
 
-  // --------------------------------------------------
-  // Find descendants
-  //
-  // A category cannot be moved under itself
-  // or under one of its children.
-  // --------------------------------------------------
-
   const descendantIds = new Set<string>();
 
   const findDescendants = (parentId: string) => {
@@ -188,10 +153,6 @@ export default async function EditCategoryPage({
 
   findDescendants(id);
 
-  // --------------------------------------------------
-  // Build parent options
-  // --------------------------------------------------
-
   const parentOptions = categoryList
     .filter((item) => item.id !== id)
     .filter((item) => !descendantIds.has(item.id))
@@ -204,47 +165,45 @@ export default async function EditCategoryPage({
       level: item.level,
     }));
 
-  // --------------------------------------------------
-  // Current English category name
-  // --------------------------------------------------
-
   const englishName =
     translationMap.get(category.id) ?? "";
 
-  // --------------------------------------------------
-  // Page
-  // --------------------------------------------------
-
   return (
-    <div className="min-h-full bg-light-bg">
-      <div className="mx-auto max-w-3xl space-y-6 p-6">
+    <main className="w-full">
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <div className="mx-auto max-w-3xl">
+          <Link
+            href="/admin/categories"
+            className="inline-flex items-center gap-2 text-sm text-muted transition hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Categories
+          </Link>
 
-        {/* Header */}
+          <div className="mt-5">
+            <h1 className="text-xl font-semibold text-foreground">
+              Edit Category
+            </h1>
 
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">
-            Edit Category
-          </h1>
+            <p className="mt-1 text-sm text-muted">
+              Update the category details in the master
+              English category structure.
+            </p>
+          </div>
 
-          <p className="mt-1 text-sm text-muted">
-            Update the category details in the master
-            English category structure.
-          </p>
+          <div className="mt-6">
+            <CategoryForm
+              mode="edit"
+              categoryId={category.id}
+              initialName={englishName}
+              initialParentId={category.parent_id}
+              initialDisplayOrder={category.display_order}
+              initialIsActive={category.is_active}
+              parentOptions={parentOptions}
+            />
+          </div>
         </div>
-
-        {/* Category Form */}
-
-        <CategoryForm
-          mode="edit"
-          categoryId={category.id}
-          initialName={englishName}
-          initialParentId={category.parent_id}
-          initialDisplayOrder={category.display_order}
-          initialIsActive={category.is_active}
-          parentOptions={parentOptions}
-        />
-
       </div>
-    </div>
+    </main>
   );
 }

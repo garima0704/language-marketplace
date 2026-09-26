@@ -8,9 +8,18 @@ import { getTranslations } from "@/lib/translations";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import ChannelCard from "@/components/channels/ChannelCard";
 
-export default async function SellerChannelsPage() {
+interface SellerChannelsPageProps {
+  searchParams: Promise<{
+    search?: string;
+  }>;
+}
+
+export default async function SellerChannelsPage({
+  searchParams,
+}: SellerChannelsPageProps) {
   const supabase = await createClient();
 
   // --------------------------------------------------
@@ -55,6 +64,8 @@ export default async function SellerChannelsPage() {
       "seller_channels.create_channel",
       "seller_channels.no_channels",
       "seller_channels.no_channels_description",
+      "seller_channels.search_placeholder",
+      "seller_channels.no_search_results",
     ],
     locale
   );
@@ -64,6 +75,34 @@ export default async function SellerChannelsPage() {
   // --------------------------------------------------
 
   const channelStats = await getSellerChannels(user.id);
+
+  // --------------------------------------------------
+  // SEARCH
+  // --------------------------------------------------
+
+  const params = await searchParams;
+
+  const search =
+    typeof params.search === "string"
+      ? params.search.trim()
+      : "";
+
+  const normalizedSearch = search.toLowerCase();
+
+  const filteredChannels = normalizedSearch
+    ? channelStats.filter((channel) => {
+        const channelName =
+          channel.channel_name?.toLowerCase() ?? "";
+
+        const slug =
+          channel.slug?.toLowerCase() ?? "";
+
+        return (
+          channelName.includes(normalizedSearch) ||
+          slug.includes(normalizedSearch)
+        );
+      })
+    : channelStats;
 
   // --------------------------------------------------
   // PAGE
@@ -93,19 +132,23 @@ export default async function SellerChannelsPage() {
         </Link>
       </div>
 
-      {/* Channels */}
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {channelStats.length > 0 ? (
-          channelStats.map((channel) => (
-            <div key={channel.id} className="space-y-3">
-              <ChannelCard
-                channel={channel}
-                variant="seller-management"
-                showActions={true}
-              />
-            </div>
-          ))
-        ) : (
+      {/* Search */}
+      <form method="GET">
+        <Input
+          name="search"
+          defaultValue={search}
+          placeholder={
+            translations[
+              "seller_channels.search_placeholder"
+            ] ?? "Search channels..."
+          }
+          className="max-w-md"
+        />
+      </form>
+
+      {/* No Channels */}
+      {channelStats.length === 0 ? (
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           <div className="col-span-full">
             <Card className="rounded-xl border-dashed">
               <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -133,8 +176,41 @@ export default async function SellerChannelsPage() {
               </div>
             </Card>
           </div>
-        )}
-      </div>
+        </div>
+      ) : filteredChannels.length === 0 ? (
+        /* No Search Results */
+        <Card className="rounded-xl border-dashed">
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <h3 className="text-lg font-semibold text-foreground">
+              {translations[
+                "seller_channels.no_search_results"
+              ] ?? "No channels found."}
+            </h3>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              {search
+                ? `"${search}" did not match any channels.`
+                : "No channels found."}
+            </p>
+          </div>
+        </Card>
+      ) : (
+        /* Channels */
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {filteredChannels.map((channel) => (
+            <div
+              key={channel.id}
+              className="space-y-3"
+            >
+              <ChannelCard
+                channel={channel}
+                variant="seller-management"
+                showActions={true}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

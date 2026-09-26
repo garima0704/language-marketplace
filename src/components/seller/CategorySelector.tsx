@@ -161,16 +161,6 @@ const getName = (category: Category) => {
   );
 };
 
-console.log(
-  "CATEGORY DEBUG",
-  categories.map((category) => ({
-    slug: category.slug,
-    key: getCategoryTranslationKey(category),
-    translation:
-      translations[getCategoryTranslationKey(category)],
-  }))
-);
-
   const languagesList = useMemo(() => {
     return [...languages].sort((a, b) =>
       a.name.localeCompare(b.name)

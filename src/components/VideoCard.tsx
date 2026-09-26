@@ -27,9 +27,11 @@ interface VideoCardProps {
   slug: string;
   title: string;
   thumbnail: string;
+
   channelName: string;
   channelSlug: string;
   channelLogo: string;
+
   views: number;
   createdAt: string;
   level: string | null;
@@ -38,10 +40,17 @@ interface VideoCardProps {
   languageLabel?: string;
   categoryLabel?: string;
 
+  sellerName?: string;
+  sellerUsername?: string | null;
+  showSeller?: boolean;
+
   status?: string;
   showStatus?: boolean;
   showManage?: boolean;
   showView?: boolean;
+
+  manageHref?: string;
+
   locale?: string;
   translations?: VideoCardTranslations;
   levelTranslations?: VideoLevelTranslations;
@@ -52,9 +61,11 @@ export default function VideoCard({
   slug,
   title,
   thumbnail,
+
   channelName,
   channelSlug,
   channelLogo,
+
   views,
   createdAt,
   level,
@@ -63,42 +74,71 @@ export default function VideoCard({
   languageLabel,
   categoryLabel,
 
+  sellerName,
+  sellerUsername,
+  showSeller = false,
+
   status,
   showStatus = false,
   showManage = false,
   showView = false,
+
+  manageHref,
+
   locale = "en",
   translations,
   levelTranslations,
 }: VideoCardProps) {
   const labels: VideoCardTranslations = {
     noThumbnail:
-      translations?.noThumbnail ?? "No thumbnail available",
+      translations?.noThumbnail ??
+      "No thumbnail available",
+
     views:
-      translations?.views ?? "views",
+      translations?.views ??
+      "views",
+
     published:
-      translations?.published ?? "Published",
+      translations?.published ??
+      "Published",
+
     draft:
-      translations?.draft ?? "Draft",
+      translations?.draft ??
+      "Draft",
+
     free:
-      translations?.free ?? "Free",
+      translations?.free ??
+      "Free",
+
     subscribersOnly:
-      translations?.subscribersOnly ?? "Subscribers only",
+      translations?.subscribersOnly ??
+      "Subscribers only",
+
     manage:
-      translations?.manage ?? "Manage",
+      translations?.manage ??
+      "Manage",
+
     view:
-      translations?.view ?? "View",
+      translations?.view ??
+      "View",
   };
 
   const levels: VideoLevelTranslations = {
     beginner:
-      levelTranslations?.beginner ?? "Beginner",
+      levelTranslations?.beginner ??
+      "Beginner",
+
     intermediate:
-      levelTranslations?.intermediate ?? "Intermediate",
+      levelTranslations?.intermediate ??
+      "Intermediate",
+
     advanced:
-      levelTranslations?.advanced ?? "Advanced",
+      levelTranslations?.advanced ??
+      "Advanced",
+
     fluent:
-      levelTranslations?.fluent ?? "Fluent",
+      levelTranslations?.fluent ??
+      "Fluent",
   };
 
   const levelLabel =
@@ -119,8 +159,13 @@ export default function VideoCard({
     .filter(Boolean)
     .join(" - ");
 
+  const resolvedManageHref =
+    manageHref ??
+    `/seller/videos/${id}`;
+
   return (
     <div className="group overflow-hidden rounded-xl border border-border bg-background transition hover:shadow-md">
+      {/* Thumbnail */}
       <Link href={`/videos/${slug}`}>
         <div className="relative aspect-video overflow-hidden bg-muted-bg">
           {thumbnail ? (
@@ -147,7 +192,9 @@ export default function VideoCard({
         </div>
       </Link>
 
+      {/* Card content */}
       <div className="space-y-2 p-4">
+        {/* Title */}
         <Link
           href={`/videos/${slug}`}
           className="mb-3 block"
@@ -157,10 +204,12 @@ export default function VideoCard({
           </h3>
         </Link>
 
+        {/* Channel + Seller */}
         <Link
           href={`/channels/${channelSlug}`}
           className="group/channel flex items-center gap-3"
         >
+          {/* Channel image */}
           <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-muted-bg">
             {channelLogo ? (
               <Image
@@ -177,26 +226,42 @@ export default function VideoCard({
             )}
           </div>
 
-          <p className="min-w-0 truncate text-sm font-medium text-foreground transition group-hover/channel:text-secondary">
-            {channelName}
-          </p>
+          {/* Channel + Seller information */}
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-foreground transition group-hover/channel:text-secondary">
+              {channelName}
+            </p>
+
+            {showSeller && sellerName && (
+              <>
+                <p className="truncate text-xs text-foreground">
+                  {sellerName}
+                </p>
+
+                {sellerUsername && (
+                  <p className="truncate text-xs text-muted">
+                    @{sellerUsername}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
         </Link>
 
+        {/* Views + date */}
         <div className="text-xs text-muted">
           {views.toLocaleString(locale)}{" "}
           {labels.views} •{" "}
-          {formatTimeAgo(createdAt, locale)}
+          {formatTimeAgo(
+            createdAt,
+            locale
+          )}
         </div>
 
+        {/* Status / Level / Access */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
           {showStatus && (
-            <span
-              className={
-                status === "published"
-                  ? "rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground"
-                  : "rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground"
-              }
-            >
+            <span className="rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground">
               {status === "published"
                 ? labels.published
                 : labels.draft}
@@ -222,37 +287,43 @@ export default function VideoCard({
           </span>
         </div>
 
+        {/* Actions */}
         {(showView || showManage) && (
           <div className="mt-6 flex gap-3">
             {showManage && (
               <Link
-                href={`/seller/videos/${id}`}
+                href={resolvedManageHref}
                 className={
-                  showView && status === "published"
+                  showView &&
+                  status === "published"
                     ? "flex-1"
                     : "w-full"
                 }
               >
-                <Button size="sm" className="w-full">
+                <Button
+                  size="sm"
+                  className="w-full"
+                >
                   {labels.manage}
                 </Button>
               </Link>
             )}
 
-            {showView && status === "published" && (
-              <Link
-                href={`/videos/${slug}`}
-                className="flex-1"
-              >
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
+            {showView &&
+              status === "published" && (
+                <Link
+                  href={`/videos/${slug}`}
+                  className="flex-1"
                 >
-                  {labels.view}
-                </Button>
-              </Link>
-            )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    {labels.view}
+                  </Button>
+                </Link>
+              )}
           </div>
         )}
       </div>

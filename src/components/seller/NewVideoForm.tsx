@@ -1383,6 +1383,33 @@ async function handleSaveDraft() {
               </select>
             </div>
 
+             {/* Subtitles */}
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                {translations["video.subtitles_second_language"] ??
+                "Subtitles for Second Language"}
+              </label>
+
+              <select
+                name="subtitle_language_code"
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
+              >
+                <option value="">
+                  {translations["video.no_subtitles"] ?? "No subtitles"}
+                </option>
+
+                {languages.map((language) => (
+                  <option
+                    key={language.code}
+                    value={language.code}
+                  >
+                    {language.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Captions */}
 
             <div>
@@ -1411,33 +1438,6 @@ async function handleSaveDraft() {
                   {translations["common.no"] ?? "No"}
                 </label>
               </div>
-            </div>
-
-            {/* Subtitles */}
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                {translations["video.subtitles_second_language"] ??
-                "Subtitles for Second Language"}
-              </label>
-
-              <select
-                name="subtitle_language_code"
-                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
-              >
-                <option value="">
-                  {translations["video.no_subtitles"] ?? "No subtitles"}
-                </option>
-
-                {languages.map((language) => (
-                  <option
-                    key={language.code}
-                    value={language.code}
-                  >
-                    {language.name}
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Idioms */}

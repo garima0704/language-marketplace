@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -18,118 +21,126 @@ export default function CategoryTreeItem({
 }: CategoryTreeItemProps) {
   const hasChildren = node.children.length > 0;
 
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const requiredTranslations = Math.max(
+    totalLanguages - 1,
+    0
+  );
+
   const translationPercentage =
-    totalLanguages > 0
+    requiredTranslations > 0
       ? Math.round(
-          (node.translationCount / totalLanguages) * 100
+          (node.translationCount / requiredTranslations) * 100
         )
-      : 0;
+      : 100;
 
   return (
-    <div className="px-4 py-3">
-      <div className="flex items-start gap-3">
+    <div>
+      {/* CATEGORY ROW */}
+
+      <div className="flex min-h-[68px] items-center gap-3 px-5 py-3">
+        {/* Expand / Collapse */}
+
+        {hasChildren ? (
+          <button
+            type="button"
+            onClick={() =>
+              setIsExpanded((previous) => !previous)
+            }
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition hover:bg-muted-bg hover:text-foreground"
+            aria-label={
+              isExpanded
+                ? `Collapse ${node.name}`
+                : `Expand ${node.name}`
+            }
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-5 w-5" />
+            ) : (
+              <ChevronRight className="h-5 w-5" />
+            )}
+          </button>
+        ) : (
+          <div className="h-8 w-8 shrink-0" />
+        )}
+
+        {/* Category information */}
+
         <div className="min-w-0 flex-1">
-          {hasChildren ? (
-            <details open={node.level === 1}>
-              <summary className="group flex cursor-pointer list-none items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted-bg">
-                {/* Expand / collapse icon */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-foreground">
+              {node.name}
+            </span>
 
-                <span className="shrink-0 text-muted">
-                  <ChevronRight className="h-4 w-4 group-open:hidden" />
-                  <ChevronDown className="hidden h-4 w-4 group-open:block" />
-                </span>
+            <span className="rounded bg-muted-bg px-2 py-0.5 text-xs font-medium text-secondary">
+              Level {node.level}
+            </span>
+          </div>
 
-                {/* Category information */}
-
-                <span className="min-w-0 flex-1">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-foreground">
-                      {node.name}
-                    </span>
-
-                    <span className="rounded-full bg-muted-bg px-2 py-0.5 text-xs text-muted">
-                      Level {node.level}
-                    </span>
-
-                    {!node.is_active && (
-                      <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted">
-                        Inactive
-                      </span>
-                    )}
-                  </span>
-
-                  <span className="mt-1 block text-xs text-muted">
-                    {node.translationCount}/{totalLanguages} languages
-                    {" · "}
-                    {translationPercentage}% translated
-                  </span>
-                </span>
-              </summary>
-
-              {/* Children */}
-
-              <div className="ml-4 mt-2 border-l border-border pl-4">
-                <div className="space-y-1">
-                  {node.children.map((child) => (
-                    <CategoryTreeItem
-                      key={child.id}
-                      node={child}
-                      totalLanguages={totalLanguages}
-                    />
-                  ))}
-                </div>
-              </div>
-            </details>
-          ) : (
-            <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-              <span className="h-2 w-2 shrink-0 rounded-full bg-border" />
-
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium text-foreground">
-                    {node.name}
-                  </span>
-
-                  <span className="rounded-full bg-muted-bg px-2 py-0.5 text-xs text-muted">
-                    Level {node.level}
-                  </span>
-
-                  {!node.is_active && (
-                    <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted">
-                      Inactive
-                    </span>
-                  )}
-                </div>
-
-                <p className="mt-1 text-xs text-muted">
-                  {node.translationCount}/{totalLanguages} languages
-                  {" · "}
-                  {translationPercentage}% translated
-                </p>
-              </div>
-            </div>
-          )}
+          <p className="mt-1 text-xs text-muted">
+            {node.translationCount}/{requiredTranslations} languages
+            {" · "}
+            {translationPercentage}% translated
+          </p>
         </div>
 
-        {/* Actions */}
+        {/* Status */}
 
-        <div className="flex shrink-0 items-center gap-2 pt-2">
-          <Link
-            href={`/admin/categories/${node.id}/translations`}
-            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted-bg"
-          >
-            Translations
-          </Link>
+        <div className="hidden shrink-0 items-center gap-2 sm:flex">
+          <span
+            className={`h-2 w-2 rounded-full ${
+              node.is_active
+                ? "bg-green-500"
+                : "bg-gray-300"
+            }`}
+          />
 
-          <Link
-            href={`/admin/categories/${node.id}/edit`}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted-bg"
-          >
-            <Pencil className="h-3.5 w-3.5" />
+          <span className="text-sm text-secondary">
+            {node.is_active
+              ? "Active"
+              : "Inactive"}
+          </span>
+        </div>
+
+        {/* Translations */}
+
+        <Link
+          href={`/admin/categories/${node.id}/translations`}
+          className="hidden h-9 shrink-0 items-center rounded-md border border-border px-3 text-sm font-medium text-foreground transition hover:bg-light-bg sm:inline-flex"
+        >
+          Translations
+        </Link>
+
+        {/* Edit */}
+
+        <Link
+          href={`/admin/categories/${node.id}/edit`}
+          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-background transition hover:opacity-90"
+        >
+          <Pencil className="h-4 w-4" />
+
+          <span className="hidden sm:inline">
             Edit
-          </Link>
-        </div>
+          </span>
+        </Link>
       </div>
+
+      {/* CHILDREN */}
+
+      {hasChildren && isExpanded && (
+        <div className="ml-11 border-l border-border pl-4">
+          <div>
+            {node.children.map((child) => (
+              <CategoryTreeItem
+                key={child.id}
+                node={child}
+                totalLanguages={totalLanguages}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

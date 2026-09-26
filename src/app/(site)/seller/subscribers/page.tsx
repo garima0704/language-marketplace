@@ -9,62 +9,69 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "@/lib/translations";
 import SubscribersTable from "@/components/seller/SubscribersTable";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default async function SubscribersPage() {
   const supabase = await createClient();
 
+  /* ========================================================
+     CURRENT LOCALE
+  ======================================================== */
+
   const cookieStore = await cookies();
 
   const locale =
-  cookieStore.get("niceconvo_locale")?.value || "en";
+    cookieStore.get("niceconvo_locale")?.value ?? "en";
 
-  // --------------------------------------------------
-  // Translations
-  // --------------------------------------------------
+  /* ========================================================
+     TRANSLATIONS
+  ======================================================== */
 
   const translations = await getTranslations(
-  [
-    "seller.subscribers",
-    "seller.subscribers_description",
-    "seller.no_channels",
-    "seller.create_channel_subscribers",
+    [
+      "seller.subscribers",
+      "seller.subscribers_description",
+      "seller.no_channels",
+      "seller.create_channel_subscribers",
 
-    "seller.subscriber",
-    "seller.channel",
+      "seller.subscriber",
+      "seller.channel",
 
-    "seller.total_subscribers",
-    "seller.total_subscribers_description",
-    "seller.active_subscribers",
-    "seller.active_subscribers_description",
-    "seller.monthly_subscription_value",
-    "seller.monthly_subscription_value_description",
-    "seller.your_subscribers",
-    "seller.your_subscribers_description",
+      "seller.total_subscribers",
+      "seller.total_subscribers_description",
+      "seller.active_subscribers",
+      "seller.active_subscribers_description",
+      "seller.monthly_subscription_value",
+      "seller.monthly_subscription_value_description",
+      "seller.your_subscribers",
+      "seller.your_subscribers_description",
 
-    // Subscribers table
-    "seller.search_subscribers",
-    "seller.all",
-    "seller.active",
-    "seller.cancelled",
-    "seller.expired",
-    "seller.no_subscribers",
-    "seller.no_subscribers_found",
-    "seller.no_subscribers_description",
-    "seller.try_change_search_filter",
-    "seller.subscription",
-    "seller.status",
-    "seller.renewal",
-    "seller.joined",
-    "seller.per_month",
-    "seller.ends_after_period",
-    "seller.cancelling",
-  ],
-  locale
-);
+      // Subscribers table
+      "seller.search_subscribers",
+      "seller.all",
+      "seller.active",
+      "seller.cancelled",
+      "seller.expired",
+      "seller.no_subscribers",
+      "seller.no_subscribers_found",
+      "seller.no_subscribers_description",
+      "seller.try_change_search_filter",
+      "seller.subscription",
+      "seller.status",
+      "seller.renewal",
+      "seller.joined",
+      "seller.per_month",
+      "seller.ends_after_period",
+      "seller.cancelling",
+    ],
+    locale
+  );
 
-  // --------------------------------------------------
-  // Current seller
-  // --------------------------------------------------
+  /* ========================================================
+     CURRENT SELLER
+  ======================================================== */
 
   const {
     data: { user },
@@ -74,16 +81,18 @@ export default async function SubscribersPage() {
     redirect("/login");
   }
 
-  // --------------------------------------------------
-  // Seller profile
-  // --------------------------------------------------
+  /* ========================================================
+     SELLER PROFILE
+  ======================================================== */
 
-  const { data: profile, error: profileError } =
-    await supabase
-      .from("profiles")
-      .select("id, is_creator")
-      .eq("id", user.id)
-      .maybeSingle();
+  const {
+    data: profile,
+    error: profileError,
+  } = await supabase
+    .from("profiles")
+    .select("id, is_creator")
+    .eq("id", user.id)
+    .maybeSingle();
 
   if (profileError) {
     console.error(
@@ -96,19 +105,21 @@ export default async function SubscribersPage() {
     redirect("/");
   }
 
-  // --------------------------------------------------
-  // Seller channels
-  // --------------------------------------------------
+  /* ========================================================
+     SELLER CHANNELS
+  ======================================================== */
 
-  const { data: channels, error: channelsError } =
-    await supabase
-      .from("channels")
-      .select(`
-        id,
-        channel_name,
-        slug
-      `)
-      .eq("user_id", user.id);
+  const {
+    data: channels,
+    error: channelsError,
+  } = await supabase
+    .from("channels")
+    .select(`
+      id,
+      channel_name,
+      slug
+    `)
+    .eq("user_id", user.id);
 
   if (channelsError) {
     console.error(
@@ -123,41 +134,70 @@ export default async function SubscribersPage() {
     (channel) => channel.id
   );
 
-  // --------------------------------------------------
-  // No channels
-  // --------------------------------------------------
+  /* ========================================================
+     NO CHANNELS
+     Same empty state as Seller Channels
+  ======================================================== */
 
   if (channelIds.length === 0) {
     return (
-      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
-        <div className="mb-8">
-          <h1>
-            {translations["seller.subscribers"] ?? "Subscribers"}
-          </h1>
+      <div className="w-full">
+        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
 
-          <p>
-            {translations["seller.subscribers_description"] ??
-              "Manage the people subscribed to your channels."}
-          </p>
-        </div>
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              {translations["seller.subscribers"] ??
+                "Subscribers"}
+            </h1>
 
-        <div className="rounded-xl border border-border bg-background px-6 py-12 text-center">
-          <p className="font-medium text-foreground">
-            {translations["seller.no_channels"] ?? "No channels yet"}
-          </p>
+            <p className="mt-2 text-sm text-muted">
+              {translations[
+                "seller.subscribers_description"
+              ] ??
+                "Manage the people subscribed to your channels."}
+            </p>
+          </div>
 
-          <p className="mt-2 text-sm text-muted">
-            {translations["seller.create_channel_subscribers"] ??
-              "Create a channel to start getting subscribers."}
-          </p>
+          {/* Empty state */}
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <div className="col-span-full">
+              <Card className="rounded-xl border-dashed">
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <h3 className="text-lg font-semibold">
+                    {translations["seller.no_channels"] ??
+                      "No channels yet"}
+                  </h3>
+
+                  <p className="mt-2 text-muted-foreground">
+                    {translations[
+                      "seller.create_channel_subscribers"
+                    ] ??
+                      "Create a channel to start getting subscribers."}
+                  </p>
+
+                  <div className="mt-6">
+                    <Link href="/seller/channels/new">
+                      <Button>
+                        {translations[
+                          "seller.create_channel"
+                        ] ?? "Create Channel"}
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+
         </div>
       </div>
     );
   }
 
-  // --------------------------------------------------
-  // Subscriptions
-  // --------------------------------------------------
+  /* ========================================================
+     SUBSCRIPTIONS
+  ======================================================== */
 
   const {
     data: subscriptions,
@@ -204,82 +244,81 @@ export default async function SubscribersPage() {
     );
   }
 
-  // --------------------------------------------------
-  // Format subscriber rows
-  // --------------------------------------------------
+  /* ========================================================
+     FORMAT SUBSCRIBER ROWS
+  ======================================================== */
 
-  const subscriberRows = (subscriptions ?? []).map(
-    (subscription) => {
-      const subscriberProfile = Array.isArray(
-        subscription.profiles
-      )
+  const subscriberRows = (
+    subscriptions ?? []
+  ).map((subscription) => {
+    const subscriberProfile =
+      Array.isArray(subscription.profiles)
         ? subscription.profiles[0]
         : subscription.profiles;
 
-      const channel = Array.isArray(
-        subscription.channels
-      )
+    const channel =
+      Array.isArray(subscription.channels)
         ? subscription.channels[0]
         : subscription.channels;
 
-      return {
-        id: subscription.id,
-        buyerId: subscription.buyer_id,
+    return {
+      id: subscription.id,
 
-        subscriberName:
-          subscriberProfile?.display_name ||
-          subscriberProfile?.username ||
-          translations["seller.subscriber"] ||
-          "Subscriber",
+      buyerId: subscription.buyer_id,
 
-        username:
-          subscriberProfile?.username || null,
+      subscriberName:
+        subscriberProfile?.display_name ||
+        subscriberProfile?.username ||
+        translations["seller.subscriber"] ||
+        "Subscriber",
 
-        avatarUrl:
-          subscriberProfile?.avatar_url || null,
+      username:
+        subscriberProfile?.username || null,
 
-        channelName:
-          channel?.channel_name || 
-           translations["seller.channel"] ||
-          "Channel",
+      avatarUrl:
+        subscriberProfile?.avatar_url || null,
 
-        channelSlug:
-          channel?.slug || null,
+      channelName:
+        channel?.channel_name ||
+        translations["seller.channel"] ||
+        "Channel",
 
-        price: Number(
-          subscription.subscription_price
-        ),
+      channelSlug:
+        channel?.slug || null,
 
-        currency:
-          subscription.currency,
+      price: Number(
+        subscription.subscription_price
+      ),
 
-        status:
-          subscription.status,
+      currency:
+        subscription.currency,
 
-        startedAt:
-          subscription.started_at,
+      status:
+        subscription.status,
 
-        currentPeriodEnd:
-          subscription.current_period_end,
+      startedAt:
+        subscription.started_at,
 
-        cancelAtPeriodEnd:
-          subscription.cancel_at_period_end,
+      currentPeriodEnd:
+        subscription.current_period_end,
 
-        cancelledAt:
-          subscription.cancelled_at,
+      cancelAtPeriodEnd:
+        subscription.cancel_at_period_end,
 
-        paymentProvider:
-          subscription.payment_provider,
+      cancelledAt:
+        subscription.cancelled_at,
 
-        createdAt:
-          subscription.created_at,
-      };
-    }
-  );
+      paymentProvider:
+        subscription.payment_provider,
 
-  // --------------------------------------------------
-  // Stats
-  // --------------------------------------------------
+      createdAt:
+        subscription.created_at,
+    };
+  });
+
+  /* ========================================================
+     STATS
+  ======================================================== */
 
   const totalSubscribers =
     subscriberRows.length;
@@ -302,155 +341,161 @@ export default async function SubscribersPage() {
         0
       );
 
-  // --------------------------------------------------
-  // Currency
-  // --------------------------------------------------
+  /* ========================================================
+     CURRENCY
+  ======================================================== */
 
   const currency =
-    subscriberRows[0]?.currency || "USD";
+    subscriberRows[0]?.currency ?? "USD";
 
-  // --------------------------------------------------
-  // Page
-  // --------------------------------------------------
+  /* ========================================================
+     PAGE
+  ======================================================== */
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+    <div className="w-full">
+      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
 
-      {/* ==================================================
-          HEADER
-      ================================================== */}
+        {/* ==================================================
+            HEADER
+        ================================================== */}
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-           {translations["seller.subscribers"] ?? "Subscribers"}
-        </h1>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            {translations["seller.subscribers"] ??
+              "Subscribers"}
+          </h1>
 
-        <p className="mt-2 text-sm text-muted">
-          {translations["seller.subscribers_description"] ??
-          "Manage the people subscribed to your channels."}
-        </p>
+          <p className="mt-2 text-sm text-muted">
+            {translations[
+              "seller.subscribers_description"
+            ] ??
+              "Manage the people subscribed to your channels."}
+          </p>
+        </div>
+
+        {/* ==================================================
+            SUMMARY CARDS
+        ================================================== */}
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+          {/* Total Subscribers */}
+          <div className="rounded-xl border border-border bg-background p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted">
+                {translations[
+                  "seller.total_subscribers"
+                ] ?? "Total Subscribers"}
+              </p>
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
+                <Users className="h-4 w-4 text-foreground" />
+              </div>
+            </div>
+
+            <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+              {totalSubscribers}
+            </p>
+
+            <p className="mt-1 text-xs text-muted">
+              {translations[
+                "seller.total_subscribers_description"
+              ] ??
+                "People subscribed to your channels"}
+            </p>
+          </div>
+
+          {/* Active Subscribers */}
+          <div className="rounded-xl border border-border bg-background p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted">
+                {translations[
+                  "seller.active_subscribers"
+                ] ?? "Active Subscribers"}
+              </p>
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
+                <UserCheck className="h-4 w-4 text-foreground" />
+              </div>
+            </div>
+
+            <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+              {activeSubscribers}
+            </p>
+
+            <p className="mt-1 text-xs text-muted">
+              {translations[
+                "seller.active_subscribers_description"
+              ] ??
+                "Currently active subscriptions"}
+            </p>
+          </div>
+
+          {/* Monthly Subscription Value */}
+          <div className="rounded-xl border border-border bg-background p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted">
+                {translations[
+                  "seller.monthly_subscription_value"
+                ] ??
+                  "Monthly Subscription Value"}
+              </p>
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
+                <DollarSign className="h-4 w-4 text-foreground" />
+              </div>
+            </div>
+
+            <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+              {new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency,
+              }).format(
+                monthlySubscriptionValue
+              )}
+            </p>
+
+            <p className="mt-1 text-xs text-muted">
+              {translations[
+                "seller.monthly_subscription_value_description"
+              ] ??
+                "Value of active subscriptions"}
+            </p>
+          </div>
+
+        </div>
+
+        {/* ==================================================
+            SUBSCRIBERS
+        ================================================== */}
+
+        <section className="mt-10">
+
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-foreground">
+              {translations[
+                "seller.your_subscribers"
+              ] ?? "Your Subscribers"}
+            </h2>
+
+            <p className="mt-1 text-sm text-muted">
+              {translations[
+                "seller.your_subscribers_description"
+              ] ??
+                "View and manage subscribers across your channels."}
+            </p>
+          </div>
+
+          <SubscribersTable
+            subscribers={subscriberRows}
+            translations={translations}
+            locale={locale}
+          />
+
+        </section>
+
       </div>
-
-      {/* ==================================================
-          SUMMARY CARDS
-      ================================================== */}
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
-        {/* Total Subscribers */}
-
-        <div className="rounded-xl border border-border bg-background p-5">
-
-          <div className="flex items-center justify-between">
-
-            <p className="text-lg font-bold text-muted">
-              {translations["seller.total_subscribers"] ?? "Total Subscribers"}
-            </p>
-
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
-              <Users className="h-4 w-4 text-foreground" />
-            </div>
-
-          </div>
-
-          <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-            {totalSubscribers}
-          </p>
-
-          <p className="mt-1 text-xs text-muted">
-            {translations["seller.total_subscribers_description"] ??
-            "People subscribed to your channels"}
-          </p>
-
-        </div>
-
-        {/* Active Subscribers */}
-
-        <div className="rounded-xl border border-border bg-background p-5">
-
-          <div className="flex items-center justify-between">
-
-            <p className="text-lg font-bold text-muted">
-              {translations["seller.active_subscribers"] ?? "Active Subscribers"}
-            </p>
-
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
-              <UserCheck className="h-4 w-4 text-foreground" />
-            </div>
-
-          </div>
-
-          <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-            {activeSubscribers}
-          </p>
-
-          <p className="mt-1 text-xs text-muted">
-            {translations["seller.active_subscribers_description"] ??
-            "Currently active subscriptions"}
-          </p>
-
-        </div>
-
-        {/* Monthly Subscription Value */}
-
-        <div className="rounded-xl border border-border bg-background p-5">
-
-          <div className="flex items-center justify-between">
-
-            <p className="text-lg font-bold text-muted">
-              {translations["seller.monthly_subscription_value"] ??
-              "Monthly Subscription Value"}
-            </p>
-
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg">
-              <DollarSign className="h-4 w-4 text-foreground" />
-            </div>
-
-          </div>
-
-          <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-            {new Intl.NumberFormat("en-US", {
-              style: "currency",
-              currency,
-            }).format(monthlySubscriptionValue)}
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            {translations["seller.monthly_subscription_value_description"] ??
-            "Value of active subscriptions"}
-          </p>
-
-        </div>
-
-      </div>
-
-      {/* ==================================================
-          SUBSCRIBERS
-      ================================================== */}
-
-      <section className="mt-10">
-
-        <div className="mb-4">
-
-          <h2 className="text-xl font-semibold text-foreground">
-            {translations["seller.your_subscribers"] ??
-            "Your Subscribers"}
-          </h2>
-
-          <p className="mt-1 text-sm text-muted">
-            {translations["seller.your_subscribers_description"] ??
-            "View and manage subscribers across your channels."}
-          </p>
-
-        </div>
-
-        <SubscribersTable
-          subscribers={subscriberRows}
-          translations={translations}
-          locale={locale}
-        />
-
-      </section>
-
     </div>
   );
 }

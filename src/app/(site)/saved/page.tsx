@@ -3,9 +3,10 @@ import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "@/lib/translations";
+import { getCategoryLabel } from "@/lib/categories";
+import { getBrowseLanguages } from "@/lib/languages";
 
 import VideoCard from "@/components/VideoCard";
-import { getCategoryLabel } from "@/lib/categories";
 
 export default async function SavedVideosPage() {
   const supabase = await createClient();
@@ -32,18 +33,34 @@ export default async function SavedVideosPage() {
     cookieStore.get("niceconvo_locale")?.value ?? "en";
 
   /* ========================================================
+     BROWSE LANGUAGES
+  ======================================================== */
+
+  const languages = await getBrowseLanguages(locale);
+
+  function getLanguageLabel(
+    languageCode: string | null
+  ) {
+    if (!languageCode) return "";
+
+    const language = languages.find(
+      (item) => item.code === languageCode
+    );
+
+    return language?.name ?? languageCode;
+  }
+
+  /* ========================================================
      TRANSLATIONS
   ======================================================== */
 
   const translations = await getTranslations(
     [
-      // Saved videos
       "saved_videos.title",
       "saved_videos.description",
       "saved_videos.empty.title",
       "saved_videos.empty.description",
 
-      // Video card
       "video.no_thumbnail",
       "video.views",
       "video.published",
@@ -52,7 +69,6 @@ export default async function SavedVideosPage() {
       "video.subscribers_only",
       "video.manage",
 
-      // Video levels
       "level.beginner",
       "level.intermediate",
       "level.advanced",
@@ -81,6 +97,7 @@ export default async function SavedVideosPage() {
         created_at,
         level,
         status,
+        language_code,
 
         categories (
           id,
@@ -107,7 +124,10 @@ export default async function SavedVideosPage() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Error loading saved videos:", error);
+    console.error(
+      "Error loading saved videos:",
+      error
+    );
   }
 
   /* ========================================================
@@ -154,11 +174,22 @@ export default async function SavedVideosPage() {
       created_at: video.created_at,
       level: video.level,
 
-      category_label: categoryLabel,
+      language_label:
+        getLanguageLabel(
+          video.language_code
+        ),
 
-      channel_name: channel?.channel_name ?? "",
-      channel_slug: channel?.slug ?? "",
-      channel_logo: channel?.logo_url ?? "",
+      category_label:
+        categoryLabel,
+
+      channel_name:
+        channel?.channel_name ?? "",
+
+      channel_slug:
+        channel?.slug ?? "",
+
+      channel_logo:
+        channel?.logo_url ?? "",
 
       saved_at: saved.created_at,
     });
@@ -172,13 +203,11 @@ export default async function SavedVideosPage() {
     <div className="w-full">
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
 
-        {/* ==================================================
-            HEADER
-        ================================================== */}
-
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            {translations["saved_videos.title"] ?? "Saved Videos"}
+            {translations["saved_videos.title"] ??
+              "Saved Videos"}
           </h1>
 
           <p className="mt-2 text-sm text-muted">
@@ -187,10 +216,7 @@ export default async function SavedVideosPage() {
           </p>
         </div>
 
-        {/* ==================================================
-            EMPTY STATE
-        ================================================== */}
-
+        {/* Empty state */}
         {videos.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border px-6 py-16 text-center">
             <h2 className="text-lg font-semibold text-foreground">
@@ -204,11 +230,6 @@ export default async function SavedVideosPage() {
             </p>
           </div>
         ) : (
-
-          /* ==================================================
-             VIDEO GRID
-          ================================================== */
-
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {videos.map((video: any) => (
               <VideoCard
@@ -224,8 +245,17 @@ export default async function SavedVideosPage() {
                 createdAt={video.created_at}
                 level={video.level}
                 accessType={video.access_type}
-                categoryLabel={video.category_label || ""}
+
+                languageLabel={
+                  video.language_label || ""
+                }
+
+                categoryLabel={
+                  video.category_label || ""
+                }
+
                 locale={locale}
+
                 translations={{
                   noThumbnail:
                     translations["video.no_thumbnail"] ??
@@ -252,13 +282,16 @@ export default async function SavedVideosPage() {
                     "Free",
 
                   subscribersOnly:
-                    translations["video.subscribers_only"] ??
+                    translations[
+                      "video.subscribers_only"
+                    ] ??
                     "Subscribers only",
 
                   manage:
                     translations["video.manage"] ??
                     "Manage",
                 }}
+
                 levelTranslations={{
                   beginner:
                     translations["level.beginner"] ??

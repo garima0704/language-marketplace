@@ -27,11 +27,17 @@ type TranslationRow = {
   name: string | null;
 };
 
+type Locale = {
+  code: string;
+  name: string;
+  is_active: boolean;
+};
+
 export default async function AdminCategoriesPage() {
   const { supabase } = await requireAdmin();
 
   // --------------------------------------------------
-  // Fetch categories
+  // Categories
   // --------------------------------------------------
 
   const { data: categories, error: categoriesError } =
@@ -57,19 +63,20 @@ export default async function AdminCategoriesPage() {
     );
 
     return (
-      <div className="p-6">
-        <div className="rounded-xl border border-border bg-background p-6">
-          <p className="text-sm text-muted">
-            Unable to load categories.
-          </p>
+      <main className="w-full">
+        <div className="mx-auto max-w-7xl px-6 py-8">
+          <div className="rounded-xl border border-border bg-background p-6">
+            <p className="text-sm text-muted">
+              Unable to load categories.
+            </p>
+          </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   // --------------------------------------------------
-  // Fetch category translations from the main
-  // translations table.
+  // Category translations
   // --------------------------------------------------
 
   const {
@@ -82,11 +89,11 @@ export default async function AdminCategoriesPage() {
         translation_key,
         locale_code,
         value,
-        name
+        name,
+        is_active
       `
     )
-    .eq("section", "category")
-    .eq("is_active", true);
+    .eq("section", "category");
 
   if (translationsError) {
     console.error(
@@ -96,13 +103,13 @@ export default async function AdminCategoriesPage() {
   }
 
   // --------------------------------------------------
-  // Fetch supported locales
+  // Supported locales
   // --------------------------------------------------
 
   const { data: locales, error: localesError } =
     await supabase
       .from("locales")
-      .select("code, name")
+      .select("code, name, is_active")
       .order("name", { ascending: true });
 
   if (localesError) {
@@ -113,23 +120,14 @@ export default async function AdminCategoriesPage() {
   }
 
   const categoryList = (categories ?? []) as Category[];
+
   const translationList =
     (translationRows ?? []) as TranslationRow[];
-  const localeList = locales ?? [];
+
+  const localeList = (locales ?? []) as Locale[];
 
   // --------------------------------------------------
   // Build category translation keys
-  //
-  // Example:
-  //
-  // Technical
-  //   category.technical
-  //
-  // Business
-  //   category.technical.business
-  //
-  // Customer Service
-  //   category.technical.customer-service
   // --------------------------------------------------
 
   const categoryMap = new Map<string, Category>();
@@ -142,6 +140,7 @@ export default async function AdminCategoriesPage() {
 
   function getCategoryPath(category: Category): string {
     const parts: string[] = [];
+
     let current: Category | undefined = category;
 
     while (current) {
@@ -165,14 +164,16 @@ export default async function AdminCategoriesPage() {
   }
 
   // --------------------------------------------------
-  // Convert the new translations structure into the
-  // shape expected by CategoryTree.
+  // Convert translations into CategoryTree format
   // --------------------------------------------------
 
   const keyToCategoryId = new Map<string, string>();
 
   for (const [categoryId, translationKey] of categoryKeyMap) {
-    keyToCategoryId.set(translationKey, categoryId);
+    keyToCategoryId.set(
+      translationKey,
+      categoryId
+    );
   }
 
   const categoryTranslations: Translation[] = [];
@@ -202,39 +203,35 @@ export default async function AdminCategoriesPage() {
 
   const totalCategories = categoryList.length;
 
-  // Top-level master categories.
   const mainCategories = categoryList.filter(
     (category) => category.parent_id === null
   ).length;
 
-  // --------------------------------------------------
-  // Translation completeness
-  // --------------------------------------------------
-
-  const translationCounts = new Map<string, number>();
-
-  for (const translation of categoryTranslations) {
-    translationCounts.set(
-      translation.category_id,
-      (translationCounts.get(
-        translation.category_id
-      ) ?? 0) + 1
-    );
-  }
-
-  const fullyTranslated = categoryList.filter(
-    (category) =>
-      (translationCounts.get(category.id) ?? 0) >=
-      localeList.length
+  const activeCategories = categoryList.filter(
+    (category) => category.is_active
   ).length;
 
+  const inactiveCategories = categoryList.filter(
+    (category) => !category.is_active
+  ).length;
+
+  // --------------------------------------------------
+  // Active translation languages
+  // --------------------------------------------------
+
+  const activeLocales = localeList.filter(
+    (locale) => locale.is_active
+  );
+
+  const totalLanguages = activeLocales.length;
+
   return (
-    <div className="min-h-full bg-light-bg">
-      <div className="mx-auto max-w-7xl space-y-6 p-6">
+    <main className="w-full">
+      <div className="mx-auto max-w-7xl px-6 py-8">
 
         {/* Header */}
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">
               Categories
@@ -247,30 +244,32 @@ export default async function AdminCategoriesPage() {
 
           <Link
             href="/admin/categories/new"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-background transition hover:opacity-90"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-background transition hover:opacity-90"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 shrink-0" />
             Add Category
           </Link>
         </div>
 
         {/* Stats */}
 
-        <CategoryStats
-          totalCategories={totalCategories}
-          mainCategories={mainCategories}
-          fullyTranslated={fullyTranslated}
-          totalLanguages={localeList.length}
-        />
+        <div className="mb-6">
+          <CategoryStats
+            totalCategories={totalCategories}
+            mainCategories={mainCategories}
+            activeCategories={activeCategories}
+            inactiveCategories={inactiveCategories}
+          />
+        </div>
 
         {/* Category Tree */}
 
         <CategoryTree
           categories={categoryList}
           translations={categoryTranslations}
-          totalLanguages={localeList.length}
+          totalLanguages={totalLanguages}
         />
       </div>
-    </div>
+    </main>
   );
 }

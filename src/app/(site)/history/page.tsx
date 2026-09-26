@@ -3,9 +3,10 @@ import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "@/lib/translations";
+import { getCategoryLabel } from "@/lib/categories";
+import { getBrowseLanguages } from "@/lib/languages";
 
 import VideoCard from "@/components/VideoCard";
-import { getCategoryLabel } from "@/lib/categories";
 
 export default async function WatchHistoryPage() {
   const supabase = await createClient();
@@ -30,6 +31,24 @@ export default async function WatchHistoryPage() {
 
   const locale =
     cookieStore.get("niceconvo_locale")?.value ?? "en";
+
+  /* ========================================================
+     BROWSE LANGUAGES
+  ======================================================== */
+
+  const languages = await getBrowseLanguages(locale);
+
+  function getLanguageLabel(
+    languageCode: string | null
+  ) {
+    if (!languageCode) return "";
+
+    const language = languages.find(
+      (item) => item.code === languageCode
+    );
+
+    return language?.name ?? languageCode;
+  }
 
   /* ========================================================
      TRANSLATIONS
@@ -90,7 +109,7 @@ export default async function WatchHistoryPage() {
     manage:
       translations["video.manage"] ??
       "Manage",
-    
+
     view:
       translations["video.view"] ??
       "View",
@@ -135,6 +154,7 @@ export default async function WatchHistoryPage() {
         created_at,
         level,
         status,
+        language_code,
 
         categories (
           id,
@@ -207,6 +227,14 @@ export default async function WatchHistoryPage() {
     );
 
     /* ======================================================
+       LANGUAGE + CATEGORY LABELS
+    ====================================================== */
+
+    const languageLabel = getLanguageLabel(
+      video.language_code
+    );
+
+    /* ======================================================
        ADD VIDEO
     ====================================================== */
 
@@ -220,14 +248,21 @@ export default async function WatchHistoryPage() {
       created_at: video.created_at,
       level: video.level,
 
+      language_label: languageLabel,
       category_label: categoryLabel,
 
-      channel_name: channel?.channel_name ?? "",
-      channel_slug: channel?.slug ?? "",
-      channel_logo: channel?.logo_url ?? "",
+      channel_name:
+        channel?.channel_name ?? "",
+
+      channel_slug:
+        channel?.slug ?? "",
+
+      channel_logo:
+        channel?.logo_url ?? "",
 
       watched_at: item.watched_at,
-      progress_seconds: item.progress_seconds ?? 0,
+      progress_seconds:
+        item.progress_seconds ?? 0,
     });
   }
 
@@ -262,17 +297,19 @@ export default async function WatchHistoryPage() {
         {videos.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border px-6 py-16 text-center">
             <h2 className="text-lg font-semibold text-foreground">
-              {translations["watch_history.empty.title"] ??
-                "No watch history"}
+              {translations[
+                "watch_history.empty.title"
+              ] ?? "No watch history"}
             </h2>
 
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
-              {translations["watch_history.empty.description"] ??
+              {translations[
+                "watch_history.empty.description"
+              ] ??
                 "Videos you watch will appear here so you can easily continue watching them later."}
             </p>
           </div>
         ) : (
-
           /* ==================================================
              VIDEO GRID
           ================================================== */
@@ -292,7 +329,15 @@ export default async function WatchHistoryPage() {
                 createdAt={video.created_at}
                 level={video.level}
                 accessType={video.access_type}
-                categoryLabel={video.category_label || ""}
+
+                languageLabel={
+                  video.language_label || ""
+                }
+
+                categoryLabel={
+                  video.category_label || ""
+                }
+
                 locale={locale}
                 translations={videoTranslations}
                 levelTranslations={levelTranslations}

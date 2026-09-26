@@ -1,31 +1,96 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+
 import {
   Video,
   CheckCircle,
   FileText,
   Unlock,
   Lock,
-  Search,
+  Plus,
 } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/server";
-import {
-  formatTimeAgo,
-  getInitials,
-  getProfileName,
-} from "@/lib/utils";
+import { requireAdmin } from "@/lib/auth/admin";
+import { getCategoryLabel } from "@/lib/categories";
+import { getBrowseLanguages } from "@/lib/languages";
 
-export default async function AdminVideosPage() {
-  const supabase = await createClient();
+import VideoSection from "@/components/VideoSection";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
-  // ---------------------------------------------------------
-  // Fetch videos
-  // ---------------------------------------------------------
+type VideoRow = {
+  id: string;
+  channel_id: string;
+  title: string;
+  slug: string;
+  thumbnail_url: string | null;
+  access_type: "free" | "subscriber";
+  status: string;
+  view_count: number;
+  created_at: string;
+  published_at: string | null;
+  level: string | null;
+  language_code: string | null;
+  category_id: string | null;
+  video_id: string | null;
+  video_provider: string | null;
+};
 
-  const { data: videos } = await supabase
-    .from("videos")
-    .select(
-      `
+type Channel = {
+  id: string;
+  user_id: string;
+  channel_name: string;
+  slug: string;
+  logo_url: string | null;
+};
+
+type Seller = {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+};
+
+export default async function AdminVideosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    search?: string;
+  }>;
+}) {
+  const { supabase } = await requireAdmin();
+
+  const params = await searchParams;
+
+  const search =
+    typeof params.search === "string"
+      ? params.search.trim()
+      : "";
+
+  const cookieStore = await cookies();
+
+  const locale =
+    cookieStore.get("niceconvo_locale")?.value ??
+    "en";
+
+  const languages =
+    await getBrowseLanguages(locale);
+
+  function getLanguageLabel(
+    languageCode: string | null
+  ) {
+    if (!languageCode) return undefined;
+
+    const language = languages.find(
+      (item) => item.code === languageCode
+    );
+
+    return language?.name ?? languageCode;
+  }
+
+  const { data: videos, error: videosError } =
+    await supabase
+      .from("videos")
+      .select(`
         id,
         channel_id,
         title,
@@ -34,120 +99,214 @@ export default async function AdminVideosPage() {
         access_type,
         status,
         view_count,
-        created_at
-      `
-    )
-    .order("created_at", { ascending: false })
-    .limit(50);
+        created_at,
+        published_at,
+        level,
+        language_code,
+        category_id,
+        video_id,
+        video_provider
+      `)
+      .order("created_at", {
+        ascending: false,
+      });
 
-  // ---------------------------------------------------------
-  // Channel IDs
-  // ---------------------------------------------------------
+  if (videosError) {
+    console.error(
+      "VIDEOS FETCH ERROR:",
+      videosError
+    );
+
+    return (
+      <main className="w-full">
+        <div className="mx-auto max-w-7xl px-6 py-8">
+          <Card className="rounded-xl">
+            <div className="p-6">
+              <p className="text-sm text-muted">
+                Unable to load videos.
+              </p>
+            </div>
+          </Card>
+        </div>
+      </main>
+    );
+  }
+
+  const videoList =
+    (videos ?? []) as VideoRow[];
 
   const channelIds = [
     ...new Set(
-      (videos ?? []).map(
+      videoList.map(
         (video) => video.channel_id
       )
     ),
   ];
 
-  // ---------------------------------------------------------
-  // Fetch channels
-  // ---------------------------------------------------------
-
-  const { data: channels } =
+  const {
+    data: channels,
+    error: channelsError,
+  } =
     channelIds.length > 0
       ? await supabase
           .from("channels")
-          .select(
-            `
-              id,
-              user_id,
-              channel_name
-            `
-          )
+          .select(`
+            id,
+            user_id,
+            channel_name,
+            slug,
+            logo_url
+          `)
           .in("id", channelIds)
-      : { data: [] };
+      : {
+          data: [],
+          error: null,
+        };
 
-  // ---------------------------------------------------------
-  // Seller IDs
-  // ---------------------------------------------------------
+  if (channelsError) {
+    console.error(
+      "CHANNELS FETCH ERROR:",
+      channelsError
+    );
+  }
+
+  const channelList =
+    (channels ?? []) as Channel[];
 
   const sellerIds = [
     ...new Set(
-      (channels ?? []).map(
+      channelList.map(
         (channel) => channel.user_id
       )
     ),
   ];
 
-  // ---------------------------------------------------------
-  // Fetch sellers
-  // ---------------------------------------------------------
-
-  const { data: sellers } =
+  const {
+    data: sellers,
+    error: sellersError,
+  } =
     sellerIds.length > 0
       ? await supabase
           .from("profiles")
-          .select(
-            `
-              id,
-              username,
-              display_name,
-              avatar_url
-            `
-          )
+          .select(`
+            id,
+            username,
+            display_name
+          `)
           .in("id", sellerIds)
-      : { data: [] };
+      : {
+          data: [],
+          error: null,
+        };
 
-  // ---------------------------------------------------------
-  // Maps
-  // ---------------------------------------------------------
+  if (sellersError) {
+    console.error(
+      "SELLERS FETCH ERROR:",
+      sellersError
+    );
+  }
+
+  const sellerList =
+    (sellers ?? []) as Seller[];
 
   const channelMap = new Map(
-    (channels ?? []).map((channel) => [
+    channelList.map((channel) => [
       channel.id,
       channel,
     ])
   );
 
   const sellerMap = new Map(
-    (sellers ?? []).map((seller) => [
+    sellerList.map((seller) => [
       seller.id,
       seller,
     ])
   );
 
-  // ---------------------------------------------------------
-  // Video statistics
-  // ---------------------------------------------------------
+  /*
+   * Category labels
+   */
+  const categoryIds = [
+    ...new Set(
+      videoList
+        .map(
+          (video) => video.category_id
+        )
+        .filter(
+          (id): id is string =>
+            Boolean(id)
+        )
+    ),
+  ];
 
-  const totalVideos = videos?.length ?? 0;
+  const categoryLabelMap =
+    new Map<
+      string,
+      string | undefined
+    >();
+
+  if (categoryIds.length > 0) {
+    const categoryLabels =
+      await Promise.all(
+        categoryIds.map(
+          async (categoryId) => {
+            const label =
+              await getCategoryLabel(
+                categoryId,
+                locale
+              );
+
+            return [
+              categoryId,
+              label,
+            ] as const;
+          }
+        )
+      );
+
+    for (const [
+      categoryId,
+      label,
+    ] of categoryLabels) {
+      categoryLabelMap.set(
+        categoryId,
+        label
+      );
+    }
+  }
+
+  /*
+   * Stats
+   */
+  const totalVideos =
+    videoList.length;
 
   const publishedVideos =
-    videos?.filter(
+    videoList.filter(
       (video) =>
-        video.status === "published"
-    ).length ?? 0;
+        video.status ===
+        "published"
+    ).length;
 
   const draftVideos =
-    videos?.filter(
+    videoList.filter(
       (video) =>
         video.status === "draft"
-    ).length ?? 0;
+    ).length;
 
   const freeVideos =
-    videos?.filter(
+    videoList.filter(
       (video) =>
-        video.access_type === "free"
-    ).length ?? 0;
+        video.access_type ===
+        "free"
+    ).length;
 
   const subscriberVideos =
-    videos?.filter(
+    videoList.filter(
       (video) =>
-        video.access_type !== "free"
-    ).length ?? 0;
+        video.access_type ===
+        "subscriber"
+    ).length;
 
   const stats = [
     {
@@ -177,29 +336,110 @@ export default async function AdminVideosPage() {
     },
   ];
 
+  /*
+   * Prepare videos for VideoSection
+   */
+  const allListVideos =
+    videoList.map((video) => {
+      const channel =
+        channelMap.get(
+          video.channel_id
+        );
+
+      const seller = channel
+        ? sellerMap.get(
+            channel.user_id
+          )
+        : undefined;
+
+      return {
+        ...video,
+
+        channels: channel
+          ? {
+              id: channel.id,
+              user_id: channel.user_id,
+              channel_name: channel.channel_name,
+              slug: channel.slug,
+              logo_url: channel.logo_url,
+              profiles: null,
+            }
+          : null,
+
+        seller_name:
+          seller?.display_name ||
+          seller?.username ||
+          "Unknown seller",
+
+        seller_username:
+          seller?.username ?? null,
+
+        language_label:
+          getLanguageLabel(
+            video.language_code
+          ),
+
+        category_label:
+          video.category_id
+            ? categoryLabelMap.get(
+                video.category_id
+              ) ?? ""
+            : "",
+      };
+    });
+
+  /*
+   * Search
+   */
+  const searchLower =
+    search.toLowerCase();
+
+  const listVideos = search
+    ? allListVideos.filter(
+        (video) =>
+          [
+            video.title,
+            video.channel_name,
+            video.seller_name,
+            video.seller_username ??
+              "",
+          ].some((value) =>
+            value
+              .toLowerCase()
+              .includes(
+                searchLower
+              )
+          )
+      )
+    : allListVideos;
+
   return (
-    <main className="min-h-screen bg-light-bg">
+    <main className="w-full">
       <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* Header */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Videos
+            </h1>
 
-        {/* -------------------------------------------------
-            Header
-        ------------------------------------------------- */}
+            <p className="mt-1 text-sm text-muted">
+              Manage videos uploaded by
+              NiceConvo sellers.
+            </p>
+          </div>
 
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Videos
-          </h1>
-
-          <p className="mt-2 text-secondary">
-            Manage and monitor videos uploaded by NiceConvo sellers.
-          </p>
+          <Link
+            href="/admin/videos/new"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-background transition hover:opacity-90"
+          >
+            <Plus className="h-4 w-4 shrink-0" />
+            Add Video
+          </Link>
         </div>
 
-        {/* -------------------------------------------------
-            Stats
-        ------------------------------------------------- */}
-
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {/* Stats */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {stats.map((stat) => {
             const Icon = stat.icon;
 
@@ -210,11 +450,11 @@ export default async function AdminVideosPage() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-secondary">
+                    <p className="text-sm text-muted">
                       {stat.title}
                     </p>
 
-                    <p className="mt-2 text-2xl font-bold text-foreground">
+                    <p className="mt-2 text-2xl font-semibold text-foreground">
                       {stat.value}
                     </p>
                   </div>
@@ -228,229 +468,65 @@ export default async function AdminVideosPage() {
           })}
         </div>
 
-        {/* -------------------------------------------------
-            Search
-        ------------------------------------------------- */}
-
-        <div className="mt-8 rounded-xl border border-border bg-background p-4">
-          <div className="relative w-full md:max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-
-            <input
-              type="search"
-              placeholder="Search videos..."
-              className="h-10 w-full rounded-lg border border-border bg-background pl-10 pr-4 text-sm text-foreground outline-none placeholder:text-muted focus:border-foreground"
+        {/* Search */}
+        <div className="mt-8">
+          <form method="GET">
+            <Input
+              name="search"
+              defaultValue={search}
+              placeholder="Search videos, channels, or sellers..."
+              className="max-w-md"
             />
-          </div>
+          </form>
         </div>
 
-        {/* -------------------------------------------------
-            Videos Table
-        ------------------------------------------------- */}
+        {/* Videos */}
+        <div className="mt-6">
+          {listVideos.length === 0 ? (
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              <div className="col-span-full">
+                <Card className="rounded-xl border-dashed">
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <h3 className="text-lg font-semibold">
+                      {search
+                        ? "No videos found"
+                        : "No videos yet"}
+                    </h3>
 
-        <div className="mt-6 overflow-hidden rounded-xl border border-border bg-background">
+                    <p className="mt-2 text-muted-foreground">
+                      {search
+                        ? "Try changing your search."
+                        : "There are no videos uploaded by sellers yet."}
+                    </p>
 
-          <div className="border-b border-border px-6 py-5">
-            <h2 className="text-lg font-semibold text-foreground">
-              All Videos
-            </h2>
-
-            <p className="mt-1 text-sm text-muted">
-              Videos uploaded by NiceConvo sellers.
-            </p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-
-              <thead>
-                <tr className="border-b border-border text-left">
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Video
-                  </th>
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Channel
-                  </th>
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Access
-                  </th>
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Status
-                  </th>
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Views
-                  </th>
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Created
-                  </th>
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Action
-                  </th>
-
-                </tr>
-              </thead>
-
-              <tbody>
-
-                {videos && videos.length > 0 ? (
-                  videos.map((video) => {
-                    const channel = channelMap.get(
-                      video.channel_id
-                    );
-
-                    const seller = channel
-                      ? sellerMap.get(channel.user_id)
-                      : undefined;
-
-                    const sellerName =
-                      getProfileName(seller);
-
-                    const isFree =
-                      video.access_type === "free";
-
-                    return (
-                      <tr
-                        key={video.id}
-                        className="border-b border-border last:border-0"
-                      >
-
-                        {/* Video */}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-
-                            {video.thumbnail_url ? (
-                              <img
-                                src={video.thumbnail_url}
-                                alt={video.title}
-                                className="h-12 w-20 shrink-0 rounded-md object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-12 w-20 shrink-0 items-center justify-center rounded-md bg-muted-bg">
-                                <Video className="h-5 w-5 text-muted" />
-                              </div>
-                            )}
-
-                            <div className="min-w-0">
-                              <p className="max-w-xs truncate font-medium text-foreground">
-                                {video.title}
-                              </p>
-
-                              <p className="mt-0.5 max-w-xs truncate text-xs text-muted">
-                                /{video.slug}
-                              </p>
-                            </div>
-
-                          </div>
-                        </td>
-
-                        {/* Channel */}
-                        <td className="px-6 py-4">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-foreground">
-                              {channel?.channel_name || "—"}
-                            </p>
-
-                            {seller && (
-                              <div className="mt-1 flex items-center gap-2">
-
-                                {seller.avatar_url ? (
-                                  <img
-                                    src={seller.avatar_url}
-                                    alt={sellerName}
-                                    className="h-6 w-6 rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted-bg text-[10px] font-medium text-secondary">
-                                    {getInitials(
-                                      sellerName
-                                    )}
-                                  </div>
-                                )}
-
-                                <span className="text-xs text-muted">
-                                  {sellerName}
-                                </span>
-
-                              </div>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Access */}
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1.5 rounded-md bg-muted-bg px-2.5 py-1 text-xs font-medium text-secondary">
-                            {isFree ? (
-                              <>
-                                <Unlock className="h-3.5 w-3.5" />
-                                Free
-                              </>
-                            ) : (
-                              <>
-                                <Lock className="h-3.5 w-3.5" />
-                                Subscriber
-                              </>
-                            )}
-                          </span>
-                        </td>
-
-                        {/* Status */}
-                        <td className="px-6 py-4">
-                          <span className="rounded-md bg-muted-bg px-2.5 py-1 text-xs font-medium text-secondary">
-                            {video.status || "Unknown"}
-                          </span>
-                        </td>
-
-                        {/* Views */}
-                        <td className="px-6 py-4 text-secondary">
-                          {Number(
-                            video.view_count || 0
-                          ).toLocaleString()}
-                        </td>
-
-                        {/* Created */}
-                        <td className="px-6 py-4 text-muted">
-                          {formatTimeAgo(
-                            video.created_at
-                          )}
-                        </td>
-
-                        {/* Action */}
-                        <td className="px-6 py-4">
-                          <Link
-                            href={`/admin/videos/${video.id}`}
-                            className="text-sm font-medium text-secondary hover:text-foreground"
-                          >
-                            View
-                          </Link>
-                        </td>
-
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-6 py-10 text-center text-sm text-muted"
-                    >
-                      No videos found.
-                    </td>
-                  </tr>
-                )}
-
-              </tbody>
-
-            </table>
-          </div>
+                    {!search && (
+                      <div className="mt-6">
+                        <Link
+                          href="/admin/videos/new"
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-background transition hover:opacity-90"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add Video
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
+            </div>
+          ) : (
+            <VideoSection
+              videos={listVideos}
+              showManage
+              showView
+              showStatus
+              showSeller
+              manageHrefPrefix="/admin/videos"
+              locale={locale}
+              compact
+            />
+          )}
         </div>
-
       </div>
     </main>
   );

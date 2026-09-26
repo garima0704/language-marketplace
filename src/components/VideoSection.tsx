@@ -32,6 +32,9 @@ interface Video {
 
   language_label?: string;
   category_label?: string;
+
+  seller_name?: string;
+  seller_username?: string | null;
 }
 
 interface Props {
@@ -41,8 +44,11 @@ interface Props {
   showManage?: boolean;
   showView?: boolean;
   showStatus?: boolean;
+  showSeller?: boolean;
   compact?: boolean;
   locale?: string;
+
+  manageHrefPrefix?: string;
 }
 
 export default async function VideoSection({
@@ -52,8 +58,11 @@ export default async function VideoSection({
   showManage = false,
   showView = false,
   showStatus = false,
+  showSeller = false,
   compact = false,
   locale = "en",
+
+  manageHrefPrefix,
 }: Props) {
   const translations = await getTranslations(
     [
@@ -226,6 +235,18 @@ export default async function VideoSection({
                 showStatus={showStatus}
                 showManage={showManage}
                 showView={showView}
+                showSeller={showSeller}
+                sellerName={
+                  video.seller_name
+                }
+                sellerUsername={
+                  video.seller_username
+                }
+                manageHref={
+                  manageHrefPrefix
+                    ? `${manageHrefPrefix}/${video.id}`
+                    : undefined
+                }
                 locale={locale}
                 translations={
                   videoTranslations

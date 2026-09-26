@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+
 import { requireAdmin } from "@/lib/auth/admin";
 import CategoryForm from "@/components/admin/categories/CategoryForm";
 
@@ -22,14 +25,16 @@ export default async function NewCategoryPage() {
   // Fetch categories
   // --------------------------------------------------
 
-  const { data: categories, error: categoriesError } =
-    await supabase
-      .from("categories")
-      .select(
-        "id, parent_id, level, display_order, slug"
-      )
-      .order("level", { ascending: true })
-      .order("display_order", { ascending: true });
+  const {
+    data: categories,
+    error: categoriesError,
+  } = await supabase
+    .from("categories")
+    .select(
+      "id, parent_id, level, display_order, slug"
+    )
+    .order("level", { ascending: true })
+    .order("display_order", { ascending: true });
 
   if (categoriesError) {
     console.error(
@@ -52,11 +57,6 @@ export default async function NewCategoryPage() {
 
   // --------------------------------------------------
   // Build hierarchical translation keys
-  //
-  // Example:
-  // category.technical
-  // category.technical.business
-  // category.technical.business.customer-service
   // --------------------------------------------------
 
   const categoryKeyMap = new Map<string, string>();
@@ -65,6 +65,7 @@ export default async function NewCategoryPage() {
     category: Category
   ): string {
     const parts: string[] = [];
+
     let current: Category | undefined = category;
 
     while (current) {
@@ -74,7 +75,9 @@ export default async function NewCategoryPage() {
         break;
       }
 
-      current = categoryMap.get(current.parent_id);
+      current = categoryMap.get(
+        current.parent_id
+      );
 
       if (!current) {
         break;
@@ -122,7 +125,7 @@ export default async function NewCategoryPage() {
 
   for (const translation of (translations ??
     []) as TranslationRow[]) {
-    const categoryId = categoryKeyMap.entries().find(
+    const categoryId = [...categoryKeyMap.entries()].find(
       ([, translationKey]) =>
         translationKey === translation.translation_key
     )?.[0];
@@ -139,11 +142,6 @@ export default async function NewCategoryPage() {
 
   // --------------------------------------------------
   // Create children map
-  //
-  // parent_id -> children
-  //
-  // null -> top-level categories
-  // category A -> children of category A
   // --------------------------------------------------
 
   const childrenMap = new Map<
@@ -180,9 +178,8 @@ export default async function NewCategoryPage() {
       childrenMap.get(parentId) ?? [];
 
     for (const category of children) {
-      // Level 4 categories cannot have children,
-      // so they should not appear as selectable parents.
-      if (category.level < 4) {
+      // Level 3 categories cannot have children.
+      if (category.level < 3) {
         parentOptions.push({
           id: category.id,
           name:
@@ -193,8 +190,7 @@ export default async function NewCategoryPage() {
         });
       }
 
-      // Continue through the hierarchy
-      // to find children of this category.
+      // Continue through the hierarchy.
       addCategories(
         category.id,
         depth + 1
@@ -202,7 +198,7 @@ export default async function NewCategoryPage() {
     }
   }
 
-  // Start from top-level categories
+  // Start from top-level categories.
   addCategories(null, 0);
 
   // --------------------------------------------------
@@ -210,30 +206,44 @@ export default async function NewCategoryPage() {
   // --------------------------------------------------
 
   return (
-    <div className="min-h-full bg-light-bg">
-      <div className="mx-auto max-w-3xl p-6">
+    <main className="w-full">
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <div className="mx-auto max-w-3xl">
 
-        {/* Header */}
+          {/* Back */}
 
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-foreground">
-            Add Category
-          </h1>
+          <Link
+            href="/admin/categories"
+            className="inline-flex items-center gap-2 text-sm text-muted transition hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Categories
+          </Link>
 
-          <p className="mt-1 text-sm text-muted">
-            Create a new category in the master English
-            category structure.
-          </p>
+          {/* Header */}
+
+          <div className="mt-5">
+            <h1 className="text-xl font-semibold text-foreground">
+              Add Category
+            </h1>
+
+            <p className="mt-1 text-sm text-muted">
+              Create a new category in the master
+              English category structure.
+            </p>
+          </div>
+
+          {/* Form */}
+
+          <div className="mt-6">
+            <CategoryForm
+              mode="create"
+              parentOptions={parentOptions}
+            />
+          </div>
+
         </div>
-
-        {/* Form */}
-
-        <CategoryForm
-          mode="create"
-          parentOptions={parentOptions}
-        />
-
       </div>
-    </div>
+    </main>
   );
 }

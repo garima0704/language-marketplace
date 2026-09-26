@@ -92,9 +92,9 @@ export default function CategoryForm({
       return;
     }
 
-    if (calculatedLevel > 4) {
+    if (calculatedLevel > 3) {
       setError(
-        "Categories can only be nested up to 4 levels."
+        "Categories can only be nested up to 3 levels."
       );
       return;
     }
@@ -219,15 +219,17 @@ export default function CategoryForm({
               No Parent — Main Category
             </option>
 
-            {parentOptions.map((parent) => (
-              <option
-                key={parent.id}
-                value={parent.id}
-              >
-                {"— ".repeat(parent.level - 1)}
-                {parent.name}
-              </option>
-            ))}
+            {parentOptions
+              .filter((parent) => parent.level < 3)
+              .map((parent) => (
+                <option
+                  key={parent.id}
+                  value={parent.id}
+                >
+                  {"— ".repeat(parent.level - 1)}
+                  {parent.name}
+                </option>
+              ))}
           </select>
 
           <p className="mt-2 text-xs text-muted">
@@ -258,7 +260,7 @@ export default function CategoryForm({
 
           <p className="mt-2 text-xs text-muted">
             Level is calculated automatically from the parent.
-            Maximum level is 4.
+            Maximum level is 3.
           </p>
         </div>
 
@@ -341,7 +343,7 @@ export default function CategoryForm({
           Footer
       -------------------------------------------------- */}
 
-      <div className="flex flex-col-reverse gap-3 border-t border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-end">
+      <div className="flex flex-col-reverse gap-3 px-6 pt-0 pb-4 sm:flex-row sm:items-center sm:justify-end">
         <button
           type="button"
           onClick={() => router.push("/admin/categories")}
