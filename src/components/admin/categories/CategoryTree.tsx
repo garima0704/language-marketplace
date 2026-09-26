@@ -170,7 +170,7 @@ export default function CategoryTree({
     "all" | "active" | "inactive"
   >("all");
   const [level, setLevel] = useState<
-    "all" | "1" | "2" | "3" | "4"
+    "all" | "1" | "2" | "3"
   >("all");
 
   const tree = useMemo(
