@@ -122,6 +122,28 @@ export default async function AdminEditVideoPage({
     );
   }
 
+    const normalizedChannels = (channels ?? [])
+    .map((channel) => {
+      const profile = Array.isArray(channel.profiles)
+        ? channel.profiles[0]
+        : channel.profiles;
+
+      if (!profile) {
+        return null;
+      }
+
+      return {
+        id: channel.id,
+        channel_name: channel.channel_name,
+        user_id: channel.user_id,
+        profiles: profile,
+      };
+    })
+    .filter(
+      (channel): channel is NonNullable<typeof channel> =>
+        channel !== null
+    );
+
   // --------------------------------------------------
   // Load languages
   // --------------------------------------------------
@@ -387,7 +409,7 @@ export default async function AdminEditVideoPage({
 
       <AdminEditVideoForm
         video={video}
-        channels={channels ?? []}
+        channels={normalizedChannels}
         languages={localizedLanguages}
         languageRegions={languageRegions ?? []}
         categories={categoryList}
