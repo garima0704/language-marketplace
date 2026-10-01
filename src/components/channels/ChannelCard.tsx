@@ -36,7 +36,8 @@ interface ChannelCardProps {
   variant:
   | "subscription"
   | "seller-management"
-  | "seller-public";
+  | "seller-public"
+  | "admin";
   subscription?: SubscriptionInfo;
   showActions?: boolean;
 }
@@ -66,6 +67,9 @@ export default async function ChannelCard({
       "channel.manage_subscription",
       "channel.manage",
       "channel.view",
+      "channel.delete",
+      "channel.delete_confirm",
+      "channel.deleting",
     ],
     locale
   );

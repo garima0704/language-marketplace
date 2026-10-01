@@ -162,7 +162,7 @@ const getName = (category: Category) => {
 };
 
   const languagesList = useMemo(() => {
-    return [...languages].sort((a, b) =>
+    return [...(languages ?? [])].sort((a, b) =>
       a.name.localeCompare(b.name)
     );
   }, [languages]);

@@ -8,6 +8,7 @@ import {
   Unlock,
   Lock,
   Plus,
+  Search,
 } from "lucide-react";
 
 import { requireAdmin } from "@/lib/auth/admin";
@@ -16,7 +17,6 @@ import { getBrowseLanguages } from "@/lib/languages";
 
 import VideoSection from "@/components/VideoSection";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 
 type VideoRow = {
   id: string;
@@ -467,14 +467,19 @@ export default async function AdminVideosPage({
         </div>
 
         {/* Search */}
-        <div className="mt-8">
+        <div className="mt-8 rounded-xl border border-border bg-background p-4">
           <form method="GET">
-            <Input
-              name="search"
-              defaultValue={search}
-              placeholder="Search videos, channels, or sellers..."
-              className="max-w-md"
-            />
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+
+              <input
+                type="search"
+                name="search"
+                defaultValue={search}
+                placeholder="Search videos, channels, or sellers..."
+                className="h-10 w-full rounded-lg border border-border bg-background pl-10 pr-4 text-sm text-foreground outline-none placeholder:text-muted focus:border-foreground"
+              />
+            </div>
           </form>
         </div>
 
@@ -520,6 +525,7 @@ export default async function AdminVideosPage({
               showStatus
               showSeller
               manageHrefPrefix="/admin/videos"
+              manageHrefSuffix="/edit"
               locale={locale}
               compact
             />

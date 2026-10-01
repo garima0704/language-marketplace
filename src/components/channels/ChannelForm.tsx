@@ -12,12 +12,19 @@ import { Textarea } from "@/components/ui/textarea";
 
 interface Channel {
   id: string;
+  user_id: string;
   channel_name: string;
   slug: string;
   description: string | null;
   logo_url: string | null;
   banner_url: string | null;
   subscription_price: number;
+}
+
+interface Seller {
+  id: string;
+  username: string;
+  display_name: string;
 }
 
 interface ChannelFormTranslations {
@@ -65,7 +72,9 @@ interface ChannelFormTranslations {
 
 interface Props {
   mode: "create" | "edit";
+  adminMode?: boolean;
   userId?: string;
+  sellers?: Seller[];
   channel?: Channel;
   translations: ChannelFormTranslations;
 }
@@ -74,7 +83,9 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 export default function ChannelForm({
   mode,
+  adminMode = false,
   userId,
+  sellers = [],
   channel,
   translations,
 }: Props) {
@@ -83,6 +94,10 @@ export default function ChannelForm({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [selectedUserId, setSelectedUserId] = useState(
+    userId ?? channel?.user_id ?? ""
+  );
 
   const [channelName, setChannelName] = useState(
     channel?.channel_name ?? ""
@@ -362,6 +377,11 @@ export default function ChannelForm({
       return;
     }
 
+    if (adminMode && mode === "create" && !selectedUserId) {
+      setError("Please select a seller.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -382,7 +402,7 @@ export default function ChannelForm({
           await supabase
             .from("channels")
             .insert({
-              user_id: userId,
+              user_id: adminMode ? selectedUserId : userId,
               channel_name: trimmedName,
               slug: uniqueSlug,
               description: trimmedDescription,
@@ -435,7 +455,11 @@ export default function ChannelForm({
           }
         }
 
-        router.push(`/seller/channels/${channelId}`);
+        router.push(
+          adminMode
+            ? `/admin/channels/${channelId}`
+            : `/seller/channels/${channelId}`
+        );
         return;
       }
 
@@ -504,6 +528,48 @@ export default function ChannelForm({
 
   return (
     <div className="max-w-4xl space-y-10">
+      {/* Seller */}
+      {adminMode && (
+        <div className="rounded-2xl border border-border bg-background p-8 shadow-sm">
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-foreground">
+              Seller
+            </h2>
+
+            <p className="mt-1 text-sm text-muted">
+              Select the seller who will own this channel.
+            </p>
+          </div>
+
+          <div className="max-w-md space-y-2">
+            <Label htmlFor="seller">
+              Seller <span className="text-red-600">*</span>
+            </Label>
+
+            <select
+              id="seller"
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              disabled={loading}
+              className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:ring-1 focus:ring-foreground"
+            >
+              <option value="">Select a seller</option>
+
+              <option value={userId}>
+                My account (Admin)
+              </option>
+
+              {sellers
+                .filter((seller) => seller.id !== userId)
+                .map((seller) => (
+                  <option key={seller.id} value={seller.id}>
+                    {seller.display_name} (@{seller.username})
+                  </option>
+                ))}
+            </select>
+          </div>
+        </div>
+      )}
       {/* General Information */}
       <div className="rounded-2xl border border-border bg-background p-8 shadow-sm">
         <div className="mb-8">
@@ -754,7 +820,11 @@ export default function ChannelForm({
           type="button"
           variant="outline"
           disabled={loading}
-          onClick={() => router.push("/seller/channels")}
+          onClick={() =>
+            router.push(
+              adminMode ? "/admin/channels" : "/seller/channels"
+            )
+          }
         >
           {translations.cancel}
         </Button>

@@ -5,6 +5,9 @@ import {
   UserRound,
   ShieldCheck,
   Search,
+  Plus,
+  Eye,
+  Pencil,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
@@ -39,7 +42,8 @@ export default async function AdminUsersPage() {
     supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })
-      .eq("role", "buyer"),
+      .eq("role", "user")
+      .eq("is_creator", false),
 
     supabase
       .from("profiles")
@@ -92,21 +96,30 @@ export default async function AdminUsersPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-light-bg">
+    <main className="w-full">
       <div className="mx-auto max-w-7xl px-6 py-8">
-
         {/* -------------------------------------------------
             Header
         ------------------------------------------------- */}
 
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Users
-          </h1>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              Users
+            </h1>
 
-          <p className="mt-2 text-secondary">
-            Manage NiceConvo users and their account roles.
-          </p>
+            <p className="mt-2 text-secondary">
+              Manage NiceConvo users and their account roles.
+            </p>
+          </div>
+
+          <Link
+            href="/admin/users/new"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            Add User
+          </Link>
         </div>
 
         {/* -------------------------------------------------
@@ -148,8 +161,6 @@ export default async function AdminUsersPage() {
 
         <div className="mt-8 rounded-xl border border-border bg-background p-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
-            {/* Search */}
             <div className="relative w-full md:max-w-md">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
 
@@ -160,7 +171,6 @@ export default async function AdminUsersPage() {
               />
             </div>
 
-            {/* Role filter */}
             <select
               className="h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-foreground"
               defaultValue="all"
@@ -189,7 +199,6 @@ export default async function AdminUsersPage() {
         ------------------------------------------------- */}
 
         <div className="mt-6 overflow-hidden rounded-xl border border-border bg-background">
-
           <div className="border-b border-border px-6 py-5">
             <h2 className="text-lg font-semibold text-foreground">
               All Users
@@ -202,7 +211,6 @@ export default async function AdminUsersPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="px-6 py-3 font-medium text-secondary">
@@ -247,7 +255,6 @@ export default async function AdminUsersPage() {
                         {/* User */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-
                             {user.avatar_url ? (
                               <img
                                 src={user.avatar_url}
@@ -271,7 +278,6 @@ export default async function AdminUsersPage() {
                                 </p>
                               )}
                             </div>
-
                           </div>
                         </td>
 
@@ -292,14 +298,25 @@ export default async function AdminUsersPage() {
                           {formatTimeAgo(user.created_at)}
                         </td>
 
-                        {/* Action */}
+                        {/* Actions */}
                         <td className="px-6 py-4">
-                          <Link
-                            href={`/admin/users/${user.id}`}
-                            className="text-sm font-medium text-secondary hover:text-foreground"
-                          >
-                            View
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/admin/users/${user.id}`}
+                              className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm font-medium text-foreground transition hover:bg-light-bg"
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span>View</span>
+                            </Link>
+
+                            <Link
+                              href={`/admin/users/${user.id}/edit`}
+                              className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-background transition hover:opacity-90"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              <span>Edit</span>
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -315,11 +332,9 @@ export default async function AdminUsersPage() {
                   </tr>
                 )}
               </tbody>
-
             </table>
           </div>
         </div>
-
       </div>
     </main>
   );

@@ -1,78 +1,84 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import {
   Tv,
   CheckCircle,
   Video,
   AlertCircle,
   Search,
+  Plus,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
-import {
-  formatPrice,
-  formatTimeAgo,
-  getInitials,
-  getProfileName,
-} from "@/lib/utils";
+import { requireAdmin } from "@/lib/auth/admin";
 
-export default async function AdminChannelsPage() {
+import AdminChannelCard from "@/components/admin/channels/AdminChannelCard";
+
+interface AdminChannelsPageProps {
+  searchParams: Promise<{
+    search?: string;
+  }>;
+}
+
+export default async function AdminChannelsPage({
+  searchParams,
+}: AdminChannelsPageProps) {
+  await requireAdmin();
+
   const supabase = await createClient();
 
-  // ---------------------------------------------------------
-  // Fetch channels
-  // ---------------------------------------------------------
+  const params = await searchParams;
 
-  const { data: channels } = await supabase
+  const search =
+    typeof params.search === "string"
+      ? params.search.trim()
+      : "";
+
+  const normalizedSearch = search.toLowerCase();
+
+  const { data: channels, error } = await supabase
     .from("channels")
-    .select(
-      `
-        id,
-        user_id,
-        channel_name,
-        slug,
-        description,
-        logo_url,
-        subscription_price,
-        currency,
-        status,
-        created_at
-      `
-    )
-    .order("created_at", { ascending: false })
-    .limit(50);
+    .select(`
+      id,
+      user_id,
+      channel_name,
+      slug,
+      description,
+      logo_url,
+      banner_url,
+      subscription_price,
+      currency,
+      status,
+      created_at
+    `)
+    .order("created_at", {
+      ascending: false,
+    });
 
-  // ---------------------------------------------------------
-  // Seller IDs
-  // ---------------------------------------------------------
+  if (error) {
+    throw new Error(error.message);
+  }
 
   const sellerIds = [
     ...new Set(
-      (channels ?? []).map((channel) => channel.user_id)
+      (channels ?? []).map(
+        (channel) => channel.user_id
+      )
     ),
   ];
-
-  // ---------------------------------------------------------
-  // Fetch sellers
-  // ---------------------------------------------------------
 
   const { data: sellers } =
     sellerIds.length > 0
       ? await supabase
           .from("profiles")
-          .select(
-            `
-              id,
-              username,
-              display_name,
-              avatar_url
-            `
-          )
+          .select(`
+            id,
+            username,
+            display_name,
+            avatar_url
+          `)
           .in("id", sellerIds)
       : { data: [] };
-
-  // ---------------------------------------------------------
-  // Fetch video counts
-  // ---------------------------------------------------------
 
   const channelIds = (channels ?? []).map(
     (channel) => channel.id
@@ -86,10 +92,6 @@ export default async function AdminChannelsPage() {
           .in("channel_id", channelIds)
       : { data: [] };
 
-  // ---------------------------------------------------------
-  // Maps
-  // ---------------------------------------------------------
-
   const sellerMap = new Map(
     (sellers ?? []).map((seller) => [
       seller.id,
@@ -97,18 +99,18 @@ export default async function AdminChannelsPage() {
     ])
   );
 
-  const videoCountByChannel = new Map<string, number>();
+  const videoCountByChannel = new Map<
+    string,
+    number
+  >();
 
   (videos ?? []).forEach((video) => {
     videoCountByChannel.set(
       video.channel_id,
-      (videoCountByChannel.get(video.channel_id) ?? 0) + 1
+      (videoCountByChannel.get(video.channel_id) ??
+        0) + 1
     );
   });
-
-  // ---------------------------------------------------------
-  // Channel statistics
-  // ---------------------------------------------------------
 
   const totalChannels = channels?.length ?? 0;
 
@@ -119,13 +121,49 @@ export default async function AdminChannelsPage() {
         channel.status === "active"
     ).length ?? 0;
 
-  const channelsWithVideos = (channels ?? []).filter(
+  const channelsWithVideos = (
+    channels ?? []
+  ).filter(
     (channel) =>
-      (videoCountByChannel.get(channel.id) ?? 0) > 0
+      (videoCountByChannel.get(channel.id) ?? 0) >
+      0
   ).length;
 
   const channelsWithoutVideos =
     totalChannels - channelsWithVideos;
+
+  const filteredChannels = normalizedSearch
+    ? (channels ?? []).filter((channel) => {
+        const seller = sellerMap.get(
+          channel.user_id
+        );
+
+        const channelName =
+          channel.channel_name?.toLowerCase() ?? "";
+
+        const slug =
+          channel.slug?.toLowerCase() ?? "";
+
+        const sellerName =
+          seller?.display_name?.toLowerCase() ?? "";
+
+        const sellerUsername =
+          seller?.username?.toLowerCase() ?? "";
+
+        return (
+          channelName.includes(
+            normalizedSearch
+          ) ||
+          slug.includes(normalizedSearch) ||
+          sellerName.includes(
+            normalizedSearch
+          ) ||
+          sellerUsername.includes(
+            normalizedSearch
+          )
+        );
+      })
+    : channels ?? [];
 
   const stats = [
     {
@@ -151,28 +189,31 @@ export default async function AdminChannelsPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-light-bg">
+    <main className="w-full">
       <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* Header */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Channels
+            </h1>
 
-        {/* -------------------------------------------------
-            Header
-        ------------------------------------------------- */}
+            <p className="mt-1 text-sm text-muted">
+              Manage seller channels across NiceConvo.
+            </p>
+          </div>
 
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Channels
-          </h1>
-
-          <p className="mt-2 text-secondary">
-            Manage seller channels across NiceConvo.
-          </p>
+          <Link
+            href="/admin/channels/new"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-background transition hover:opacity-90"
+          >
+            <Plus className="h-4 w-4 shrink-0" />
+            Create Channel
+          </Link>
         </div>
 
-        {/* -------------------------------------------------
-            Stats
-        ------------------------------------------------- */}
-
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Stats */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => {
             const Icon = stat.icon;
 
@@ -183,11 +224,11 @@ export default async function AdminChannelsPage() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-secondary">
+                    <p className="text-sm text-muted">
                       {stat.title}
                     </p>
 
-                    <p className="mt-2 text-2xl font-bold text-foreground">
+                    <p className="mt-2 text-2xl font-semibold text-foreground">
                       {stat.value}
                     </p>
                   </div>
@@ -201,212 +242,64 @@ export default async function AdminChannelsPage() {
           })}
         </div>
 
-        {/* -------------------------------------------------
-            Search
-        ------------------------------------------------- */}
-
+        {/* Search */}
         <div className="mt-8 rounded-xl border border-border bg-background p-4">
-          <div className="relative w-full md:max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <form method="GET">
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
 
-            <input
-              type="search"
-              placeholder="Search channels..."
-              className="h-10 w-full rounded-lg border border-border bg-background pl-10 pr-4 text-sm text-foreground outline-none placeholder:text-muted focus:border-foreground"
-            />
-          </div>
+              <input
+                type="search"
+                name="search"
+                defaultValue={search}
+                placeholder="Search channels or sellers..."
+                className="h-10 w-full rounded-lg border border-border bg-background pl-10 pr-4 text-sm text-foreground outline-none placeholder:text-muted focus:border-foreground"
+              />
+            </div>
+          </form>
         </div>
 
-        {/* -------------------------------------------------
-            Channels Table
-        ------------------------------------------------- */}
+        {/* Results */}
+        <div className="mt-6">
+          {filteredChannels.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-background py-16 text-center">
+              <p className="text-sm font-medium text-foreground">
+                {search
+                  ? "No channels found"
+                  : "No channels yet"}
+              </p>
 
-        <div className="mt-6 overflow-hidden rounded-xl border border-border bg-background">
+              <p className="mt-1 text-sm text-muted">
+                {search
+                  ? "Try a different search."
+                  : "Create a channel to get started."}
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {filteredChannels.map((channel) => {
+                const seller = sellerMap.get(
+                  channel.user_id
+                );
 
-          <div className="border-b border-border px-6 py-5">
-            <h2 className="text-lg font-semibold text-foreground">
-              All Channels
-            </h2>
-
-            <p className="mt-1 text-sm text-muted">
-              Channels created by NiceConvo sellers.
-            </p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-
-              <thead>
-                <tr className="border-b border-border text-left">
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Channel
-                  </th>
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Seller
-                  </th>
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Subscription
-                  </th>
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Videos
-                  </th>
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Created
-                  </th>
-
-                  <th className="px-6 py-3 font-medium text-secondary">
-                    Action
-                  </th>
-
-                </tr>
-              </thead>
-
-              <tbody>
-
-                {channels && channels.length > 0 ? (
-                  channels.map((channel) => {
-                    const seller = sellerMap.get(
-                      channel.user_id
-                    );
-
-                    const sellerName =
-                      getProfileName(seller);
-
-                    const videoCount =
-                      videoCountByChannel.get(
-                        channel.id
-                      ) ?? 0;
-
-                    return (
-                      <tr
-                        key={channel.id}
-                        className="border-b border-border last:border-0"
-                      >
-
-                        {/* Channel */}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-
-                            {channel.logo_url ? (
-                              <img
-                                src={channel.logo_url}
-                                alt={channel.channel_name}
-                                className="h-10 w-10 rounded-lg object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted-bg text-sm font-medium text-secondary">
-                                {getInitials(
-                                  channel.channel_name
-                                )}
-                              </div>
-                            )}
-
-                            <div className="min-w-0">
-                              <p className="truncate font-medium text-foreground">
-                                {channel.channel_name}
-                              </p>
-
-                              <p className="mt-0.5 truncate text-xs text-muted">
-                                /{channel.slug}
-                              </p>
-                            </div>
-
-                          </div>
-                        </td>
-
-                        {/* Seller */}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-
-                            {seller?.avatar_url ? (
-                              <img
-                                src={seller.avatar_url}
-                                alt={sellerName}
-                                className="h-8 w-8 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted-bg text-xs font-medium text-secondary">
-                                {getInitials(
-                                  sellerName
-                                )}
-                              </div>
-                            )}
-
-                            <div className="min-w-0">
-                              <p className="truncate text-sm text-foreground">
-                                {sellerName}
-                              </p>
-
-                              {seller?.username && (
-                                <p className="truncate text-xs text-muted">
-                                  @{seller.username}
-                                </p>
-                              )}
-                            </div>
-
-                          </div>
-                        </td>
-
-                        {/* Subscription */}
-                        <td className="px-6 py-4 font-medium text-foreground">
-                          {formatPrice(
-                            channel.subscription_price,
-                            channel.currency
-                          ) ?? "Free"}
-                          <span className="ml-1 text-xs font-normal text-muted">
-                            / month
-                          </span>
-                        </td>
-
-                        {/* Videos */}
-                        <td className="px-6 py-4">
-                          <span className="rounded-md bg-muted-bg px-2.5 py-1 text-xs font-medium text-secondary">
-                            {videoCount}
-                          </span>
-                        </td>
-
-                        {/* Created */}
-                        <td className="px-6 py-4 text-muted">
-                          {formatTimeAgo(
-                            channel.created_at
-                          )}
-                        </td>
-
-                        {/* Action */}
-                        <td className="px-6 py-4">
-                          <Link
-                            href={`/admin/channels/${channel.id}`}
-                            className="text-sm font-medium text-secondary hover:text-foreground"
-                          >
-                            View
-                          </Link>
-                        </td>
-
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-6 py-10 text-center text-sm text-muted"
-                    >
-                      No channels found.
-                    </td>
-                  </tr>
-                )}
-
-              </tbody>
-
-            </table>
-          </div>
+                return (
+                  <AdminChannelCard
+                    key={channel.id}
+                    channel={{
+                      ...channel,
+                      subscriber_count: 0,
+                      video_count:
+                        videoCountByChannel.get(
+                          channel.id
+                        ) ?? 0,
+                    }}
+                    seller={seller}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
-
       </div>
     </main>
   );

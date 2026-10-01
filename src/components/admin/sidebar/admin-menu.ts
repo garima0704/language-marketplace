@@ -17,11 +17,6 @@ export const adminMenu = [
         label: "Users",
         icon: "Users",
       },
-      {
-        href: "/admin/sellers",
-        label: "Sellers",
-        icon: "UserCheck",
-      },
     ],
   },
 

@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 interface DeleteChannelButtonProps {
   channelId: string;
   channelName: string;
+  adminMode?: boolean;
 }
 
 export default function DeleteChannelButton({
   channelId,
   channelName,
+  adminMode = false,
 }: DeleteChannelButtonProps) {
   const router = useRouter();
   const supabase = createClient();
@@ -38,7 +40,9 @@ export default function DeleteChannelButton({
       return;
     }
 
-    router.push("/seller/channels");
+    router.push(
+      adminMode ? "/admin/channels" : "/seller/channels"
+    );
     router.refresh();
   };
 

@@ -49,6 +49,7 @@ interface Props {
   locale?: string;
 
   manageHrefPrefix?: string;
+  manageHrefSuffix?: string;
 }
 
 export default async function VideoSection({
@@ -63,6 +64,7 @@ export default async function VideoSection({
   locale = "en",
 
   manageHrefPrefix,
+  manageHrefSuffix,
 }: Props) {
   const translations = await getTranslations(
     [
@@ -244,7 +246,9 @@ export default async function VideoSection({
                 }
                 manageHref={
                   manageHrefPrefix
-                    ? `${manageHrefPrefix}/${video.id}`
+                    ? `${manageHrefPrefix}/${video.id}${
+                        manageHrefSuffix ?? ""
+                      }`
                     : undefined
                 }
                 locale={locale}
