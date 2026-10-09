@@ -55,6 +55,7 @@ interface LanguagesSectionProps {
     name: string;
   }[];
   translations: LanguagesSectionTranslations;
+  readOnly?: boolean;
 }
 
 export default function LanguagesSection({
@@ -62,6 +63,7 @@ export default function LanguagesSection({
   languages,
   availableLanguages,
   translations,
+  readOnly = false,
 }: LanguagesSectionProps) {
   const [open, setOpen] = useState(false);
 
@@ -89,9 +91,11 @@ export default function LanguagesSection({
             </p>
           </div>
 
-          <Button onClick={() => setOpen(true)}>
-            {translations.edit_languages}
-          </Button>
+          {!readOnly && (
+            <Button onClick={() => setOpen(true)}>
+              {translations.edit_languages}
+            </Button>
+          )}
         </div>
 
         {languages.length > 0 ? (
@@ -148,32 +152,34 @@ export default function LanguagesSection({
         )}
       </Card>
 
-      <EditLanguagesDialog
-        open={open}
-        onOpenChange={setOpen}
-        profileId={profileId}
-        languages={languages}
-        availableLanguages={availableLanguages}
-        translations={{
-          title: translations.dialog_title,
-          description: translations.dialog_description,
-          language: translations.language,
-          proficiency: translations.proficiency,
-          native_language: translations.native_language,
-          native: translations.native,
-          remove_language: translations.remove_language,
-          no_languages: translations.no_languages_dialog,
-          add_language: translations.add_language,
-          cancel: translations.cancel,
-          saving: translations.saving,
-          save_changes: translations.save_changes,
-          beginner: translations.beginner,
-          intermediate: translations.intermediate,
-          advanced: translations.advanced,
-          fluent: translations.fluent,
-          save_error: translations.save_error,
-        }}
-      />
+      {!readOnly && (
+        <EditLanguagesDialog
+          open={open}
+          onOpenChange={setOpen}
+          profileId={profileId}
+          languages={languages}
+          availableLanguages={availableLanguages}
+          translations={{
+            title: translations.dialog_title,
+            description: translations.dialog_description,
+            language: translations.language,
+            proficiency: translations.proficiency,
+            native_language: translations.native_language,
+            native: translations.native,
+            remove_language: translations.remove_language,
+            no_languages: translations.no_languages_dialog,
+            add_language: translations.add_language,
+            cancel: translations.cancel,
+            saving: translations.saving,
+            save_changes: translations.save_changes,
+            beginner: translations.beginner,
+            intermediate: translations.intermediate,
+            advanced: translations.advanced,
+            fluent: translations.fluent,
+            save_error: translations.save_error,
+          }}
+        />
+      )}
     </>
   );
 }

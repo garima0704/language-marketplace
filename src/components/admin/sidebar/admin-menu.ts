@@ -114,9 +114,9 @@ export const adminMenu = [
         icon: "Globe",
       },
       {
-        href: "/admin/settings",
-        label: "Settings",
-        icon: "Settings",
+        href: "/admin/pages",
+        label: "Pages",
+        icon: "FileText",
       },
     ],
   },

@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
 
 import { getTranslations } from "@/lib/translations";
+import FooterLinks from "./FooterLinks";
 
 export default async function Footer() {
   const cookieStore = await cookies();
@@ -24,44 +24,17 @@ export default async function Footer() {
   return (
     <footer className="mt-12 bg-background">
       <div className="mx-auto max-w-7xl px-6 py-8">
-        <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm">
-          <Link
-            href="/about"
-            className="text-muted transition hover:text-foreground"
-          >
-            {translations["footer.about"] ?? "About"}
-          </Link>
-
-          <Link
-            href="/contact"
-            className="text-muted transition hover:text-foreground"
-          >
-            {translations["footer.contact"] ?? "Contact"}
-          </Link>
-
-          <Link
-            href="/privacy-policy"
-            className="text-muted transition hover:text-foreground"
-          >
-            {translations["footer.privacy_policy"] ??
-              "Privacy Policy"}
-          </Link>
-
-          <Link
-            href="/cookie-policy"
-            className="text-muted transition hover:text-foreground"
-          >
-            {translations["footer.cookie_policy"] ??
-              "Cookie Policy"}
-          </Link>
-
-          <Link
-            href="/terms"
-            className="text-muted transition hover:text-foreground"
-          >
-            {translations["footer.terms"] ?? "Terms"}
-          </Link>
-        </div>
+        <FooterLinks
+          translations={{
+            about: translations["footer.about"] ?? "About",
+            contact: translations["footer.contact"] ?? "Contact",
+            privacyPolicy:
+              translations["footer.privacy_policy"] ?? "Privacy Policy",
+            cookiePolicy:
+              translations["footer.cookie_policy"] ?? "Cookie Policy",
+            terms: translations["footer.terms"] ?? "Terms",
+          }}
+        />
 
         <p className="mt-6 text-sm text-muted">
           © 2026 NiceConvo.{" "}

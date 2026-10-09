@@ -69,11 +69,13 @@ interface BasicDetailsTranslations {
 interface BasicDetailsSectionProps {
   profile: Profile;
   translations: BasicDetailsTranslations;
+  readOnly?: boolean;
 }
 
 export default function BasicDetailsSection({
   profile,
   translations,
+  readOnly = false,
 }: BasicDetailsSectionProps) {
   const [open, setOpen] = useState(false);
 
@@ -166,9 +168,11 @@ export default function BasicDetailsSection({
               </div>
             </div>
 
-            <Button onClick={() => setOpen(true)}>
-              {translations.edit_profile}
-            </Button>
+            {!readOnly && (
+              <Button onClick={() => setOpen(true)}>
+                {translations.edit_profile}
+              </Button>
+            )}
           </div>
 
           {/* Bio */}
@@ -193,57 +197,59 @@ export default function BasicDetailsSection({
         </div>
       </Card>
 
-      <EditProfileDialog
-        open={open}
-        onOpenChange={setOpen}
-        profile={profile}
-        translations={{
-          title: translations.edit_basic_details,
-          change_photo: translations.change_photo,
-          uploading: translations.uploading,
-          image_formats: translations.image_formats,
-          max_file_size: translations.max_file_size,
+      {!readOnly && (
+        <EditProfileDialog
+          open={open}
+          onOpenChange={setOpen}
+          profile={profile}
+          translations={{
+            title: translations.edit_basic_details,
+            change_photo: translations.change_photo,
+            uploading: translations.uploading,
+            image_formats: translations.image_formats,
+            max_file_size: translations.max_file_size,
 
-          display_name: translations.display_name,
-          display_name_required:
-            translations.display_name_required,
+            display_name: translations.display_name,
+            display_name_required:
+              translations.display_name_required,
 
-          username: translations.username,
-          username_locked_description:
-            translations.username_locked_description,
+            username: translations.username,
+            username_locked_description:
+              translations.username_locked_description,
 
-          country: translations.country,
-          country_placeholder:
-            translations.country_placeholder,
+            country: translations.country,
+            country_placeholder:
+              translations.country_placeholder,
 
-          date_of_birth:
-            translations.date_of_birth,
+            date_of_birth:
+              translations.date_of_birth,
 
-          gender: translations.gender,
-          select_gender:
-            translations.select_gender,
-          gender_female:
-            translations.gender_female,
-          gender_male:
-            translations.gender_male,
+            gender: translations.gender,
+            select_gender:
+              translations.select_gender,
+            gender_female:
+              translations.gender_female,
+            gender_male:
+              translations.gender_male,
 
-          bio: translations.bio,
-          bio_placeholder:
-            translations.bio_placeholder,
+            bio: translations.bio,
+            bio_placeholder:
+              translations.bio_placeholder,
 
-          cancel: translations.cancel,
-          saving: translations.saving,
-          save_changes:
-            translations.save_changes,
+            cancel: translations.cancel,
+            saving: translations.saving,
+            save_changes:
+              translations.save_changes,
 
-          max_file_size_error:
-            translations.max_file_size_error,
-          invalid_image_type:
-            translations.invalid_image_type,
-          photo_upload_error:
-            translations.photo_upload_error,
-        }}
-      />
+            max_file_size_error:
+              translations.max_file_size_error,
+            invalid_image_type:
+              translations.invalid_image_type,
+            photo_upload_error:
+              translations.photo_upload_error,
+          }}
+        />
+      )}
     </>
   );
 }

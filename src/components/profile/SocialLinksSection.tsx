@@ -35,6 +35,7 @@ interface SocialLinksSectionProps {
   socialLinks: SocialLink[];
   availablePlatforms: SocialPlatform[];
   translations: SocialLinksSectionTranslations;
+  readOnly?: boolean;
 }
 
 export default function SocialLinksSection({
@@ -42,6 +43,7 @@ export default function SocialLinksSection({
   socialLinks,
   availablePlatforms,
   translations,
+  readOnly = false,
 }: SocialLinksSectionProps) {
   const [open, setOpen] = useState(false);
 
@@ -59,9 +61,11 @@ export default function SocialLinksSection({
             </p>
           </div>
 
-          <Button onClick={() => setOpen(true)}>
-            {translations.edit_social_links}
-          </Button>
+          {!readOnly && (
+            <Button onClick={() => setOpen(true)}>
+              {translations.edit_social_links}
+            </Button>
+          )}
         </div>
 
         {socialLinks.length > 0 ? (
@@ -103,13 +107,15 @@ export default function SocialLinksSection({
         )}
       </Card>
 
-      <EditSocialLinksDialog
-        open={open}
-        onOpenChange={setOpen}
-        profileId={profileId}
-        socialLinks={socialLinks}
-        availablePlatforms={availablePlatforms}
-      />
+      {!readOnly && (
+        <EditSocialLinksDialog
+          open={open}
+          onOpenChange={setOpen}
+          profileId={profileId}
+          socialLinks={socialLinks}
+          availablePlatforms={availablePlatforms}
+        />
+      )}
     </>
   );
 }

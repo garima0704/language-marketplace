@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-import UserForm from "./UserForm";
+import UserForm from "@/components/admin/users/UserForm";
 
 export default function AdminCreateUserPage() {
   return (

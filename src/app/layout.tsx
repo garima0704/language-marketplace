@@ -3,7 +3,10 @@ import { Poppins, Inter, Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -29,7 +32,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("h-full", "antialiased", poppins.variable, inter.variable, "font-sans", geist.variable)}
+      className={cn(
+        "h-full",
+        "antialiased",
+        poppins.variable,
+        inter.variable,
+        "font-sans",
+        geist.variable
+      )}
     >
       <body className="min-h-screen bg-white text-gray-900">
         {children}

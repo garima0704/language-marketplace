@@ -1,25 +1,27 @@
-import { createClient } from "@/lib/supabase/server";
-
-import {
-  Users,
-  UserCheck,
-  Tv,
-  Video,
-  CreditCard,
-  DollarSign,
-  Wallet,
-  Clock,
-  AlertCircle,
-  ArrowRight,
-} from "lucide-react";
-
 import Link from "next/link";
 import {
-  formatTimeAgo,
+  AlertCircle,
+  ArrowRight,
+  CreditCard,
+  DollarSign,
+  Tv,
+  UserCheck,
+  Users,
+  Video,
+  Wallet,
+  Clock,
+} from "lucide-react";
+
+import { requireAdmin } from "@/lib/auth/admin";
+import { createClient } from "@/lib/supabase/server";
+import {
   formatPrice,
+  formatTimeAgo,
 } from "@/lib/utils";
 
 export default async function AdminDashboardPage() {
+  await requireAdmin();
+
   const supabase = await createClient();
 
   // ---------------------------------------------------------
@@ -36,40 +38,69 @@ export default async function AdminDashboardPage() {
     payoutsResult,
     pendingPayoutsResult,
   ] = await Promise.all([
+    // Total users — admins excluded
     supabase
       .from("profiles")
-      .select("id", { count: "exact", head: true }),
+      .select("id", {
+        count: "exact",
+        head: true,
+      })
+      .eq("role", "user"),
 
+    // Sellers — admins excluded
     supabase
       .from("profiles")
-      .select("id", { count: "exact", head: true })
+      .select("id", {
+        count: "exact",
+        head: true,
+      })
+      .eq("role", "user")
       .eq("is_creator", true),
 
+    // Channels
     supabase
       .from("channels")
-      .select("id", { count: "exact", head: true }),
+      .select("id", {
+        count: "exact",
+        head: true,
+      }),
 
+    // Videos
     supabase
       .from("videos")
-      .select("id", { count: "exact", head: true }),
+      .select("id", {
+        count: "exact",
+        head: true,
+      }),
 
+    // Active subscriptions
     supabase
       .from("subscriptions")
-      .select("id", { count: "exact", head: true })
+      .select("id", {
+        count: "exact",
+        head: true,
+      })
       .eq("status", "active"),
 
+    // Payments
     supabase
       .from("payments")
-      .select("gross_amount, creator_amount"),
+      .select(
+        "gross_amount, creator_amount, payment_status"
+      ),
 
+    // Completed payouts
     supabase
       .from("payouts")
       .select("amount")
       .eq("status", "completed"),
 
+    // Pending payouts
     supabase
       .from("payouts")
-      .select("amount", { count: "exact" })
+      .select("amount", {
+        count: "exact",
+      })
       .eq("status", "pending"),
   ]);
 
@@ -77,19 +108,29 @@ export default async function AdminDashboardPage() {
   // Financial totals
   // ---------------------------------------------------------
 
+  const successfulPayments =
+    paymentsResult.data?.filter(
+      (payment) =>
+        payment.payment_status === "paid" ||
+        payment.payment_status === "completed" ||
+        payment.payment_status === "succeeded"
+    ) ?? [];
+
   const totalRevenue =
-    paymentsResult.data?.reduce(
+    successfulPayments.reduce(
       (total, payment) =>
-        total + Number(payment.gross_amount || 0),
+        total +
+        Number(payment.gross_amount || 0),
       0
-    ) ?? 0;
+    );
 
   const creatorEarnings =
-    paymentsResult.data?.reduce(
+    successfulPayments.reduce(
       (total, payment) =>
-        total + Number(payment.creator_amount || 0),
+        total +
+        Number(payment.creator_amount || 0),
       0
-    ) ?? 0;
+    );
 
   const completedPayouts =
     payoutsResult.data?.reduce(
@@ -106,7 +147,7 @@ export default async function AdminDashboardPage() {
     ) ?? 0;
 
   // ---------------------------------------------------------
-  // Stats cards
+  // Stats
   // ---------------------------------------------------------
 
   const stats = [
@@ -137,17 +178,23 @@ export default async function AdminDashboardPage() {
     },
     {
       title: "Total Revenue",
-      value: formatPrice(totalRevenue, "USD") ?? "$0.00",
+      value:
+        formatPrice(totalRevenue, "USD") ??
+        "$0.00",
       icon: DollarSign,
     },
     {
       title: "Creator Earnings",
-      value: formatPrice(creatorEarnings, "USD") ?? "$0.00",
+      value:
+        formatPrice(creatorEarnings, "USD") ??
+        "$0.00",
       icon: Wallet,
     },
     {
       title: "Pending Payouts",
-      value: formatPrice(pendingPayouts, "USD") ?? "$0.00",
+      value:
+        formatPrice(pendingPayouts, "USD") ??
+        "$0.00",
       icon: Clock,
     },
   ];
@@ -162,55 +209,82 @@ export default async function AdminDashboardPage() {
     recentVideosResult,
     recentSubscriptionsResult,
   ] = await Promise.all([
+    // Recent users — admins excluded
     supabase
       .from("profiles")
-      .select("id, username, display_name, created_at")
-      .order("created_at", { ascending: false })
+      .select(
+        "id, username, display_name, created_at"
+      )
+      .eq("role", "user")
+      .order("created_at", {
+        ascending: false,
+      })
       .limit(3),
 
     supabase
       .from("channels")
-      .select("id, channel_name, created_at")
-      .order("created_at", { ascending: false })
+      .select(
+        "id, channel_name, created_at"
+      )
+      .order("created_at", {
+        ascending: false,
+      })
       .limit(3),
 
     supabase
       .from("videos")
       .select("id, title, created_at")
-      .order("created_at", { ascending: false })
+      .order("created_at", {
+        ascending: false,
+      })
       .limit(3),
 
     supabase
       .from("subscriptions")
-      .select("id, created_at, status")
-      .order("created_at", { ascending: false })
+      .select(
+        "id, created_at, status"
+      )
+      .order("created_at", {
+        ascending: false,
+      })
       .limit(3),
   ]);
 
   const recentActivity = [
-    ...(recentUsersResult.data ?? []).map((user) => ({
-      type: "User",
-      title: user.display_name || user.username || "New user",
-      date: user.created_at,
-    })),
+    ...(recentUsersResult.data ?? []).map(
+      (user) => ({
+        type: "User",
+        title:
+          user.display_name ||
+          user.username ||
+          "New user",
+        date: user.created_at,
+      })
+    ),
 
-    ...(recentChannelsResult.data ?? []).map((channel) => ({
-      type: "Channel",
-      title: channel.channel_name,
-      date: channel.created_at,
-    })),
+    ...(recentChannelsResult.data ?? []).map(
+      (channel) => ({
+        type: "Channel",
+        title: channel.channel_name,
+        date: channel.created_at,
+      })
+    ),
 
-    ...(recentVideosResult.data ?? []).map((video) => ({
-      type: "Video",
-      title: video.title,
-      date: video.created_at,
-    })),
+    ...(recentVideosResult.data ?? []).map(
+      (video) => ({
+        type: "Video",
+        title: video.title,
+        date: video.created_at,
+      })
+    ),
 
-    ...(recentSubscriptionsResult.data ?? []).map((subscription) => ({
-      type: "Subscription",
-      title: "New subscription",
-      date: subscription.created_at,
-    })),
+    ...(recentSubscriptionsResult.data ?? []).map(
+      (subscription) => ({
+        type: "Subscription",
+        title: "New subscription",
+        date: subscription.created_at,
+      })
+    ),
   ]
     .sort(
       (a, b) =>
@@ -223,40 +297,42 @@ export default async function AdminDashboardPage() {
   // Recent payments
   // ---------------------------------------------------------
 
-  const { data: recentPayments } = await supabase
-    .from("payments")
-    .select(
-      `
-        id,
-        gross_amount,
-        currency,
-        payment_status,
-        paid_at,
-        created_at,
-        buyer_id,
-        channel_id
-      `
-    )
-    .order("created_at", { ascending: false })
-    .limit(6);
+  const { data: recentPayments } =
+    await supabase
+      .from("payments")
+      .select(
+        `
+          id,
+          gross_amount,
+          currency,
+          payment_status,
+          paid_at,
+          created_at
+        `
+      )
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(6);
 
   // ---------------------------------------------------------
   // Pending actions
   // ---------------------------------------------------------
 
-  const pendingPayoutCount = pendingPayoutsResult.count ?? 0;
+  const pendingPayoutCount =
+    pendingPayoutsResult.count ?? 0;
 
   return (
-    <main className="min-h-screen bg-light-bg">
+    <div className="w-full">
       <div className="mx-auto max-w-7xl px-6 py-8">
-
         {/* Header */}
+
         <div>
-          <h1 className="text-3xl font-bold text-foreground">
+          <h1 className="text-2xl font-semibold text-foreground">
             Admin Dashboard
           </h1>
 
-          <p className="mt-2 text-secondary">
+          <p className="mt-1 text-sm text-secondary">
             Overview of your NiceConvo marketplace.
           </p>
         </div>
@@ -280,7 +356,7 @@ export default async function AdminDashboardPage() {
                       {stat.title}
                     </p>
 
-                    <p className="mt-2 text-2xl font-bold text-foreground">
+                    <p className="mt-2 text-2xl font-semibold text-foreground">
                       {stat.value}
                     </p>
                   </div>
@@ -299,45 +375,49 @@ export default async function AdminDashboardPage() {
         ------------------------------------------------- */}
 
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
-
           {/* Recent Activity */}
-          <div className="rounded-xl border border-border bg-background p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">
-                  Recent Activity
-                </h2>
 
-                <p className="mt-1 text-sm text-muted">
-                  Latest activity across NiceConvo.
-                </p>
-              </div>
+          <div className="rounded-xl border border-border bg-background">
+            <div className="border-b border-border px-6 py-5">
+              <h2 className="text-lg font-semibold text-foreground">
+                Recent Activity
+              </h2>
+
+              <p className="mt-1 text-sm text-muted">
+                Latest activity across NiceConvo.
+              </p>
             </div>
 
-            <div className="mt-5 divide-y divide-border">
+            <div className="px-6">
               {recentActivity.length > 0 ? (
-                recentActivity.map((activity, index) => (
-                  <div
-                    key={`${activity.type}-${index}`}
-                    className="flex items-center justify-between py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground">
-                        {activity.title}
-                      </p>
+                <div className="divide-y divide-border">
+                  {recentActivity.map(
+                    (activity, index) => (
+                      <div
+                        key={`${activity.type}-${index}`}
+                        className="flex items-center justify-between py-4"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {activity.title}
+                          </p>
 
-                      <p className="mt-1 text-xs text-muted">
-                        {activity.type}
-                      </p>
-                    </div>
+                          <p className="mt-1 text-xs text-muted">
+                            {activity.type}
+                          </p>
+                        </div>
 
-                    <p className="ml-4 shrink-0 text-xs text-muted">
-                      {formatTimeAgo(activity.date)}
-                    </p>
-                  </div>
-                ))
+                        <p className="ml-4 shrink-0 text-xs text-muted">
+                          {formatTimeAgo(
+                            activity.date
+                          )}
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
               ) : (
-                <p className="py-6 text-sm text-muted">
+                <p className="py-8 text-sm text-muted">
                   No recent activity.
                 </p>
               )}
@@ -345,8 +425,9 @@ export default async function AdminDashboardPage() {
           </div>
 
           {/* Needs Attention */}
-          <div className="rounded-xl border border-border bg-background p-6">
-            <div>
+
+          <div className="rounded-xl border border-border bg-background">
+            <div className="border-b border-border px-6 py-5">
               <h2 className="text-lg font-semibold text-foreground">
                 Needs Attention
               </h2>
@@ -356,11 +437,11 @@ export default async function AdminDashboardPage() {
               </p>
             </div>
 
-            <div className="mt-5 space-y-3">
-
+            <div className="space-y-3 p-6">
               {/* Pending payouts */}
+
               <Link
-                href="/admin/payouts/pending"
+                href="/admin/payouts"
                 className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted-bg"
               >
                 <div className="flex items-center gap-3">
@@ -389,6 +470,7 @@ export default async function AdminDashboardPage() {
               </Link>
 
               {/* Reports */}
+
               <Link
                 href="/admin/reports"
                 className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted-bg"
@@ -412,7 +494,8 @@ export default async function AdminDashboardPage() {
                 <ArrowRight className="h-4 w-4 text-muted" />
               </Link>
 
-              {/* Failed payments */}
+              {/* Payments */}
+
               <Link
                 href="/admin/payments"
                 className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted-bg"
@@ -443,7 +526,7 @@ export default async function AdminDashboardPage() {
             Recent Payments
         ------------------------------------------------- */}
 
-        <div className="mt-6 rounded-xl border border-border bg-background">
+        <div className="mt-6 overflow-hidden rounded-xl border border-border bg-background">
           <div className="flex items-center justify-between border-b border-border px-6 py-5">
             <div>
               <h2 className="text-lg font-semibold text-foreground">
@@ -457,7 +540,7 @@ export default async function AdminDashboardPage() {
 
             <Link
               href="/admin/payments"
-              className="text-sm font-medium text-secondary hover:text-foreground"
+              className="text-sm font-medium text-secondary transition hover:text-foreground"
             >
               View all
             </Link>
@@ -486,35 +569,47 @@ export default async function AdminDashboardPage() {
               </thead>
 
               <tbody>
-                {recentPayments && recentPayments.length > 0 ? (
-                  recentPayments.map((payment) => (
-                    <tr
-                      key={payment.id}
-                      className="border-b border-border last:border-0"
-                    >
-                      <td className="px-6 py-4 text-foreground">
-                        Payment #{payment.id.slice(0, 8)}
-                      </td>
+                {recentPayments &&
+                recentPayments.length > 0 ? (
+                  recentPayments.map(
+                    (payment) => (
+                      <tr
+                        key={payment.id}
+                        className="border-b border-border last:border-0"
+                      >
+                        <td className="px-6 py-4 text-foreground">
+                          Payment #
+                          {payment.id.slice(
+                            0,
+                            8
+                          )}
+                        </td>
 
-                      <td className="px-6 py-4 font-medium text-foreground">
-                        {payment.currency || "USD"}{" "}
-                        {Number(payment.gross_amount || 0).toFixed(2)}
-                      </td>
+                        <td className="px-6 py-4 font-medium text-foreground">
+                          {payment.currency ||
+                            "USD"}{" "}
+                          {Number(
+                            payment.gross_amount ||
+                              0
+                          ).toFixed(2)}
+                        </td>
 
-                      <td className="px-6 py-4">
-                        <span className="rounded-md bg-muted-bg px-2 py-1 text-xs font-medium text-secondary">
-                          {payment.payment_status || "Unknown"}
-                        </span>
-                      </td>
+                        <td className="px-6 py-4">
+                          <span className="rounded-md bg-muted-bg px-2 py-1 text-xs font-medium text-secondary">
+                            {payment.payment_status ||
+                              "Unknown"}
+                          </span>
+                        </td>
 
-                      <td className="px-6 py-4 text-muted">
-                        {formatTimeAgo(
-                          payment.paid_at ||
-                          payment.created_at
-                        )}
-                      </td>
-                    </tr>
-                  ))
+                        <td className="px-6 py-4 text-muted">
+                          {formatTimeAgo(
+                            payment.paid_at ||
+                              payment.created_at
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  )
                 ) : (
                   <tr>
                     <td
@@ -535,39 +630,59 @@ export default async function AdminDashboardPage() {
         ------------------------------------------------- */}
 
         <div className="mt-6 rounded-xl border border-border bg-background p-6">
-        <h2 className="text-lg font-semibold text-foreground">
-          Financial Summary
-        </h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            Financial Summary
+          </h2>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <FinancialItem
-            label="Total Revenue"
-            value={formatPrice(totalRevenue, "USD") ?? "$0.00"}
-          />
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <FinancialItem
+              label="Total Revenue"
+              value={
+                formatPrice(
+                  totalRevenue,
+                  "USD"
+                ) ?? "$0.00"
+              }
+            />
 
-          <FinancialItem
-            label="Creator Earnings"
-            value={formatPrice(creatorEarnings, "USD") ?? "$0.00"}
-          />
+            <FinancialItem
+              label="Creator Earnings"
+              value={
+                formatPrice(
+                  creatorEarnings,
+                  "USD"
+                ) ?? "$0.00"
+              }
+            />
 
-          <FinancialItem
-            label="Completed Payouts"
-            value={formatPrice(completedPayouts, "USD") ?? "$0.00"}
-          />
+            <FinancialItem
+              label="Completed Payouts"
+              value={
+                formatPrice(
+                  completedPayouts,
+                  "USD"
+                ) ?? "$0.00"
+              }
+            />
 
-          <FinancialItem
-            label="Pending Payouts"
-            value={formatPrice(pendingPayouts, "USD") ?? "$0.00"}
-          />
+            <FinancialItem
+              label="Pending Payouts"
+              value={
+                formatPrice(
+                  pendingPayouts,
+                  "USD"
+                ) ?? "$0.00"
+              }
+            />
+          </div>
         </div>
       </div>
     </div>
-    </main>
   );
 }
 
 // ---------------------------------------------------------
-// Components
+// Financial item
 // ---------------------------------------------------------
 
 function FinancialItem({

@@ -17,8 +17,8 @@ import {
   Wallet,
   BarChart3,
   Flag,
-  Settings,
   Globe,
+  FileText,
   ExternalLink,
 } from "lucide-react";
 
@@ -38,8 +38,8 @@ const icons = {
   Wallet,
   BarChart3,
   Flag,
-  Settings,
   Globe,
+  FileText,
 } as const;
 
 export default function AdminSidebar() {
